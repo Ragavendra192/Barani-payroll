@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Worker Payslip - {{ row.Emp_No }} - {{ row.Employee_Name }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 6mm;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9px;
+            color: #000;
+            margin: 0;
+            padding: 5px;
+            background: #fff;
+        }
+        .payslip-box {
+            border: 1.5px solid #000;
+            padding: 8px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+        }
+        .company-header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin-bottom: 4px;
+        }
+        .company-header-table td {
+            border: none;
+            padding: 2px;
+            vertical-align: middle;
+        }
+        .company-title {
+            font-size: 14.5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+        .company-address {
+            font-size: 8.5px;
+            text-align: center;
+            font-weight: bold;
+            color: #000;
+            margin-top: 2px;
+        }
+        .payslip-month-banner {
+            font-size: 10.5px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #000;
+            background-color: #a9d08e;
+            padding: 3px 0;
+            margin-bottom: 4px;
+            color: #000;
+        }
+        table.payslip-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4px;
+        }
+        table.payslip-table th, table.payslip-table td {
+            border: 1px solid #000;
+            padding: 3px 5px;
+            font-size: 9px;
+        }
+        .lbl-blue {
+            font-weight: bold;
+            background-color: #b4c6e7;
+            color: #000;
+        }
+        .lbl-peach {
+            font-weight: bold;
+            background-color: #f8cbad;
+            color: #000;
+        }
+        .lbl-lavender {
+            font-weight: bold;
+            background-color: #d9e1f2;
+            color: #000;
+        }
+        .lbl-green {
+            font-weight: bold;
+            background-color: #a9d08e;
+            color: #000;
+        }
+        .lbl-pink {
+            font-weight: bold;
+            background-color: #f8cecc;
+            color: #000;
+        }
+        .lbl-total-green {
+            font-weight: bold;
+            background-color: #c6e0b4;
+            color: #000;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .bold { font-weight: bold; }
+
+        .footer-note {
+            margin-top: 6px;
+            text-align: center;
+            font-size: 8.5px;
+            color: #000;
+            font-style: italic;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { padding: 0; }
+            .payslip-box { border: 1.5px solid #000; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    {% if not is_pdf %}
+    <div style="text-align: center; margin-bottom: 12px;" class="no-print">
+        <button onclick="window.print()" style="padding: 7px 16px; font-weight: bold; background: #0284c7; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px;">
+            <i class="fa-solid fa-print"></i> Print Payslip
+        </button>
+        <a href="{{ url_for('payslips.download_payslip', year=year, month=row.Payroll_Month or 7, emp_no=row.Emp_No, category=row.Category) }}" style="padding: 7px 16px; font-weight: bold; background: #16a34a; color: #fff; text-decoration: none; border-radius: 4px; display: inline-block;">
+            <i class="fa-solid fa-download"></i> Download PDF
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="payslip-box">
+        <!-- COMPANY HEADER WITH LOGO -->
+        <table class="company-header-table">
+            <tr>
+                <td style="width: 14%; text-align: left;">
+                    <img src="/static/images/barani_logo.png" alt="BHIPL Logo" style="max-height: 44px; max-width: 95px;">
+                </td>
+                <td style="width: 86%; text-align: center;">
+                    <div class="company-title">BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT II</div>
+                    <div class="company-address">
+                        S.F NOS 507/1C1, 1C2, ARASUR VILLAGE,, SULUR TALUK, ARASUR, COIMBATORE, COIMBATORE-641407
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- PAYSLIP MONTH BANNER -->
+        <div class="payslip-month-banner">
+            Payslip For The Month Of {{ month_name }}-{{ year }}
+        </div>
+
+        <!-- EMPLOYEE MASTER INFORMATION TABLE -->
+        <table class="payslip-table">
+            <tr>
+                <td class="lbl-blue" style="width: 16%;">Employee Name</td>
+                <td style="width: 34%; font-weight: bold;">{{ row.Employee_Name or '-' }}</td>
+                <td class="lbl-blue" style="width: 16%;">Date of Joining</td>
+                <td style="width: 34%; font-weight: bold;">{{ row.DOJ or '-' }}</td>
+            </tr>
+            <tr>
+                <td class="lbl-blue">Employee No.</td>
+                <td style="font-weight: bold;">{{ row.Emp_No or '-' }}</td>
+                <td class="lbl-blue">Bank</td>
+                <td style="font-weight: bold;">{{ row.Bank_Name or row.Bank or '-' }}</td>
+            </tr>
+            <tr>
+                <td class="lbl-blue">Father Name</td>
+                <td style="font-weight: bold;">{{ row.Father_Name or '-' }}</td>
+                <td class="lbl-blue">Bank A/C No.</td>
+                <td style="font-weight: bold;">{{ row.Account_No or '-' }}</td>
+            </tr>
+            <tr>
+                <td class="lbl-blue">Department</td>
+                <td style="font-weight: bold;">{{ row.Department or '-' }}</td>
+                <td class="lbl-blue">IFSC Code</td>
+                <td style="font-weight: bold;">{{ row.IFSC_Code or '-' }}</td>
+            </tr>
+            <tr>
+                <td class="lbl-blue">Designation</td>
+                <td style="font-weight: bold;">{{ row.Designation or '' }}</td>
+                <td class="lbl-blue">UAN Number</td>
+                <td style="font-weight: bold;">{{ row.UAN or '-' }}</td>
+            </tr>
+            <tr>
+                <td class="lbl-blue">Date of Birth</td>
+                <td style="font-weight: bold;">{{ row.DOB or '-' }}</td>
+                <td class="lbl-blue">ESI Number</td>
+                <td style="font-weight: bold;">{{ row.ESI_No or '-' }}</td>
+            </tr>
+        </table>
+
+        <!-- ATTENDANCE / LEAVE / ADVANCE SUMMARY TABLE -->
+        <table class="payslip-table text-center">
+            <thead>
+                <tr>
+                    <th class="lbl-peach" style="text-align: left; width: 14%;">Leave Type</th>
+                    <th class="lbl-peach" style="width: 7%;">Op. Bal.</th>
+                    <th class="lbl-peach" style="width: 7%;">Availed</th>
+                    <th class="lbl-peach" style="width: 7%;">Cl. Bal.</th>
+                    <th class="lbl-lavender" style="width: 9%;">Total Days</th>
+                    <th class="lbl-lavender" style="width: 9%;">Present Days</th>
+                    <th class="lbl-lavender" style="width: 8%;">Week Off</th>
+                    <th class="lbl-lavender" style="width: 8%;">Holidays</th>
+                    <th class="lbl-lavender" style="width: 9%;">Paid Leave</th>
+                    <th class="lbl-lavender" style="width: 9%;">Unpaid Leave</th>
+                    <th class="lbl-lavender" style="width: 13%;">Paid Days</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- ROW 1: EARNED LEAVE & ATTENDANCE STATS -->
+                <tr>
+                    <td style="text-align: left; font-weight: bold;">Earned Leave</td>
+                    <td>{{ "%.1f"|format(row.EL_Op if row.EL_Op is defined and row.EL_Op is not none else 12.0) }}</td>
+                    <td>{{ "%.1f"|format(row.EL or 0.0) }}</td>
+                    <td>{{ "%.1f"|format(row.EL_Cl if row.EL_Cl is defined and row.EL_Cl is not none else ((row.EL_Op or 12.0) - (row.EL or 0.0))) }}</td>
+                    <td style="font-weight: bold;">{{ "%.1f"|format(row.Working_Days or 27.0) }}</td>
+                    <td style="font-weight: bold;">{{ "%.1f"|format(row.Present_Days or 0.0) }}</td>
+                    <td>{{ "%.1f"|format(row.Week_Off or 0.0) }}</td>
+                    <td>{{ "%.1f"|format(row.NH or 0.0) }}</td>
+                    <td>{{ "%.1f"|format((row.EL or 0.0) + (row.CL or 0.0) + (row.SL or 0.0)) }}</td>
+                    <td style="font-weight: bold;">{{ "%.1f"|format(row.LOP_Days or 0.0) }}</td>
+                    <td style="font-weight: bold;">{{ "%.1f"|format(row.Total_Days or 0.0) }}</td>
+                </tr>
+                <!-- ROW 2: CASUAL LEAVE & OPENING/CLOSING ADVANCE -->
+                <tr>
+                    <td style="text-align: left; font-weight: bold;">Casual Leave</td>
+                    <td>{{ "%.1f"|format(row.CL_Op if row.CL_Op is defined and row.CL_Op is not none else 2.0) }}</td>
+                    <td>{{ "%.1f"|format(row.CL or 0.0) }}</td>
+                    <td>{{ "%.1f"|format(row.CL_Cl if row.CL_Cl is defined and row.CL_Cl is not none else ((row.CL_Op or 2.0) - (row.CL or 0.0))) }}</td>
+                    <td colspan="2" rowspan="2" style="vertical-align: middle; font-weight: bold; text-align: left; padding-left: 8px;">Opening Advance</td>
+                    <td colspan="2" rowspan="2" style="vertical-align: middle; font-weight: bold; text-align: center;">{{ "{:,.0f}".format(row.Opening_Advance or 0.0) }}</td>
+                    <td rowspan="2" style="vertical-align: middle; font-weight: bold; text-align: left; padding-left: 6px;">Closing Advance</td>
+                    <td colspan="2" rowspan="2" style="vertical-align: middle; font-weight: bold; text-align: center;">{{ "{:,.0f}".format(row.Closing_Advance if row.Closing_Advance is defined and row.Closing_Advance is not none else ((row.Opening_Advance or 0.0) - (row.Advance_Deduction or 0.0))) }}</td>
+                </tr>
+                <!-- ROW 3: COFF -->
+                <tr>
+                    <td style="text-align: left; font-weight: bold;">Coff</td>
+                    <td>0.0</td>
+                    <td>0.0</td>
+                    <td>0.0</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- MAIN EARNINGS & DEDUCTIONS TABLE -->
+        <table class="payslip-table">
+            <thead>
+                <tr>
+                    <th class="lbl-green" style="width: 32%; text-align: center;">Descriptions</th>
+                    <th class="lbl-green" style="width: 14%; text-align: center;">Fixed Gross</th>
+                    <th class="lbl-green" style="width: 14%; text-align: center;">Earned Gross</th>
+                    <th class="lbl-pink" style="width: 26%; text-align: center;">Deductions</th>
+                    <th class="lbl-pink" style="width: 14%; text-align: center;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- ROW 1: BASIC + DA -->
+                <tr>
+                    <td class="bold">WAGE BASIC AND DA</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Master_Basic + row.Master_DA if row.Master_Basic is defined and (row.Master_Basic + row.Master_DA) > 0 else row.Basic_DA or 0.0) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Basic_DA_Earned or 0.0) }}</td>
+                    <td class="bold">{{ deductions_list[0][0] if deductions_list|length > 0 else '' }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(deductions_list[0][1]) if deductions_list|length > 0 else '' }}</td>
+                </tr>
+                <!-- ROW 2: CONVEYANCE -->
+                <tr>
+                    <td class="bold">WAGE CONVEYANCE</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Master_Conveyance if row.Master_Conveyance is defined and row.Master_Conveyance > 0 else row.Conveyance_Allowance or 0.0) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Conveyance_Earned or 0.0) }}</td>
+                    <td class="bold">{{ deductions_list[1][0] if deductions_list|length > 1 else '' }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(deductions_list[1][1]) if deductions_list|length > 1 else '' }}</td>
+                </tr>
+                <!-- ROW 3: HRA -->
+                <tr>
+                    <td class="bold">WAGE HRA</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Master_HRA if row.Master_HRA is defined and row.Master_HRA > 0 else row.HRA or 0.0) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.HRA_Earned or 0.0) }}</td>
+                    <td class="bold">{{ deductions_list[2][0] if deductions_list|length > 2 else '' }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(deductions_list[2][1]) if deductions_list|length > 2 else '' }}</td>
+                </tr>
+                <!-- ROW 4: OTHER ALLOWANCE -->
+                <tr>
+                    <td class="bold">WAGE OTHER ALLOWANCE</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Master_Other if row.Master_Other is defined and row.Master_Other > 0 else row.Other_Allowance or 0.0) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Other_Allowance_Earned or 0.0) }}</td>
+                    <td class="bold">{{ deductions_list[3][0] if deductions_list|length > 3 else '' }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(deductions_list[3][1]) if deductions_list|length > 3 else '' }}</td>
+                </tr>
+                <!-- ROW 5: WASHING ALLOWANCE -->
+                <tr>
+                    <td class="bold">WAGE WASHING ALLOWANCE</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Master_Washing if row.Master_Washing is defined and row.Master_Washing > 0 else row.Washing_Allowance or 0.0) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Washing_Allowance_Earned or 0.0) }}</td>
+                    <td class="bold">{{ deductions_list[4][0] if deductions_list|length > 4 else '' }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(deductions_list[4][1]) if deductions_list|length > 4 else '' }}</td>
+                </tr>
+                <!-- ROW 6: OVERTIME -->
+                <tr>
+                    <td class="bold">OVERTIME</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.OT_Wages or 0.0) }}</td>
+                    <td class="bold">{{ deductions_list[5][0] if deductions_list|length > 5 else '' }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(deductions_list[5][1]) if deductions_list|length > 5 else '' }}</td>
+                </tr>
+                <!-- ROW 7: SPECIAL INCENTIVE -->
+                <tr>
+                    <td class="bold">SPACIAL INCENTIVE</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.Special_Allowance_Earned or 0.0) }}</td>
+                    <td class="bold">{{ deductions_list[6][0] if deductions_list|length > 6 else '' }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(deductions_list[6][1]) if deductions_list|length > 6 else '' }}</td>
+                </tr>
+                <!-- TOTALS ROW -->
+                <tr>
+                    <td class="lbl-total-green text-right bold">Total Earnings :</td>
+                    <td class="lbl-total-green text-right bold">{{ "{:,.2f}".format(row.Fixed_Gross or 0.0) }}</td>
+                    <td class="lbl-total-green text-right bold">{{ "{:,.2f}".format(row.Gross_Wages or 0.0) }}</td>
+                    <td class="lbl-pink text-right bold">Total Deductions :</td>
+                    <td class="lbl-pink text-right bold">{{ "{:,.2f}".format(row.Total_Deduction or 0.0) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- NET PAY & NET PAY IN WORDS BAR -->
+        <table class="payslip-table" style="margin-top: 2px; margin-bottom: 2px;">
+            <tr>
+                <td class="lbl-blue bold text-center" style="width: 16%; padding: 4px 5px; font-size: 9.5px;">Net Pay (ROD +)</td>
+                <td class="bold text-center" style="width: 14%; padding: 4px 5px; font-size: 10px;">{{ "{:,.0f}".format(row.Net_Salary or 0.0) }}</td>
+                <td class="lbl-blue bold text-center" style="width: 16%; padding: 4px 5px; font-size: 9.5px;">Net Pay in Words</td>
+                <td class="bold" style="width: 54%; padding: 4px 6px; font-size: 8.5px;">{{ net_in_words }}</td>
+            </tr>
+        </table>
+
+        <!-- FOOTER NOTE -->
+        <div class="footer-note">
+            Note: This is system generated Payslip and does not require any Signature.
+        </div>
+    </div>
+
+</body>
+</html>

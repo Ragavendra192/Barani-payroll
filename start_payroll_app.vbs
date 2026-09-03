@@ -15,7 +15,7 @@ On Error GoTo 0
 Function IsValidPython(cmdStr)
     On Error Resume Next
     Dim execObj
-    Set execObj = WshShell.Exec("cmd.exe /c " & cmdStr & " -c ""import sys; sys.exit(0)""")
+    Set execObj = WshShell.Exec(cmdStr & " -c ""import sys; sys.exit(0)""")
     If Err.Number <> 0 Then
         IsValidPython = False
         On Error GoTo 0
@@ -122,46 +122,34 @@ pythonExe = FindPython()
 
 ' Verify Python was found
 If pythonExe = "" Then
-    MsgBox "Error: Python executable could not be found or executed on this server. Please install Python or rebuild the virtual environment (venv) on this laptop.", 16, "BHIPL Payroll Error"
+    WshShell.Popup "Error: Python executable could not be found or executed on this server. Please install Python or rebuild the virtual environment (venv) on this system.", 10, "BHIPL Payroll System Error", 16
     WScript.Quit 1
 End If
 
 ' Verify app.py exists before launching
 If Not fso.FileExists(appPath) Then
-    MsgBox "Error: Could not find app.py at " & appPath, 16, "BHIPL Payroll Error"
+    WshShell.Popup "Error: Could not find app.py at " & appPath, 10, "BHIPL Payroll System Error", 16
     WScript.Quit 1
 End If
 
 ' Ensure Autostart Shortcut is in Windows Startup Folder
-Dim wscriptPath, startupFolder, shortcutPath, shortcut, oldShortcutPath
-wscriptPath = WshShell.ExpandEnvironmentStrings("%SystemRoot%\System32\wscript.exe")
+Dim startupFolder, shortcutPath, shortcut, isNewShortcut
 startupFolder = WshShell.SpecialFolders("Startup")
 shortcutPath = startupFolder & "\BHIPLPayroll.lnk"
-oldShortcutPath = startupFolder & "\BHIPLPortal.lnk"
+isNewShortcut = Not fso.FileExists(shortcutPath)
 
-' Clean up legacy shortcut if present
-If fso.FileExists(oldShortcutPath) Then
-    On Error Resume Next
-    fso.DeleteFile oldShortcutPath, True
-    On Error GoTo 0
-End If
+On Error Resume Next
+Set shortcut = WshShell.CreateShortcut(shortcutPath)
+shortcut.TargetPath = "wscript.exe"
+shortcut.Arguments = """" & WScript.ScriptFullName & """"
+shortcut.WorkingDirectory = scriptDir
+shortcut.Description = "Starts the BHIPL Payroll System in the background"
+shortcut.Save
 
-If Not fso.FileExists(shortcutPath) Then
-    On Error Resume Next
-    Err.Clear
-    Set shortcut = WshShell.CreateShortcut(shortcutPath)
-    shortcut.TargetPath = wscriptPath
-    shortcut.Arguments = """" & WScript.ScriptFullName & """"
-    shortcut.WorkingDirectory = scriptDir
-    shortcut.Description = "Starts the BHIPL Payroll System in the background"
-    shortcut.Save
-    If Err.Number = 0 Then
-        MsgBox "BHIPL Payroll has been successfully configured to auto-start on Windows login." & vbCrLf & vbCrLf & "Shortcut created at:" & vbCrLf & shortcutPath, 64, "Autostart Configured"
-    Else
-        MsgBox "Failed to create startup shortcut: " & Err.Description, 16, "Autostart Error"
-    End If
-    On Error GoTo 0
+If isNewShortcut And Err.Number = 0 Then
+    WshShell.Popup "BHIPL Payroll System has been configured to auto-start on Windows login.", 5, "Autostart Configured", 64
 End If
+On Error GoTo 0
 
 ' Run the application silently in the background with full paths
 ' 0 = Hide the window

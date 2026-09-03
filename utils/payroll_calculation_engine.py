@@ -387,10 +387,37 @@ def calculate_worker_pf_esi(emp, salary, attendance, deductions, standard_days=2
 
 def calculate_staff_naps_earned_gross(salary, att_info, standard_days_dec):
     fixed_gross = money(salary.get('Gross_Wages') or salary.get('Base_Gross') or salary.get('Fixed_Gross'))
+    fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
+    fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
+    fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_spl = money(salary.get('Special_Allowance') or '0.00')
+
     worked_days_dec = att_info['total_days_dec']
-    earned_gross = calculate_earned_salary(fixed_gross, worked_days_dec, standard_days_dec)
+    earned_basic_da = calculate_earned_salary(fixed_basic_da, worked_days_dec, standard_days_dec)
+    earned_hra = calculate_earned_salary(fixed_hra, worked_days_dec, standard_days_dec)
+    earned_conv = calculate_earned_salary(fixed_conv, worked_days_dec, standard_days_dec)
+    earned_wash = calculate_earned_salary(fixed_wash, worked_days_dec, standard_days_dec)
+    earned_other = calculate_earned_salary(fixed_other, worked_days_dec, standard_days_dec)
+    earned_spl = calculate_earned_salary(fixed_spl, worked_days_dec, standard_days_dec)
+
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + earned_spl
+
     return {
         'fixed_gross': fixed_gross,
+        'fixed_basic_da': fixed_basic_da,
+        'fixed_hra': fixed_hra,
+        'fixed_conv': fixed_conv,
+        'fixed_wash': fixed_wash,
+        'fixed_other': fixed_other,
+        'fixed_spl': fixed_spl,
+        'earned_basic_da': earned_basic_da,
+        'earned_hra': earned_hra,
+        'earned_conv': earned_conv,
+        'earned_wash': earned_wash,
+        'earned_other': earned_other,
+        'earned_spl': earned_spl,
         'earned_gross': earned_gross
     }
 
@@ -433,8 +460,8 @@ def calculate_staff_naps(emp, salary, attendance, deductions, standard_days=26.0
 
     return build_result(
         emp, 'STAFF_NAPS', 'STAFF', 'NAPS', att_info,
-        earn_info['fixed_gross'], Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), earn_info['fixed_gross'], Decimal('0.00'),
-        earned_gross_total, Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), earned_gross_total,
+        earn_info['fixed_basic_da'], earn_info['fixed_hra'], earn_info['fixed_conv'], earn_info['fixed_wash'], earn_info['fixed_other'], earn_info['fixed_spl'], earn_info['fixed_gross'], Decimal('0.00'),
+        earn_info['earned_basic_da'], earn_info['earned_hra'], earn_info['earned_conv'], earn_info['earned_wash'], earn_info['earned_other'], earn_info['earned_spl'], earned_gross_total,
         ot_info, Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'),
         arrears, ded_info, net_pay, money(salary.get('Basic')), money(salary.get('DA'))
     )
@@ -450,18 +477,41 @@ def calculate_worker_naps_earned_gross(salary, att_info, attendance, standard_da
     else:
         fixed_gross = money(salary.get('Gross_Wages') or salary.get('Base_Gross') or salary.get('Fixed_Gross'))
 
+    fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
+    fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
+    fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_spl = Decimal('0.00')
+
     worked_days_dec = att_info['total_days_dec']
-    earned_basic = calculate_earned_salary(fixed_gross, worked_days_dec, standard_days_dec)
+    earned_basic_da = calculate_earned_salary(fixed_basic_da, worked_days_dec, standard_days_dec)
+    earned_hra = calculate_earned_salary(fixed_hra, worked_days_dec, standard_days_dec)
+    earned_conv = calculate_earned_salary(fixed_conv, worked_days_dec, standard_days_dec)
+    earned_wash = calculate_earned_salary(fixed_wash, worked_days_dec, standard_days_dec)
+    earned_other = calculate_earned_salary(fixed_other, worked_days_dec, standard_days_dec)
+    earned_spl = Decimal('0.00')
 
     act_ot = attendance.get('actual_ot_hours') or attendance.get('ot_hours') or attendance.get('Act_OT_hrs') or 0.0
     ot_info = calculate_ot(act_ot, per_day_wage, salary.get('OT_Rate'))
 
-    earned_gross = earned_basic + ot_info['ot_wages_dec'] + ot_info['special_ot_dec']
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + ot_info['ot_wages_dec'] + ot_info['special_ot_dec']
 
     return {
         'per_day_wage': per_day_wage,
         'fixed_gross': fixed_gross,
-        'earned_basic': earned_basic,
+        'fixed_basic_da': fixed_basic_da,
+        'fixed_hra': fixed_hra,
+        'fixed_conv': fixed_conv,
+        'fixed_wash': fixed_wash,
+        'fixed_other': fixed_other,
+        'fixed_spl': fixed_spl,
+        'earned_basic_da': earned_basic_da,
+        'earned_hra': earned_hra,
+        'earned_conv': earned_conv,
+        'earned_wash': earned_wash,
+        'earned_other': earned_other,
+        'earned_spl': earned_spl,
         'ot_info': ot_info,
         'earned_gross': earned_gross
     }
@@ -503,8 +553,8 @@ def calculate_worker_naps(emp, salary, attendance, deductions, standard_days=26.
 
     return build_result(
         emp, 'WORKER_NAPS', 'WORKER', 'NAPS', att_info,
-        earn_info['fixed_gross'], Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), earn_info['fixed_gross'], earn_info['per_day_wage'],
-        earn_info['earned_basic'], Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), earn_info['earned_gross'],
+        earn_info['fixed_basic_da'], earn_info['fixed_hra'], earn_info['fixed_conv'], earn_info['fixed_wash'], earn_info['fixed_other'], earn_info['fixed_spl'], earn_info['fixed_gross'], earn_info['per_day_wage'],
+        earn_info['earned_basic_da'], earn_info['earned_hra'], earn_info['earned_conv'], earn_info['earned_wash'], earn_info['earned_other'], earn_info['earned_spl'], earn_info['earned_gross'],
         earn_info['ot_info'], Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'),
         arrears, ded_info, net_pay, money(salary.get('Basic')), money(salary.get('DA'))
     )
@@ -515,10 +565,37 @@ def calculate_worker_naps(emp, salary, attendance, deductions, standard_days=26.
 
 def calculate_staff_non_pf_esi_earned_gross(salary, att_info, standard_days_dec):
     fixed_gross = money(salary.get('Gross_Wages') or salary.get('Base_Gross') or salary.get('Fixed_Gross'))
+    fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
+    fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
+    fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_spl = money(salary.get('Special_Allowance') or '0.00')
+
     worked_days_dec = att_info['total_days_dec']
-    earned_gross = calculate_earned_salary(fixed_gross, worked_days_dec, standard_days_dec)
+    earned_basic_da = calculate_earned_salary(fixed_basic_da, worked_days_dec, standard_days_dec)
+    earned_hra = calculate_earned_salary(fixed_hra, worked_days_dec, standard_days_dec)
+    earned_conv = calculate_earned_salary(fixed_conv, worked_days_dec, standard_days_dec)
+    earned_wash = calculate_earned_salary(fixed_wash, worked_days_dec, standard_days_dec)
+    earned_other = calculate_earned_salary(fixed_other, worked_days_dec, standard_days_dec)
+    earned_spl = calculate_earned_salary(fixed_spl, worked_days_dec, standard_days_dec)
+
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + earned_spl
+
     return {
         'fixed_gross': fixed_gross,
+        'fixed_basic_da': fixed_basic_da,
+        'fixed_hra': fixed_hra,
+        'fixed_conv': fixed_conv,
+        'fixed_wash': fixed_wash,
+        'fixed_other': fixed_other,
+        'fixed_spl': fixed_spl,
+        'earned_basic_da': earned_basic_da,
+        'earned_hra': earned_hra,
+        'earned_conv': earned_conv,
+        'earned_wash': earned_wash,
+        'earned_other': earned_other,
+        'earned_spl': earned_spl,
         'earned_gross': earned_gross
     }
 
@@ -555,8 +632,8 @@ def calculate_staff_non_pf_esi(emp, salary, attendance, deductions, standard_day
 
     return build_result(
         emp, 'STAFF_NON_PF_ESI', 'STAFF', 'NON_PF_ESI', att_info,
-        earn_info['fixed_gross'], Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), earn_info['fixed_gross'], Decimal('0.00'),
-        earned_gross_total, Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), earned_gross_total,
+        earn_info['fixed_basic_da'], earn_info['fixed_hra'], earn_info['fixed_conv'], earn_info['fixed_wash'], earn_info['fixed_other'], earn_info['fixed_spl'], earn_info['fixed_gross'], Decimal('0.00'),
+        earn_info['earned_basic_da'], earn_info['earned_hra'], earn_info['earned_conv'], earn_info['earned_wash'], earn_info['earned_other'], earn_info['earned_spl'], earned_gross_total,
         ot_info, Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'),
         arrears, ded_info, net_pay, money(salary.get('Basic')), money(salary.get('DA'))
     )
@@ -572,18 +649,41 @@ def calculate_worker_non_pf_esi_earned_gross(salary, att_info, attendance, stand
     else:
         fixed_gross = money(salary.get('Gross_Wages') or salary.get('Base_Gross') or salary.get('Fixed_Gross'))
 
+    fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
+    fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
+    fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
+    fixed_spl = Decimal('0.00')
+
     worked_days_dec = att_info['total_days_dec']
-    earned_basic = calculate_earned_salary(fixed_gross, worked_days_dec, standard_days_dec)
+    earned_basic_da = calculate_earned_salary(fixed_basic_da, worked_days_dec, standard_days_dec)
+    earned_hra = calculate_earned_salary(fixed_hra, worked_days_dec, standard_days_dec)
+    earned_conv = calculate_earned_salary(fixed_conv, worked_days_dec, standard_days_dec)
+    earned_wash = calculate_earned_salary(fixed_wash, worked_days_dec, standard_days_dec)
+    earned_other = calculate_earned_salary(fixed_other, worked_days_dec, standard_days_dec)
+    earned_spl = Decimal('0.00')
 
     act_ot = attendance.get('actual_ot_hours') or attendance.get('ot_hours') or attendance.get('Act_OT_hrs') or 0.0
     ot_info = calculate_ot(act_ot, per_day_wage, salary.get('OT_Rate'))
 
-    earned_gross = earned_basic + ot_info['ot_wages_dec'] + ot_info['special_ot_dec']
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + ot_info['ot_wages_dec'] + ot_info['special_ot_dec']
 
     return {
         'per_day_wage': per_day_wage,
         'fixed_gross': fixed_gross,
-        'earned_basic': earned_basic,
+        'fixed_basic_da': fixed_basic_da,
+        'fixed_hra': fixed_hra,
+        'fixed_conv': fixed_conv,
+        'fixed_wash': fixed_wash,
+        'fixed_other': fixed_other,
+        'fixed_spl': fixed_spl,
+        'earned_basic_da': earned_basic_da,
+        'earned_hra': earned_hra,
+        'earned_conv': earned_conv,
+        'earned_wash': earned_wash,
+        'earned_other': earned_other,
+        'earned_spl': earned_spl,
         'ot_info': ot_info,
         'earned_gross': earned_gross
     }
@@ -619,8 +719,8 @@ def calculate_worker_non_pf_esi(emp, salary, attendance, deductions, standard_da
 
     return build_result(
         emp, 'WORKER_NON_PF_ESI', 'WORKER', 'NON_PF_ESI', att_info,
-        earn_info['fixed_gross'], Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), earn_info['fixed_gross'], earn_info['per_day_wage'],
-        earn_info['earned_basic'], Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), earn_info['earned_gross'],
+        earn_info['fixed_basic_da'], earn_info['fixed_hra'], earn_info['fixed_conv'], earn_info['fixed_wash'], earn_info['fixed_other'], earn_info['fixed_spl'], earn_info['fixed_gross'], earn_info['per_day_wage'],
+        earn_info['earned_basic_da'], earn_info['earned_hra'], earn_info['earned_conv'], earn_info['earned_wash'], earn_info['earned_other'], earn_info['earned_spl'], earn_info['earned_gross'],
         earn_info['ot_info'], Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'), Decimal('0.00'),
         arrears, ded_info, net_pay, money(salary.get('Basic')), money(salary.get('DA'))
     )
@@ -740,15 +840,19 @@ def get_staff_naps_calculation_trace(emp, salary, attendance, deductions, standa
     return {
         'employee_id': res['Emp_No'], 'employee_name': res['Name'], 'category': res['Category'],
         'inputs': {'per_day_wage': 0.0, 'standard_working_days': standard_days, 'present_days': res['Present_Days'], 'nh': res['PH'], 'el': res['PL'], 'cl': res['CL'], 'sl': res['SL'], 'ot_hours': 0.0},
-        'fixed': {'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Gross'], 'fixed_hra': 0.0, 'fixed_conveyance': 0.0, 'fixed_washing': 0.0, 'fixed_other': 0.0},
+        'fixed': {'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Basic_DA'], 'fixed_hra': res['Fixed_HRA'], 'fixed_conveyance': res['Fixed_Conveyance'], 'fixed_washing': res['Fixed_Washing'], 'fixed_other': res['Fixed_Other']},
         'attendance': {'total_worked_days': res['Worked_Days']},
-        'earnings': {'per_day_wage': 0.0, 'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Gross'], 'earned_basic_da': res['Gross_Wages'], 'earned_hra': 0.0, 'earned_conveyance': 0.0, 'earned_washing': 0.0, 'earned_other': 0.0, 'earned_special': 0.0, 'ot_rate': 0.0, 'ot_wages': 0.0, 'special_ot_amount': 0.0, 'gross_wages': res['Gross_Wages']},
+        'earnings': {'per_day_wage': 0.0, 'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Basic_DA'], 'earned_basic_da': res['Earned_Basic_DA'], 'earned_hra': res['Earned_HRA'], 'earned_conveyance': res['Earned_Conveyance'], 'earned_washing': res['Earned_Washing'], 'earned_other': res['Earned_Other'], 'earned_special': res['Earned_Special'], 'ot_rate': 0.0, 'ot_wages': 0.0, 'special_ot_amount': 0.0, 'gross_wages': res['Gross_Wages']},
         'deductions': {'pf_eligible_gross': 0.0, 'pf_deduction': 0.0, 'accounts_pf_deduction': 0.0, 'esi_eligible_gross': 0.0, 'esi_deduction': 0.0, 'accounts_esi_deduction': 0.0, 'lic': res['LIC_Deduction'], 'advance': res['Advance_Deduction'], 'naps': res['NAPS_Deduction'], 'accommodation': res['Accommodation_Deduction'], 'other_deduction': res['Other_Deduction'], 'total_deduction': res['Total_Deduction']},
         'final': {'arrears': res['Arrears'], 'net_salary': res['Net_Salary']},
         'formula_trace': [
             "Fixed Gross = Master Fixed Gross",
+            "Fixed Basic+DA = Fixed Gross * 50%",
+            "Fixed HRA = Fixed Gross * 20%",
             "Total Days = Present Days + N/H + EL + CL + SL",
-            "Earned Gross = (Fixed Gross / Standard Days) * Total Days",
+            "Earned Basic+DA = Fixed Basic+DA / Standard Days * Total Days",
+            "Earned HRA = Fixed HRA / Standard Days * Total Days",
+            "Earned Gross = Earned Basic+DA + Earned HRA + Earned Conv + Earned Wash + Earned Other + Arrears",
             "Statutory PF & ESI = 0 (Exempt NAPS Apprentice)",
             "Total Deduction = NAPS + Advance + LIC + Accom + Other",
             "Net Salary = Earned Gross - Total Deduction + Arrears"
@@ -760,19 +864,22 @@ def get_worker_naps_calculation_trace(emp, salary, attendance, deductions, stand
     return {
         'employee_id': res['Emp_No'], 'employee_name': res['Name'], 'category': res['Category'],
         'inputs': {'per_day_wage': res['Per_Day_Wage'], 'standard_working_days': standard_days, 'present_days': res['Present_Days'], 'nh': res['PH'], 'el': res['PL'], 'cl': res['CL'], 'sl': res['SL'], 'ot_hours': res['Act_OT_Hrs']},
-        'fixed': {'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Gross'], 'fixed_hra': 0.0, 'fixed_conveyance': 0.0, 'fixed_washing': 0.0, 'fixed_other': 0.0},
+        'fixed': {'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Basic_DA'], 'fixed_hra': res['Fixed_HRA'], 'fixed_conveyance': res['Fixed_Conveyance'], 'fixed_washing': res['Fixed_Washing'], 'fixed_other': res['Fixed_Other']},
         'attendance': {'total_worked_days': res['Worked_Days']},
-        'earnings': {'per_day_wage': res['Per_Day_Wage'], 'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Earned_Basic'], 'earned_basic_da': res['Earned_Basic'], 'earned_hra': 0.0, 'earned_conveyance': 0.0, 'earned_washing': 0.0, 'earned_other': 0.0, 'earned_special': 0.0, 'ot_rate': res['OT_Rate'], 'ot_wages': res['OT_Wages'], 'special_ot_amount': res['Special_OT_Amount'], 'gross_wages': res['Gross_Wages']},
+        'earnings': {'per_day_wage': res['Per_Day_Wage'], 'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Basic_DA'], 'earned_basic_da': res['Earned_Basic_DA'], 'earned_hra': res['Earned_HRA'], 'earned_conveyance': res['Earned_Conveyance'], 'earned_washing': res['Earned_Washing'], 'earned_other': res['Earned_Other'], 'earned_special': res['Earned_Special'], 'ot_rate': res['OT_Rate'], 'ot_wages': res['OT_Wages'], 'special_ot_amount': res['Special_OT_Amount'], 'gross_wages': res['Gross_Wages']},
         'deductions': {'pf_eligible_gross': 0.0, 'pf_deduction': 0.0, 'accounts_pf_deduction': 0.0, 'esi_eligible_gross': 0.0, 'esi_deduction': 0.0, 'accounts_esi_deduction': 0.0, 'lic': res['LIC_Deduction'], 'advance': res['Advance_Deduction'], 'naps': res['NAPS_Deduction'], 'accommodation': res['Accommodation_Deduction'], 'other_deduction': res['Other_Deduction'], 'total_deduction': res['Total_Deduction']},
         'final': {'arrears': res['Arrears'], 'net_salary': res['Net_Salary']},
         'formula_trace': [
             "Fixed Gross = Per Day Wage * 26",
+            "Fixed Basic+DA = Fixed Gross * 50%",
+            "Fixed HRA = Fixed Gross * 20%",
             "Total Days = Present Days + N/H + EL + CL + SL",
-            "Earned Basic = (Fixed Gross / 26) * Total Days",
+            "Earned Basic+DA = Fixed Basic+DA / 26 * Total Days",
+            "Earned HRA = Fixed HRA / 26 * Total Days",
             "OT Rate = Per Day Wage / 8.0",
             "OT Wages = min(Actual OT, 50) * OT Rate",
             "Special OT Amount = max(Actual OT - 50, 0) * OT Rate",
-            "Earned Gross = Earned Basic + OT Wages + Special OT Amount",
+            "Earned Gross = Earned Basic+DA + Earned HRA + Earned Conv + Earned Wash + Earned Other + OT Wages + Special OT Amount",
             "Statutory PF & ESI = 0 (Exempt NAPS Apprentice)",
             "Total Deduction = NAPS + Advance + LIC + Accom + Other",
             "Net Salary = Earned Gross - Total Deduction + Arrears"
@@ -784,15 +891,19 @@ def get_staff_non_pf_esi_calculation_trace(emp, salary, attendance, deductions, 
     return {
         'employee_id': res['Emp_No'], 'employee_name': res['Name'], 'category': res['Category'],
         'inputs': {'per_day_wage': 0.0, 'standard_working_days': standard_days, 'present_days': res['Present_Days'], 'nh': res['PH'], 'el': res['PL'], 'cl': res['CL'], 'sl': res['SL'], 'ot_hours': 0.0},
-        'fixed': {'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Gross'], 'fixed_hra': 0.0, 'fixed_conveyance': 0.0, 'fixed_washing': 0.0, 'fixed_other': 0.0},
+        'fixed': {'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Basic_DA'], 'fixed_hra': res['Fixed_HRA'], 'fixed_conveyance': res['Fixed_Conveyance'], 'fixed_washing': res['Fixed_Washing'], 'fixed_other': res['Fixed_Other']},
         'attendance': {'total_worked_days': res['Worked_Days']},
-        'earnings': {'per_day_wage': 0.0, 'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Gross'], 'earned_basic_da': res['Gross_Wages'], 'earned_hra': 0.0, 'earned_conveyance': 0.0, 'earned_washing': 0.0, 'earned_other': 0.0, 'earned_special': 0.0, 'ot_rate': 0.0, 'ot_wages': 0.0, 'special_ot_amount': 0.0, 'gross_wages': res['Gross_Wages']},
+        'earnings': {'per_day_wage': 0.0, 'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Basic_DA'], 'earned_basic_da': res['Earned_Basic_DA'], 'earned_hra': res['Earned_HRA'], 'earned_conveyance': res['Earned_Conveyance'], 'earned_washing': res['Earned_Washing'], 'earned_other': res['Earned_Other'], 'earned_special': res['Earned_Special'], 'ot_rate': 0.0, 'ot_wages': 0.0, 'special_ot_amount': 0.0, 'gross_wages': res['Gross_Wages']},
         'deductions': {'pf_eligible_gross': 0.0, 'pf_deduction': 0.0, 'accounts_pf_deduction': 0.0, 'esi_eligible_gross': 0.0, 'esi_deduction': 0.0, 'accounts_esi_deduction': 0.0, 'lic': res['LIC_Deduction'], 'advance': res['Advance_Deduction'], 'naps': 0.0, 'accommodation': res['Accommodation_Deduction'], 'other_deduction': res['Other_Deduction'], 'total_deduction': res['Total_Deduction']},
         'final': {'arrears': res['Arrears'], 'net_salary': res['Net_Salary']},
         'formula_trace': [
             "Fixed Gross = Master Fixed Gross",
+            "Fixed Basic+DA = Fixed Gross * 50%",
+            "Fixed HRA = Fixed Gross * 20%",
             "Total Days = Present Days + N/H + EL + CL + SL",
-            "Earned Gross = (Fixed Gross / Standard Days) * Total Days",
+            "Earned Basic+DA = Fixed Basic+DA / Standard Days * Total Days",
+            "Earned HRA = Fixed HRA / Standard Days * Total Days",
+            "Earned Gross = Earned Basic+DA + Earned HRA + Earned Conv + Earned Wash + Earned Other + Arrears",
             "Statutory PF & ESI = 0 (Excluded Non-PF/ESI)",
             "Total Deduction = Advance + LIC + Accom + Other",
             "Net Salary = Earned Gross - Total Deduction + Arrears"
@@ -804,19 +915,22 @@ def get_worker_non_pf_esi_calculation_trace(emp, salary, attendance, deductions,
     return {
         'employee_id': res['Emp_No'], 'employee_name': res['Name'], 'category': res['Category'],
         'inputs': {'per_day_wage': res['Per_Day_Wage'], 'standard_working_days': standard_days, 'present_days': res['Present_Days'], 'nh': res['PH'], 'el': res['PL'], 'cl': res['CL'], 'sl': res['SL'], 'ot_hours': res['Act_OT_Hrs']},
-        'fixed': {'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Gross'], 'fixed_hra': 0.0, 'fixed_conveyance': 0.0, 'fixed_washing': 0.0, 'fixed_other': 0.0},
+        'fixed': {'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Basic_DA'], 'fixed_hra': res['Fixed_HRA'], 'fixed_conveyance': res['Fixed_Conveyance'], 'fixed_washing': res['Fixed_Washing'], 'fixed_other': res['Fixed_Other']},
         'attendance': {'total_worked_days': res['Worked_Days']},
-        'earnings': {'per_day_wage': res['Per_Day_Wage'], 'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Earned_Basic'], 'earned_basic_da': res['Earned_Basic'], 'earned_hra': 0.0, 'earned_conveyance': 0.0, 'earned_washing': 0.0, 'earned_other': 0.0, 'earned_special': 0.0, 'ot_rate': res['OT_Rate'], 'ot_wages': res['OT_Wages'], 'special_ot_amount': res['Special_OT_Amount'], 'gross_wages': res['Gross_Wages']},
+        'earnings': {'per_day_wage': res['Per_Day_Wage'], 'fixed_gross': res['Fixed_Gross'], 'fixed_basic_da': res['Fixed_Basic_DA'], 'earned_basic_da': res['Earned_Basic_DA'], 'earned_hra': res['Earned_HRA'], 'earned_conveyance': res['Earned_Conveyance'], 'earned_washing': res['Earned_Washing'], 'earned_other': res['Earned_Other'], 'earned_special': res['Earned_Special'], 'ot_rate': res['OT_Rate'], 'ot_wages': res['OT_Wages'], 'special_ot_amount': res['Special_OT_Amount'], 'gross_wages': res['Gross_Wages']},
         'deductions': {'pf_eligible_gross': 0.0, 'pf_deduction': 0.0, 'accounts_pf_deduction': 0.0, 'esi_eligible_gross': 0.0, 'esi_deduction': 0.0, 'accounts_esi_deduction': 0.0, 'lic': res['LIC_Deduction'], 'advance': res['Advance_Deduction'], 'naps': 0.0, 'accommodation': res['Accommodation_Deduction'], 'other_deduction': res['Other_Deduction'], 'total_deduction': res['Total_Deduction']},
         'final': {'arrears': res['Arrears'], 'net_salary': res['Net_Salary']},
         'formula_trace': [
             "Fixed Gross = Per Day Wage * 26",
+            "Fixed Basic+DA = Fixed Gross * 50%",
+            "Fixed HRA = Fixed Gross * 20%",
             "Total Days = Present Days + N/H + EL + CL + SL",
-            "Earned Basic = (Fixed Gross / 26) * Total Days",
+            "Earned Basic+DA = Fixed Basic+DA / 26 * Total Days",
+            "Earned HRA = Fixed HRA / 26 * Total Days",
             "OT Rate = Per Day Wage / 8.0",
             "OT Wages = min(Actual OT, 50) * OT Rate",
             "Special OT Amount = max(Actual OT - 50, 0) * OT Rate",
-            "Earned Gross = Earned Basic + OT Wages + Special OT Amount",
+            "Earned Gross = Earned Basic+DA + Earned HRA + Earned Conv + Earned Wash + Earned Other + OT Wages + Special OT Amount",
             "Statutory PF & ESI = 0 (Excluded Non-PF/ESI)",
             "Total Deduction = Advance + LIC + Accom + Other",
             "Net Salary = Earned Gross - Total Deduction + Arrears"

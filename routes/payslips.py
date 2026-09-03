@@ -1,7 +1,10 @@
 import datetime as dt
 from flask import Blueprint, render_template, request, send_file, flash, redirect, url_for
 from models.payroll_transaction import get_payroll_transactions
-from services.payslip_service import generate_payslip_pdf, generate_all_payslips_zip, get_payslip_data, MONTH_NAMES
+from services.payslip_service import (
+    generate_payslip_pdf, generate_all_payslips_zip, get_payslip_data, 
+    get_payslip_template, get_worker_deductions_list, MONTH_NAMES
+)
 from utils.num_to_words import amount_in_words
 
 payslips_bp = Blueprint('payslips', __name__, url_prefix='/payslips')
@@ -46,12 +49,16 @@ def view_payslip(year, month, emp_no):
     row = records[0]
     month_name = MONTH_NAMES[month]
     net_in_words = amount_in_words(row.get('Net_Salary', 0.0))
+    template_name = get_payslip_template(row)
+    deductions_list = get_worker_deductions_list(row)
+
     return render_template(
-        'payslips/payslip_template.html',
+        template_name,
         row=row,
         month_name=month_name,
         year=year,
         net_in_words=net_in_words,
+        deductions_list=deductions_list,
         is_pdf=False
     )
 

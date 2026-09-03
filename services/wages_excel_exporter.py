@@ -50,6 +50,45 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 t['ESI_No'] = esi
                 t['Department'] = t.get('Department') or emp.get('Department') or ''
                 t['Designation'] = t.get('Designation') or emp.get('Designation') or ''
+
+                # Ensure Fixed_Gross and components
+                fg = float(t.get('Fixed_Gross') or emp.get('Fixed_Gross', 0.0) or 0.0)
+                pdw = float(t.get('Per_Day_Wage') or emp.get('Per_Day_Wage', 0.0) or 0.0)
+                if fg == 0.0 and pdw > 0.0:
+                    fg = round(pdw * standard_days, 2)
+                t['Fixed_Gross'] = fg
+                t['Per_Day_Wage'] = pdw
+
+                tot_days = float(t.get('Total_Days', standard_days) or standard_days)
+                std_days = float(t.get('Working_Days', standard_days) or standard_days) or 26.0
+
+                f_bda = float(t.get('Basic_DA') or emp.get('Basic_DA', 0.0) or (fg * 0.50))
+                f_hra = float(t.get('HRA') or emp.get('HRA', 0.0) or (fg * 0.20))
+                f_conv = float(t.get('Conveyance_Allowance') or emp.get('Conveyance_Allowance', 0.0) or (fg * 0.10))
+                f_wash = float(t.get('Washing_Allowance') or emp.get('Washing_Allowance', 0.0) or (fg * 0.10))
+                f_other = float(t.get('Other_Allowance') or emp.get('Other_Allowance', 0.0) or (fg * 0.10))
+
+                t['Basic_DA'] = f_bda
+                t['HRA'] = f_hra
+                t['Conveyance_Allowance'] = f_conv
+                t['Washing_Allowance'] = f_wash
+                t['Other_Allowance'] = f_other
+
+                # Check if earned slabs are 0 (e.g. older saved transactions)
+                e_hra = float(t.get('Earned_HRA', t.get('HRA_Earned', 0.0)) or 0.0)
+                if e_hra == 0.0 and fg > 0.0 and std_days > 0.0:
+                    t['Earned_Basic_DA'] = round((f_bda / std_days) * tot_days, 2)
+                    t['Earned_HRA'] = round((f_hra / std_days) * tot_days, 2)
+                    t['Earned_Conveyance'] = round((f_conv / std_days) * tot_days, 2)
+                    t['Earned_Washing'] = round((f_wash / std_days) * tot_days, 2)
+                    t['Earned_Other'] = round((f_other / std_days) * tot_days, 2)
+                else:
+                    t['Earned_Basic_DA'] = float(t.get('Earned_Basic_DA', t.get('Basic_DA_Earned', 0.0)) or 0.0)
+                    t['Earned_HRA'] = e_hra
+                    t['Earned_Conveyance'] = float(t.get('Earned_Conveyance', t.get('Conveyance_Earned', 0.0)) or 0.0)
+                    t['Earned_Washing'] = float(t.get('Earned_Washing', t.get('Washing_Allowance_Earned', 0.0)) or 0.0)
+                    t['Earned_Other'] = float(t.get('Earned_Other', t.get('Other_Allowance_Earned', 0.0)) or 0.0)
+
                 payroll_rows.append(t)
             else:
                 att_dict = {'present_days': standard_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': standard_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
@@ -335,15 +374,15 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 ws.write(row_idx, 18, ot_hrs_display, fmt_num)
 
                 pdw = float(r.get('Per_Day_Wage', 0.0) or 0.0)
-                fg = pdw * standard_days
+                fg = float(r.get('Fixed_Gross', 0.0) or (pdw * standard_days))
                 
                 ws.write(row_idx, 19, pdw, fmt_currency)
-                ws.write(row_idx, 20, fg * 0.50, fmt_currency)
-                ws.write(row_idx, 21, fg * 0.20, fmt_currency)
-                ws.write(row_idx, 22, fg * 0.10, fmt_currency)
-                ws.write(row_idx, 23, fg * 0.10, fmt_currency)
-                ws.write(row_idx, 24, fg * 0.10, fmt_currency)
-                ws.write(row_idx, 25, pdw / 8.0 if pdw else 0.0, fmt_currency)
+                ws.write(row_idx, 20, float(r.get('Basic_DA', 0.0) or fg * 0.50), fmt_currency)
+                ws.write(row_idx, 21, float(r.get('HRA', 0.0) or fg * 0.20), fmt_currency)
+                ws.write(row_idx, 22, float(r.get('Conveyance_Allowance', 0.0) or fg * 0.10), fmt_currency)
+                ws.write(row_idx, 23, float(r.get('Washing_Allowance', 0.0) or fg * 0.10), fmt_currency)
+                ws.write(row_idx, 24, float(r.get('Other_Allowance', 0.0) or fg * 0.10), fmt_currency)
+                ws.write(row_idx, 25, pdw / 8.0 if pdw else (fg / (standard_days * 8.0) if standard_days else 0.0), fmt_currency)
                 ws.write(row_idx, 26, fg, fmt_currency_bold)
 
                 ws.write(row_idx, 27, float(r.get('Earned_Basic_DA', r.get('Basic_DA_Earned', 0.0)) or 0.0), fmt_currency)

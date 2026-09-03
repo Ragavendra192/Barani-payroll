@@ -72,6 +72,32 @@ def fetch_resources(uri, rel):
         return os.path.abspath(path)
     return uri
 
+def is_worker(row):
+    cat = str(row.get('Category') or '').upper()
+    emp_type = str(row.get('Employee_Type') or '').upper()
+    return 'WORKER' in cat or emp_type == 'WORKER'
+
+def get_payslip_template(row):
+    return 'payslips/worker_payslip.html' if is_worker(row) else 'payslips/payslip_template.html'
+
+def get_worker_deductions_list(row):
+    deductions = []
+    if float(row.get('PF_Deduction', 0.0) or 0.0) > 0:
+        deductions.append(('PF EMPLOYEE CONTRIBUTION', float(row.get('PF_Deduction', 0.0))))
+    if float(row.get('Advance_Deduction', 0.0) or 0.0) > 0:
+        deductions.append(('ADVANCE', float(row.get('Advance_Deduction', 0.0))))
+    if float(row.get('ESI_Deduction', 0.0) or 0.0) > 0:
+        deductions.append(('ESI DEDUCTION', float(row.get('ESI_Deduction', 0.0))))
+    if float(row.get('LIC_Deduction', 0.0) or 0.0) > 0:
+        deductions.append(('LIC DEDUCTION', float(row.get('LIC_Deduction', 0.0))))
+    if float(row.get('NAPS_Deduction', 0.0) or 0.0) > 0:
+        deductions.append(('NAPS DEDUCTION', float(row.get('NAPS_Deduction', 0.0))))
+    if float(row.get('Accommodation_Deduction', 0.0) or 0.0) > 0:
+        deductions.append(('ACCOMMODATION DEDUCTION', float(row.get('Accommodation_Deduction', 0.0))))
+    if float(row.get('Other_Deduction', 0.0) or 0.0) > 0:
+        deductions.append(('OTHER DEDUCTION', float(row.get('Other_Deduction', 0.0))))
+    return deductions
+
 def generate_payslip_pdf(year, month, emp_no, category=None):
     """Renders single A4 PDF payslip for a given employee."""
     records = get_payslip_data(year, month, emp_no=emp_no, category=category)
@@ -81,13 +107,16 @@ def generate_payslip_pdf(year, month, emp_no, category=None):
     row = records[0]
     month_name = MONTH_NAMES[month]
     net_in_words = amount_in_words(row.get('Net_Salary', 0.0))
+    template_name = get_payslip_template(row)
+    deductions_list = get_worker_deductions_list(row)
 
     html = render_template(
-        'payslips/payslip_template.html',
+        template_name,
         row=row,
         month_name=month_name,
         year=year,
         net_in_words=net_in_words,
+        deductions_list=deductions_list,
         is_pdf=True
     )
 

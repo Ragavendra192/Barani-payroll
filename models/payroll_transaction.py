@@ -58,6 +58,7 @@ def get_payroll_transactions(year, month, category=None, emp_type=None, search=N
             ISNULL(a.LOP_Days, 0.0) AS LOP_Days, ISNULL(t.LOP_Deduction, 0.0) AS LOP_Deduction,
             ISNULL(a.Total_Days, 0.0) AS Total_Days, ISNULL(a.Working_Days, p.Standard_Working_Days) AS Working_Days,
             a.Actual_OT_Hours AS Act_OT_Hrs, a.OT_Hours, a.Special_OT_Hours,
+            ISNULL(m.Fixed_Gross, 0.0) AS Fixed_Gross,
             t.Basic_DA, t.HRA, t.Conveyance_Allowance, t.Washing_Allowance, t.Other_Allowance, t.Per_Day_Wage,
             t.Basic_DA_Earned, t.HRA_Earned, t.Conveyance_Earned, t.Washing_Allowance_Earned, t.Other_Allowance_Earned,
             t.Special_Allowance_Earned, t.OT_Wages, t.Gross_Wages,
@@ -106,6 +107,24 @@ def get_payroll_transactions(year, month, category=None, emp_type=None, search=N
             cols = [column[0] for column in cur.description]
             records = [dict(zip(cols, row)) for row in cur.fetchall()]
             conn.close()
+            for r in records:
+                pdw = float(r.get('Per_Day_Wage') or 0.0)
+                std = float(r.get('Working_Days') or r.get('Standard_Working_Days') or 26.0)
+                fg = float(r.get('Fixed_Gross') or 0.0)
+                if fg == 0.0 and pdw > 0.0:
+                    r['Fixed_Gross'] = round(pdw * std, 2)
+                r['Earned_Basic_DA'] = float(r.get('Basic_DA_Earned') or r.get('Earned_Basic_DA') or 0.0)
+                r['Basic_DA_Earned'] = r['Earned_Basic_DA']
+                r['Earned_HRA'] = float(r.get('HRA_Earned') or r.get('Earned_HRA') or 0.0)
+                r['HRA_Earned'] = r['Earned_HRA']
+                r['Earned_Conveyance'] = float(r.get('Conveyance_Earned') or r.get('Earned_Conveyance') or 0.0)
+                r['Conveyance_Earned'] = r['Earned_Conveyance']
+                r['Earned_Washing'] = float(r.get('Washing_Allowance_Earned') or r.get('Earned_Washing') or 0.0)
+                r['Washing_Allowance_Earned'] = r['Earned_Washing']
+                r['Earned_Other'] = float(r.get('Other_Allowance_Earned') or r.get('Earned_Other') or 0.0)
+                r['Other_Allowance_Earned'] = r['Earned_Other']
+                r['Earned_Special'] = float(r.get('Special_Allowance_Earned') or r.get('Earned_Special') or 0.0)
+                r['Special_Allowance_Earned'] = r['Earned_Special']
             return records
         except Exception as e:
             if '1205' in str(e) and attempt < max_retries - 1:
