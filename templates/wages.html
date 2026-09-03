@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}Wages Processing | BHIPL Payroll System{% endblock %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('main.wages') }}" id="wagesForm">
+    <!-- Summary Cards Header -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="stat-card border-start border-4 border-primary p-3 bg-white rounded shadow-sm">
+                <span class="stat-label small fw-bold text-muted d-block">TOTAL EMPLOYEES</span>
+                <h4 class="stat-value text-primary mb-0 fw-bold">{{ tot_emp }}</h4>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card border-start border-4 border-info p-3 bg-white rounded shadow-sm">
+                <span class="stat-label small fw-bold text-muted d-block">TOTAL GROSS</span>
+                <h4 class="stat-value text-info mb-0 fw-bold">₹{{ "{:,.2f}".format(tot_gross) }}</h4>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card border-start border-4 border-danger p-3 bg-white rounded shadow-sm">
+                <span class="stat-label small fw-bold text-muted d-block">TOTAL PF</span>
+                <h4 class="stat-value text-danger mb-0 fw-bold">₹{{ "{:,.2f}".format(tot_pf) }}</h4>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card border-start border-4 border-warning p-3 bg-white rounded shadow-sm">
+                <span class="stat-label small fw-bold text-muted d-block">TOTAL ESI</span>
+                <h4 class="stat-value text-warning text-dark mb-0 fw-bold">₹{{ "{:,.2f}".format(tot_esi) }}</h4>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card border-start border-4 border-secondary p-3 bg-white rounded shadow-sm">
+                <span class="stat-label small fw-bold text-muted d-block">TOTAL DEDUCTIONS</span>
+                <h4 class="stat-value text-danger mb-0 fw-bold">₹{{ "{:,.2f}".format(tot_ded) }}</h4>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card border-start border-4 border-success p-3 bg-white rounded shadow-sm">
+                <span class="stat-label small fw-bold text-muted d-block">TOTAL NET SALARY</span>
+                <h4 class="stat-value text-success mb-0 fw-bold">₹{{ "{:,.2f}".format(tot_net) }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Wages Card -->
+    <div class="card-custom mb-4">
+        <div class="card-header-custom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h4 class="card-title-custom mb-0"><i class="fa-solid fa-calculator text-primary me-2"></i>WAGES PROCESSING</h4>
+                <small class="text-secondary">Central monthly payroll calculation and wages batch processing</small>
+            </div>
+            
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <div class="input-group input-group-sm" style="width: 140px; flex-shrink: 0;">
+                    <span class="input-group-text bg-dark text-white fw-bold">Year</span>
+                    <select name="year" class="form-select fw-bold" onchange="document.getElementById('wagesForm').submit();">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="input-group input-group-sm" style="width: 220px; min-width: 210px; flex-shrink: 0;">
+                    <span class="input-group-text bg-dark text-white fw-bold">Month</span>
+                    <select name="month" class="form-select fw-bold" onchange="document.getElementById('wagesForm').submit();" style="min-width: 140px;">
+                        {% for m_num, m_name in months %}
+                        <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" name="action" value="refresh_attendance" class="btn btn-outline-info fw-bold px-3">
+                    <i class="fa-solid fa-arrows-rotate me-1"></i> REFRESH ATTENDANCE
+                </button>
+                <button type="submit" name="action" value="calculate" class="btn btn-primary fw-bold px-3">
+                    <i class="fa-solid fa-rotate me-1"></i> CALCULATE
+                </button>
+                <button type="submit" name="action" value="save" class="btn btn-success fw-bold px-4">
+                    <i class="fa-solid fa-check-double me-1"></i> SAVE PAYROLL
+                </button>
+                <a href="{{ url_for('main.download_wages_excel', year=year, month=month, category=category) }}" class="btn btn-outline-success fw-bold px-3">
+                    <i class="fa-solid fa-file-excel me-1"></i> DOWNLOAD WAGES EXCEL
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card-body bg-light border-bottom">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold mb-1">Search Employee</label>
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Employee ID or Name..." value="{{ search or '' }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold mb-1">Category Filter</label>
+                    <select name="category" class="form-select form-select-sm fw-bold">
+                        <option value="ALL">ALL CATEGORIES (Staff & Worker)</option>
+                        <option value="STAFF" {% if category == 'STAFF' %}selected{% endif %}>All Staff Employees</option>
+                        <option value="WORKER" {% if category == 'WORKER' %}selected{% endif %}>All Worker Employees</option>
+                        {% for c_code, c_label in categories %}
+                        <option value="{{ c_code }}" {% if category == c_code %}selected{% endif %}>{{ c_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold mb-1">Department</label>
+                    <select name="department" class="form-select form-select-sm fw-bold">
+                        <option value="ALL">ALL DEPARTMENTS</option>
+                        {% for d in departments %}
+                        <option value="{{ d }}" {% if dept == d %}selected{% endif %}>{{ d }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3 d-flex align-items-end mt-3 mt-md-0">
+                    <button type="submit" name="action" value="filter" class="btn btn-secondary btn-sm w-100 fw-bold"><i class="fa-solid fa-filter me-1"></i> Apply Filter</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Horizontally Scrollable Payroll Wages Table -->
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 650px;">
+                <table class="table table-hover align-middle mb-0 text-nowrap table-custom">
+                    <thead class="table-dark small text-uppercase">
+                        <tr>
+                            <th class="ps-3 sticky-col-1">Emp ID</th>
+                            <th class="sticky-col-2">Employee Name</th>
+                            <th class="sticky-col-3">Category</th>
+                            <th class="text-center">Days</th>
+                            <th class="text-center">Present</th>
+                            <th class="text-center">EL</th>
+                            <th class="text-center">CL</th>
+                            <th class="text-center">SL</th>
+                            <th class="text-center text-danger bg-danger bg-opacity-10">LOP Days</th>
+                            <th class="text-center">OT Hrs</th>
+                            <th class="text-end text-info bg-info bg-opacity-10">Spl OT Amt</th>
+                            <th class="text-end text-primary bg-primary bg-opacity-10">Earned Gross</th>
+                            <th class="text-end text-danger bg-danger bg-opacity-10">LOP Dedn</th>
+                            <th class="text-end text-danger">PF</th>
+                            <th class="text-end text-danger">ESI</th>
+                            <th class="text-end text-danger">NAPS Dedn</th>
+                            <th class="text-end text-danger">LIC</th>
+                            <th class="text-end text-secondary" style="width: 90px;">Opening Adv</th>
+                            <th class="text-end" style="width: 90px;">Advance Dedn</th>
+                            <th class="text-end text-info" style="width: 90px;">Closing Adv</th>
+                            <th class="text-end" style="width: 90px;">Other Dedn</th>
+                            <th class="text-end text-danger bg-danger bg-opacity-10">Total Dedn</th>
+                            <th class="text-end text-success bg-success bg-opacity-10">Net Salary</th>
+                            <th class="text-center pe-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if rows %}
+                            {% for r in rows %}
+                            <tr>
+                                <td class="fw-bold text-primary ps-3 sticky-col-1">#{{ r.Emp_No }}</td>
+                                <td class="fw-bold sticky-col-2">{{ r.Employee_Name or r.Name }}</td>
+                                <td class="sticky-col-3">
+                                    {% if 'STAFF' in r.Category %}
+                                    <span class="badge bg-primary px-2 py-1">STAFF</span>
+                                    {% else %}
+                                    <span class="badge bg-success px-2 py-1">WORKER</span>
+                                    {% endif %}
+                                    <small class="text-muted ms-1">{{ r.Category }}</small>
+                                </td>
+                                <td class="text-center text-muted fw-bold">{{ r.Working_Days or standard_days }}</td>
+                                <td class="text-center fw-bold">{{ r.Present_Days }}</td>
+                                <td class="text-center">{{ r.EL or 0.0 }}</td>
+                                <td class="text-center">{{ r.CL or 0.0 }}</td>
+                                <td class="text-center">{{ r.SL or 0.0 }}</td>
+                                <td class="text-center bg-danger bg-opacity-10"><span class="badge bg-danger-subtle text-danger border border-danger fw-bold px-2">{{ r.LOP_Days or 0.0 }}</span></td>
+                                <td class="text-center fw-bold text-dark">{{ r.Act_OT_Hrs or r.OT_Hours or 0.0 }}</td>
+                                <td class="text-end text-info bg-info bg-opacity-10 font-monospace">₹{{ "{:,.2f}".format(r.Special_OT_Amount or 0.0) }}</td>
+                                <td class="text-end fw-bold text-primary bg-primary bg-opacity-10 font-monospace">
+                                    ₹{{ "{:,.2f}".format(r.Earned_Gross or r.Gross_Wages or 0.0) }}
+                                </td>
+                                <td class="text-end fw-bold text-danger bg-danger bg-opacity-10">
+                                    ₹{{ "{:,.2f}".format(r.LOP_Deduction or 0.0) }}
+                                </td>
+                                <td class="text-end text-danger font-monospace">
+                                    ₹{{ "{:,.2f}".format(r.PF_Deduction or 0.0) }}
+                                </td>
+                                <td class="text-end text-danger font-monospace">
+                                    ₹{{ "{:,.2f}".format(r.ESI_Deduction or 0.0) }}
+                                </td>
+                                <td class="text-end text-danger font-monospace">
+                                    ₹{{ "{:,.2f}".format(r.NAPS_Deduction or 0.0) }}
+                                </td>
+                                <td class="text-end text-danger font-monospace">
+                                    ₹{{ "{:,.2f}".format(r.LIC_Deduction or 0.0) }}
+                                </td>
+
+                                <td class="text-end fw-bold text-secondary font-monospace pt-2" id="open_adv_{{ r.Employee_ID }}">
+                                    ₹{{ "{:,.2f}".format(r.Opening_Advance or 0.0) }}
+                                </td>
+                                <td class="p-1 text-end">
+                                    <input type="number" step="0.01" name="emp_{{ r.Employee_ID }}_advance" id="adv_input_{{ r.Employee_ID }}"
+                                           class="form-control form-control-sm text-end font-monospace advance-input" 
+                                           value="{{ r.Advance_Deduction or 0.0 }}"
+                                           data-emp="{{ r.Employee_ID }}" data-open="{{ r.Opening_Advance or 0.0 }}">
+                                </td>
+                                <td class="text-end fw-bold text-info font-monospace pt-2" id="close_adv_{{ r.Employee_ID }}">
+                                    ₹{{ "{:,.2f}".format([0.0, (r.Opening_Advance or 0.0) - (r.Advance_Deduction or 0.0)]|max) }}
+                                </td>
+
+                                <td class="p-1 text-end">
+                                    <input type="number" step="0.01" name="emp_{{ r.Employee_ID }}_other" 
+                                           class="form-control form-control-sm text-end font-monospace" 
+                                           value="{{ r.Other_Deduction or 0.0 }}">
+                                </td>
+
+                                <td class="text-end fw-bold text-danger bg-danger bg-opacity-10 font-monospace">
+                                    ₹{{ "{:,.2f}".format(r.Total_Deduction or 0.0) }}
+                                </td>
+                                <td class="text-end fw-bold text-success bg-success bg-opacity-10 font-monospace fs-6">
+                                    ₹{{ "{:,.2f}".format(r.Net_Salary or r.Net_Pay or 0.0) }}
+                                </td>
+                                <td class="text-center pe-3">
+                                    <button type="button" class="btn btn-outline-info btn-sm fw-bold px-2 py-0" 
+                                            onclick="openCalculationModal('{{ r.Employee_ID }}', '{{ year }}', '{{ month }}', '{{ standard_days }}')">
+                                        <i class="fa-solid fa-magnifying-glass-chart me-1"></i> View Calc
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="24" class="text-center py-5 text-muted">
+                                    <i class="fa-solid fa-folder-open fa-2xl mb-3 text-secondary d-block"></i>
+                                    No wages records found. Click <strong>CALCULATE</strong> to generate payroll.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- VIEW CALCULATION AUDIT BREAKDOWN MODAL -->
+<div class="modal fade" id="calcTraceModal" tabindex="-1" aria-labelledby="calcTraceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="calcTraceModalLabel"><i class="fa-solid fa-square-poll-vertical text-info me-2"></i>Payroll Calculation Breakdown Trace</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="calcTraceModalBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted fw-bold">Loading calculation breakdown...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const advInputs = document.querySelectorAll('.advance-input');
+    advInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const empId = this.dataset.emp;
+            const openAdv = parseFloat(this.dataset.open) || 0.0;
+            const dedn = parseFloat(this.value) || 0.0;
+            const closeAdv = Math.max(0.0, openAdv - dedn);
+            const closeTd = document.getElementById('close_adv_' + empId);
+            if(closeTd) {
+                closeTd.innerHTML = '₹' + closeAdv.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+        });
+    });
+});
+
+function openCalculationModal(empId, year, month, stdDays) {
+    const modal = new bootstrap.Modal(document.getElementById('calcTraceModal'));
+    const body = document.getElementById('calcTraceModalBody');
+    body.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted fw-bold">Loading calculation breakdown...</p>
+        </div>
+    `;
+    modal.show();
+
+    fetch(`/payroll/trace/${empId}?year=${year}&month=${month}&standard_days=${stdDays}&format=json`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                body.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+
+            body.innerHTML = `
+                <div class="border-bottom pb-3 mb-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-primary">#${data.employee_id} - ${data.employee_name}</h5>
+                        <span class="badge bg-secondary mt-1">${data.category}</span>
+                    </div>
+                    <div class="text-end">
+                        <span class="small text-muted d-block">Payroll Period</span>
+                        <h5 class="fw-bold mb-0 text-dark">${month}/${year}</h5>
+                    </div>
+                </div>
+
+                <!-- 1. INPUTS & FIXED BASIS -->
+                <div class="bg-light p-3 rounded mb-3 border">
+                    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-sliders me-2 text-primary"></i>1. INPUTS & FIXED SALARY BASIS</h6>
+                    <div class="row g-2 small">
+                        <div class="col-md-4">Per Day Wage: <strong>₹${data.inputs.per_day_wage ? data.inputs.per_day_wage.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Standard Working Days: <strong>${data.inputs.standard_working_days || 26} Days</strong></div>
+                        <div class="col-md-4">Fixed Gross Salary: <strong class="text-primary">₹${data.fixed ? data.fixed.fixed_gross.toFixed(2) : (data.earnings.fixed_gross ? data.earnings.fixed_gross.toFixed(2) : '0.00')}</strong></div>
+                        <div class="col-md-4">Fixed Basic + DA (50%): <strong>₹${data.fixed ? data.fixed.fixed_basic_da.toFixed(2) : (data.earnings.fixed_basic_da ? data.earnings.fixed_basic_da.toFixed(2) : '0.00')}</strong></div>
+                        <div class="col-md-4">Fixed HRA (20%): <strong>₹${data.fixed ? data.fixed.fixed_hra.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Fixed Conveyance (10%): <strong>₹${data.fixed ? data.fixed.fixed_conveyance.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Fixed Washing (10%): <strong>₹${data.fixed ? data.fixed.fixed_washing.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Fixed Other (10%): <strong>₹${data.fixed ? data.fixed.fixed_other.toFixed(2) : '0.00'}</strong></div>
+                    </div>
+                </div>
+
+                <!-- 2. CURRENT MONTH ATTENDANCE -->
+                <div class="bg-light p-3 rounded mb-3 border">
+                    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-calendar-days me-2 text-info"></i>2. CURRENT MONTH ATTENDANCE</h6>
+                    <div class="row text-center g-2 small">
+                        <div class="col"><small class="text-muted d-block">Present</small><strong>${data.inputs.present_days}</strong></div>
+                        <div class="col"><small class="text-muted d-block">N/H</small><strong>${data.inputs.nh}</strong></div>
+                        <div class="col"><small class="text-muted d-block">EL</small><strong>${data.inputs.el}</strong></div>
+                        <div class="col"><small class="text-muted d-block">CL</small><strong>${data.inputs.cl}</strong></div>
+                        <div class="col"><small class="text-muted d-block">SL</small><strong>${data.inputs.sl}</strong></div>
+                        <div class="col"><small class="text-muted d-block">Total Days</small><strong class="text-primary fs-6">${data.attendance.total_worked_days}</strong></div>
+                        <div class="col"><small class="text-muted d-block">Actual OT Hrs</small><strong class="text-warning text-dark fs-6">${data.inputs.ot_hours}</strong></div>
+                    </div>
+                </div>
+
+                <!-- 3. CURRENT MONTH EARNINGS -->
+                <div class="bg-light p-3 rounded mb-3 border">
+                    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-money-bill-wave me-2 text-success"></i>3. CURRENT MONTH EARNED SALARY</h6>
+                    <div class="row g-2 small">
+                        <div class="col-md-4">Earned Basic + DA: <strong>₹${data.earnings.earned_basic_da ? data.earnings.earned_basic_da.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Earned HRA: <strong>₹${data.earnings.earned_hra ? data.earnings.earned_hra.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Earned Conveyance: <strong>₹${data.earnings.earned_conveyance ? data.earnings.earned_conveyance.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Earned Washing: <strong>₹${data.earnings.earned_washing ? data.earnings.earned_washing.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Earned Other: <strong>₹${data.earnings.earned_other ? data.earnings.earned_other.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">OT Hourly Rate: <strong>₹${data.earnings.ot_rate ? data.earnings.ot_rate.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">OT Wages (min 50h): <strong class="text-success">₹${data.earnings.ot_wages ? data.earnings.ot_wages.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">SPL Allowance (>50h): <strong class="text-info">₹${data.earnings.special_ot_amount ? data.earnings.special_ot_amount.toFixed(2) : '0.00'}</strong></div>
+                    </div>
+                    <div class="border-top mt-2 pt-2 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-primary">EARNED GROSS WAGES</span>
+                        <h5 class="fw-bold text-primary mb-0">₹${data.earnings.gross_wages ? data.earnings.gross_wages.toFixed(2) : '0.00'}</h5>
+                    </div>
+                </div>
+
+                <!-- 4. DEDUCTIONS -->
+                <div class="bg-light p-3 rounded mb-3 border">
+                    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-scissors me-2 text-danger"></i>4. DEDUCTIONS BREAKDOWN</h6>
+                    <div class="row g-2 small">
+                        <div class="col-md-4">PF Eligible Gross: <strong>₹${data.deductions.pf_eligible_gross ? data.deductions.pf_eligible_gross.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">PF Deduction: <strong class="text-danger">₹${data.deductions.pf_deduction ? data.deductions.pf_deduction.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">ESI Eligible Gross: <strong>₹${data.deductions.esi_eligible_gross ? data.deductions.esi_eligible_gross.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">ESI Deduction: <strong class="text-danger">₹${data.deductions.esi_deduction ? data.deductions.esi_deduction.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">LIC: <strong>₹${data.deductions.lic ? data.deductions.lic.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Advance: <strong>₹${data.deductions.advance ? data.deductions.advance.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">NAPS: <strong>₹${data.deductions.naps ? data.deductions.naps.toFixed(2) : '0.00'}</strong></div>
+                        <div class="col-md-4">Accommodation: <strong>₹${data.deductions.accommodation ? data.deductions.accommodation.toFixed(2) : '0.00'}</strong></div>
+                    </div>
+                    <div class="border-top mt-2 pt-2 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-danger">TOTAL DEDUCTIONS</span>
+                        <h5 class="fw-bold text-danger mb-0">₹${data.deductions.total_deduction ? data.deductions.total_deduction.toFixed(2) : '0.00'}</h5>
+                    </div>
+                </div>
+
+                <!-- 5. FINAL NET SALARY -->
+                <div class="p-3 rounded bg-success bg-opacity-10 border border-success d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span class="fw-bold text-success d-block">FINAL NET PAYABLE SALARY</span>
+                        <small class="text-muted">Earned Gross (₹${data.earnings.gross_wages ? data.earnings.gross_wages.toFixed(2) : '0.00'}) - Total Deductions (₹${data.deductions.total_deduction ? data.deductions.total_deduction.toFixed(2) : '0.00'}) + Arrears (₹${data.final.arrears ? data.final.arrears.toFixed(2) : '0.00'})</small>
+                    </div>
+                    <h3 class="fw-bold text-success mb-0">₹${data.final.net_salary ? data.final.net_salary.toFixed(2) : '0.00'}</h3>
+                </div>
+
+                <!-- 6. FORMULA TRACE -->
+                <div class="bg-dark text-light p-3 rounded">
+                    <h6 class="fw-bold text-info mb-2"><i class="fa-solid fa-code me-2"></i>FORMULA TRACE</h6>
+                    <ul class="list-unstyled mb-0 font-monospace small">
+                        ${data.formula_trace ? data.formula_trace.map(f => `<li><i class="fa-solid fa-angle-right me-2 text-warning"></i>${f}</li>`).join('') : ''}
+                    </ul>
+                </div>
+            `;
+        })
+        .catch(err => {
+            body.innerHTML = `<div class="alert alert-danger">Error fetching calculation trace: ${err}</div>`;
+        });
+}
+</script>
+{% endblock %}

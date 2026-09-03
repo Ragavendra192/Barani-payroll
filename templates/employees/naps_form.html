@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit NAPS Employee{% else %}Add NAPS Employee{% endif %} | Barani Payroll{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h4 class="card-title-custom">
+                    <i class="fa-solid fa-user-graduate me-2 text-warning"></i>
+                    {% if is_edit %}Edit NAPS Apprentice #{{ employee.Emp_No }}{% else %}Add New NAPS Apprentice{% endif %}
+                </h4>
+                <a href="{{ url_for('naps_employees.list_employees') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back to NAPS List
+                </a>
+            </div>
+            <div class="card-body-custom">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Emp Number <span class="text-danger">*</span></label>
+                            <input type="number" name="Emp_No" class="form-control" value="{{ employee.Emp_No if employee else '' }}" {% if is_edit %}readonly{% endif %} required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Apprentice Name <span class="text-danger">*</span></label>
+                            <input type="text" name="Emp_Name" class="form-control" value="{{ employee.Emp_Name if employee else '' }}" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Department</label>
+                            <input type="text" name="Department" class="form-control" value="{{ employee.Department if employee else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Designation / Trade</label>
+                            <input type="text" name="Designation" class="form-control" value="{{ employee.Designation if employee else 'NAPS APPRENTICE' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Date of Joining (DOJ)</label>
+                            <input type="date" name="DOJ" class="form-control" value="{{ employee.DOJ if employee else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Status</label>
+                            <select name="Status" class="form-select">
+                                <option value="Active" {% if employee and employee.Status == 'Active' %}selected{% endif %}>Active</option>
+                                <option value="Inactive" {% if employee and employee.Status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+
+                        <hr class="my-3">
+                        <h6 class="fw-bold text-warning mb-2"><i class="fa-solid fa-hand-holding-dollar me-1"></i> Monthly Stipend Master</h6>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Monthly Fixed Stipend (₹) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="Stipend" class="form-control form-control-lg fw-bold text-success" value="{{ employee.Stipend if employee else '0.00' }}" required>
+                        </div>
+
+                        <div class="col-md-6 d-flex align-items-center gap-4 pt-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="PF_Eligible" id="pfSwitchNaps" {% if employee and employee.PF_Eligible %}checked{% endif %}>
+                                <label class="form-check-label" for="pfSwitchNaps">PF Eligible</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="ESI_Eligible" id="esiSwitchNaps" {% if employee and employee.ESI_Eligible %}checked{% endif %}>
+                                <label class="form-check-label" for="esiSwitchNaps">ESI Eligible</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-4 text-end">
+                            <a href="{{ url_for('naps_employees.list_employees') }}" class="btn btn-light me-2">Cancel</a>
+                            <button type="submit" class="btn btn-warning text-dark fw-bold px-4">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Save NAPS Employee
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

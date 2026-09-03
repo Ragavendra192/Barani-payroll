@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Monthly Payroll Processing | BHIPL Payroll{% endblock %}
+
+{% block content %}
+<div class="card-custom mb-5">
+    <!-- Header Title Bar -->
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="card-title-custom mb-1"><i class="fa-solid fa-calculator me-2 text-primary"></i>MONTHLY PAYROLL PROCESSING</h4>
+            <span class="text-secondary small">Global Working Days Configuration & Attendance Payroll Entry (Present, N/H, EL, CL, SL, OT Hours)</span>
+        </div>
+        <div>
+            {% if is_saved %}
+            <span class="badge bg-success fs-6"><i class="fa-solid fa-check-circle me-1"></i> Payroll Saved</span>
+            {% else %}
+            <span class="badge bg-warning text-dark fs-6"><i class="fa-solid fa-pen-to-square me-1"></i> Draft Mode</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- TOP CONTROL TOOLBAR: MONTH, CATEGORY, GLOBAL WORKING DAYS, SEARCH -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('payroll.dynamic_payroll') }}" id="periodControlForm">
+            <div class="row g-3 align-items-end">
+
+                <!-- 1. Payroll Month & Year -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label fw-bold small text-muted"><i class="fa-solid fa-calendar-days me-1"></i>Payroll Month & Year</label>
+                    <div class="input-group">
+                        <select name="month" class="form-select fw-bold text-primary" onchange="submitPeriodForm()">
+                            {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                            {% for m_idx in range(1, 13) %}
+                            <option value="{{ m_idx }}" {% if month == m_idx %}selected{% endif %}>{{ months[m_idx - 1] }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="number" name="year" class="form-control fw-bold" value="{{ year }}" style="max-width: 100px;" onchange="submitPeriodForm()">
+                    </div>
+                </div>
+
+                <!-- 2. Category Filter -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label fw-bold small text-muted"><i class="fa-solid fa-layer-group me-1"></i>Payroll Category</label>
+                    <select name="category" class="form-select fw-bold text-primary" onchange="submitPeriodForm()">
+                        {% for cat_key, cat_label in categories %}
+                        <option value="{{ cat_key }}" {% if category == cat_key %}selected{% endif %}>{{ cat_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 3. Global Standard Working Days & APPLY Button -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label fw-bold small text-muted"><i class="fa-solid fa-business-time me-1"></i>Standard Working Days (Global)</label>
+                    <div class="input-group">
+                        <input type="number" step="0.5" min="1" max="31" name="standard_days" id="global_standard_days" class="form-control fw-bold text-center text-primary fs-5" value="{{ standard_days }}" onfocus="this.select()" required>
+                        <button type="submit" name="action" value="apply_std_days" formmethod="POST" formaction="{{ url_for('payroll.dynamic_payroll') }}" class="btn btn-primary fw-bold px-3">
+                            <i class="fa-solid fa-check me-1"></i> APPLY
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. View Filter: Search Employee -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label fw-bold small text-muted"><i class="fa-solid fa-magnifying-glass me-1"></i>Search Employee</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                        <input type="text" id="employeeSearchInput" class="form-control border-start-0" placeholder="Search ID or Name..." onkeyup="filterTableRows()">
+                    </div>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <!-- MAIN PAYROLL ENTRY FORM -->
+    <form method="POST" action="{{ url_for('payroll.dynamic_payroll', year=year, month=month, category=category, standard_days=standard_days) }}" id="mainPayrollForm">
+        <input type="hidden" name="year" value="{{ year }}">
+        <input type="hidden" name="month" value="{{ month }}">
+        <input type="hidden" name="standard_days" value="{{ standard_days }}">
+        <input type="hidden" name="category" value="{{ category }}">
+
+        <div class="table-responsive">
+            <table class="table table-custom align-middle mb-0" id="payrollTable">
+                <thead>
+                    <tr>
+                        <th style="width: 45px;" class="text-center sticky-col-1">S.No</th>
+                        <th style="width: 85px;" class="sticky-col-2">Emp ID</th>
+                        <th style="min-width: 170px;" class="sticky-col-3">Employee Name</th>
+                        <th style="min-width: 120px;">CATEGORY</th>
+                        <th class="text-center bg-primary bg-opacity-10 text-primary fw-bold" style="min-width: 95px;">WORKING DAYS</th>
+                        <th class="text-center text-success fw-bold" style="min-width: 85px;">PRESENT</th>
+                        <th class="text-center text-secondary fw-bold" style="min-width: 80px;">N/H</th>
+                        <th class="text-center text-info fw-bold" style="min-width: 80px;">EL</th>
+                        <th class="text-center text-warning fw-bold" style="min-width: 80px;">CL</th>
+                        <th class="text-center text-danger fw-bold" style="min-width: 80px;">SL</th>
+                        <th class="text-center" style="min-width: 90px;">OT HOURS</th>
+                        <th class="text-end" style="min-width: 110px;">EARNED GROSS</th>
+                        <th class="text-end" style="min-width: 85px;">PF</th>
+                        <th class="text-end" style="min-width: 85px;">ESI</th>
+                        <th style="min-width: 95px;">ADVANCE</th>
+                        <th style="min-width: 95px;">OTHER DEDN</th>
+                        <th class="text-end" style="min-width: 105px;">TOTAL DEDN</th>
+                        <th class="text-end fw-bold" style="min-width: 115px;">NET SALARY</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set ns = namespace(staff_count=0, worker_count=0, current_group='') %}
+                    {% for r in rows %}
+                    {% set prefix = "emp_" ~ r.Employee_ID ~ "_" %}
+                    {% set is_staff = ('STAFF' in r.Category or r.Employee_Type == 'STAFF') %}
+                    {% set group_name = 'STAFF' if is_staff else 'WORKER' %}
+
+                    <!-- GROUP SECTION HEADERS -->
+                    {% if ns.current_group != group_name %}
+                        {% set ns.current_group = group_name %}
+                        <tr class="table-group-header-row bg-dark text-white fw-bold group-row" data-group="{{ group_name }}">
+                            <td colspan="18" class="py-2 px-3 bg-secondary bg-opacity-25 text-primary border-top border-bottom">
+                                <i class="fa-solid {% if is_staff %}fa-user-tie text-info{% else %}fa-helmet-safety text-warning{% endif %} me-2"></i>
+                                {{ group_name }} EMPLOYEES
+                            </td>
+                        </tr>
+                    {% endif %}
+
+                    <tr class="emp-row" data-employee-id="{{ r.Emp_No }}" data-employee-name="{{ r.Employee_Name|lower }}" data-category="{{ r.Category }}" data-group="{{ group_name }}">
+                        <td class="text-center text-muted small fw-semibold sticky-col-1">{{ loop.index }}</td>
+                        <td class="fw-bold text-primary sticky-col-2">
+                            {{ r.Emp_No }}
+                            <a href="{{ url_for('payroll.employee_trace', employee_id=r.Employee_ID) }}?standard_days={{ standard_days }}&year={{ year }}&month={{ month }}" target="_blank" class="text-secondary small ms-1" title="View Calculation Audit Trace">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </a>
+                        </td>
+                        <td class="fw-semibold sticky-col-3">{{ r.Employee_Name or r.Name }}</td>
+                        <td>
+                            <span class="badge {% if is_staff %}badge-staff{% else %}badge-worker{% endif %} small">
+                                {{ r.Category }}
+                            </span>
+                        </td>
+                        
+                        <!-- READ-ONLY GLOBAL WORKING DAYS BADGE -->
+                        <td class="text-center bg-primary bg-opacity-10">
+                            <span class="badge bg-primary text-white fs-6 px-2 py-1 fw-bold shadow-sm">{{ "%.1f"|format(standard_days) }}</span>
+                        </td>
+
+                        <!-- EDITABLE PRESENT DAYS -->
+                        <td>
+                            <input type="number" step="0.5" min="0" max="31" name="{{ prefix }}present_days" class="form-control form-control-sm text-center fw-bold text-success border-success" value="{{ r.Present_Days }}" onfocus="this.select()">
+                        </td>
+
+                        <!-- EDITABLE N/H (NORMAL HOLIDAY) -->
+                        <td>
+                            <input type="number" step="0.5" min="0" max="31" name="{{ prefix }}nh" class="form-control form-control-sm text-center fw-bold" value="{{ r.NH or r.PH or 0.0 }}" onfocus="this.select()">
+                        </td>
+
+                        <!-- EDITABLE EL (EARNED LEAVE) -->
+                        <td>
+                            <input type="number" step="0.5" min="0" max="31" name="{{ prefix }}el" class="form-control form-control-sm text-center fw-bold text-info border-info" value="{{ r.EL or r.PL or 0.0 }}" onfocus="this.select()">
+                        </td>
+
+                        <!-- EDITABLE CL (CASUAL LEAVE) -->
+                        <td>
+                            <input type="number" step="0.5" min="0" max="31" name="{{ prefix }}cl" class="form-control form-control-sm text-center fw-bold text-warning border-warning" value="{{ r.CL or 0.0 }}" onfocus="this.select()">
+                        </td>
+
+                        <!-- EDITABLE SL (SICK LEAVE) -->
+                        <td>
+                            <input type="number" step="0.5" min="0" max="31" name="{{ prefix }}sl" class="form-control form-control-sm text-center fw-bold text-danger border-danger" value="{{ r.SL or 0.0 }}" onfocus="this.select()">
+                        </td>
+
+                        <!-- EDITABLE OT HOURS -->
+                        <td>
+                            <input type="number" step="0.5" min="0" name="{{ prefix }}act_ot" class="form-control form-control-sm text-center fw-bold" value="{{ r.OT_Hours or r.Act_OT_Hrs or 0.0 }}" onfocus="this.select()">
+                        </td>
+
+                        <td class="text-end fw-bold text-dark">₹{{ "{:,.2f}".format(r.Gross_Wages) }}</td>
+                        <td class="text-end text-danger">₹{{ "{:,.2f}".format(r.PF_Deduction) }}</td>
+                        <td class="text-end text-danger">₹{{ "{:,.2f}".format(r.ESI_Deduction) }}</td>
+
+                        <!-- EDITABLE MANUAL DEDUCTIONS -->
+                        <td>
+                            <input type="number" step="0.01" min="0" name="{{ prefix }}advance" class="form-control form-control-sm text-end" value="{{ r.Advance_Deduction or 0.0 }}" onfocus="this.select()">
+                        </td>
+                        <td>
+                            <input type="number" step="0.01" min="0" name="{{ prefix }}other" class="form-control form-control-sm text-end" value="{{ r.Other_Deduction or 0.0 }}" onfocus="this.select()">
+                        </td>
+
+                        <td class="text-end text-danger font-monospace">₹{{ "{:,.2f}".format(r.Total_Deduction) }}</td>
+                        <td class="text-end fw-bold text-success fs-6 font-monospace">₹{{ "{:,.2f}".format(r.Net_Salary) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="18" class="text-center py-5 text-secondary">
+                            <i class="fa-solid fa-folder-open fa-2x mb-2 text-muted d-block"></i>
+                            No active employees found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if rows %}
+        <!-- SUMMARY STICKY FOOTER REVIEW BAR -->
+        <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center sticky-summary-bar shadow-lg">
+            <div class="d-flex gap-4 align-items-center">
+                <div>
+                    <span class="text-secondary small d-block fw-bold text-uppercase">TOTAL GROSS</span>
+                    <span class="fs-5 fw-bold text-primary font-monospace">₹{{ "{:,.2f}".format(tot_gross) }}</span>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block fw-bold text-uppercase">TOTAL PF</span>
+                    <span class="fs-5 fw-bold text-danger font-monospace">₹{{ "{:,.2f}".format(tot_pf) }}</span>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block fw-bold text-uppercase">TOTAL ESI</span>
+                    <span class="fs-5 fw-bold text-danger font-monospace">₹{{ "{:,.2f}".format(tot_esi) }}</span>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block fw-bold text-uppercase">TOTAL DEDUCTIONS</span>
+                    <span class="fs-5 fw-bold text-danger font-monospace">₹{{ "{:,.2f}".format(tot_ded) }}</span>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block fw-bold text-uppercase">TOTAL NET PAYABLE</span>
+                    <span class="fs-4 fw-bold text-success font-monospace">₹{{ "{:,.2f}".format(tot_net) }}</span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" name="action" value="calculate" class="btn btn-outline-primary fw-bold shadow-sm">
+                    <i class="fa-solid fa-calculator me-1"></i> Recalculate Preview
+                </button>
+                <button type="submit" name="action" value="save" class="btn btn-success fw-bold px-4 shadow-sm">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Save {{ month }}/{{ year }} Payroll
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function submitPeriodForm() {
+    document.getElementById('periodControlForm').submit();
+}
+
+function filterTableRows() {
+    const searchInput = document.getElementById('employeeSearchInput');
+    const searchVal = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    const empRows = document.querySelectorAll('.emp-row');
+    const groupRows = document.querySelectorAll('.group-row');
+
+    const visibleGroups = new Set();
+
+    empRows.forEach(row => {
+        const empGroup = (row.getAttribute('data-group') || '').toUpperCase();
+        const empId = (row.getAttribute('data-employee-id') || '').toLowerCase();
+        const empName = (row.getAttribute('data-employee-name') || '').toLowerCase();
+
+        let searchMatch = true;
+        if (searchVal !== '') {
+            searchMatch = empId.includes(searchVal) || empName.includes(searchVal);
+        }
+
+        if (searchMatch) {
+            row.style.display = '';
+            visibleGroups.add(empGroup);
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    groupRows.forEach(grow => {
+        const grp = (grow.getAttribute('data-group') || '').toUpperCase();
+        if (visibleGroups.has(grp)) {
+            grow.style.display = '';
+        } else {
+            grow.style.display = 'none';
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    filterTableRows();
+});
+</script>
+{% endblock %}

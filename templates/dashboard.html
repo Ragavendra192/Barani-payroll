@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | BHIPL Payroll{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <!-- Stat Card: Total Staff -->
+    <div class="col-md-4">
+        <div class="stat-card border-start border-4 border-primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="stat-label">TOTAL STAFF</span>
+                    <h3 class="stat-value text-primary mb-0">{{ summary.total_staff }}</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-primary bg-opacity-10 text-primary">
+                    <i class="fa-solid fa-user-tie fa-xl"></i>
+                </div>
+            </div>
+            <span class="text-secondary small mt-2 d-block">Staff Employees Master</span>
+        </div>
+    </div>
+
+    <!-- Stat Card: Total Workers -->
+    <div class="col-md-4">
+        <div class="stat-card border-start border-4 border-success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="stat-label">TOTAL WORKERS</span>
+                    <h3 class="stat-value text-success mb-0">{{ summary.total_workers }}</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-success bg-opacity-10 text-success">
+                    <i class="fa-solid fa-helmet-safety fa-xl"></i>
+                </div>
+            </div>
+            <span class="text-secondary small mt-2 d-block">Worker Employees Master</span>
+        </div>
+    </div>
+
+    <!-- Stat Card: Total NAPS -->
+    <div class="col-md-4">
+        <div class="stat-card border-start border-4 border-warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="stat-label">NAPS APPRENTICES</span>
+                    <h3 class="stat-value text-warning mb-0">{{ summary.total_naps }}</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-warning bg-opacity-10 text-warning">
+                    <i class="fa-solid fa-graduation-cap fa-xl"></i>
+                </div>
+            </div>
+            <span class="text-secondary small mt-2 d-block">NAPS Trainee Category</span>
+        </div>
+    </div>
+</div>
+
+<!-- 6 Category Breakdown Grid -->
+<div class="card-custom mb-4">
+    <div class="card-header-custom">
+        <h5 class="card-title-custom mb-0"><i class="fa-solid fa-layer-group me-2 text-primary"></i>6 Employee & Payroll Category Breakdown</h5>
+        <a href="{{ url_for('employees.list_employees') }}" class="btn btn-sm btn-outline-primary fw-bold">Manage All Employees</a>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><span class="badge badge-staff me-2">STAFF</span> PF / ESI</span>
+                        <span class="badge bg-primary fs-6">{{ summary.cat_counts.get('STAFF_PF_ESI', 0) }}</span>
+                    </div>
+                    <small class="text-secondary d-block mt-2">Full PF & ESI statutory staff employees</small>
+                    <a href="{{ url_for('payroll.dynamic_payroll', category='STAFF_PF_ESI') }}" class="btn btn-sm btn-link p-0 mt-2 fw-bold">Process Payroll &rarr;</a>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><span class="badge badge-worker me-2">WORKER</span> PF / ESI</span>
+                        <span class="badge bg-success fs-6">{{ summary.cat_counts.get('WORKER_PF_ESI', 0) }}</span>
+                    </div>
+                    <small class="text-secondary d-block mt-2">Per day wage workers with 50-hr OT & PF/ESI</small>
+                    <a href="{{ url_for('payroll.dynamic_payroll', category='WORKER_PF_ESI') }}" class="btn btn-sm btn-link p-0 mt-2 fw-bold text-success">Process Payroll &rarr;</a>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><span class="badge badge-naps me-2">STAFF</span> NAPS Apprentice</span>
+                        <span class="badge bg-warning text-dark fs-6">{{ summary.cat_counts.get('STAFF_NAPS', 0) }}</span>
+                    </div>
+                    <small class="text-secondary d-block mt-2">NAPS staff apprentices (Non-PF/ESI)</small>
+                    <a href="{{ url_for('payroll.dynamic_payroll', category='STAFF_NAPS') }}" class="btn btn-sm btn-link p-0 mt-2 fw-bold text-warning">Process Payroll &rarr;</a>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><span class="badge badge-naps me-2">WORKER</span> NAPS Apprentice</span>
+                        <span class="badge bg-warning text-dark fs-6">{{ summary.cat_counts.get('WORKER_NAPS', 0) }}</span>
+                    </div>
+                    <small class="text-secondary d-block mt-2">NAPS worker apprentices with OT</small>
+                    <a href="{{ url_for('payroll.dynamic_payroll', category='WORKER_NAPS') }}" class="btn btn-sm btn-link p-0 mt-2 fw-bold text-warning">Process Payroll &rarr;</a>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><span class="badge bg-secondary me-2">STAFF</span> Non PF / ESI</span>
+                        <span class="badge bg-secondary fs-6">{{ summary.cat_counts.get('STAFF_NON_PF_ESI', 0) }}</span>
+                    </div>
+                    <small class="text-secondary d-block mt-2">Staff excluded from PF/ESI coverage</small>
+                    <a href="{{ url_for('payroll.dynamic_payroll', category='STAFF_NON_PF_ESI') }}" class="btn btn-sm btn-link p-0 mt-2 fw-bold text-secondary">Process Payroll &rarr;</a>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><span class="badge bg-secondary me-2">WORKER</span> Non PF / ESI</span>
+                        <span class="badge bg-secondary fs-6">{{ summary.cat_counts.get('WORKER_NON_PF_ESI', 0) }}</span>
+                    </div>
+                    <small class="text-secondary d-block mt-2">Workers excluded from PF/ESI coverage</small>
+                    <a href="{{ url_for('payroll.dynamic_payroll', category='WORKER_NON_PF_ESI') }}" class="btn btn-sm btn-link p-0 mt-2 fw-bold text-secondary">Process Payroll &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

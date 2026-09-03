@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll History | BHIPL Payroll{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="card-header-custom">
+        <div>
+            <h4 class="card-title-custom"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Payroll History & Search</h4>
+            <span class="text-secondary small">Filter historical records, view past payslips, and export monthly Excel statements</span>
+        </div>
+        {% if year and month %}
+        <a href="{{ url_for('history.download_excel', year=year, month=month) }}" class="btn btn-success fw-bold">
+            <i class="fa-solid fa-file-excel me-1"></i> Export {{ month }}/{{ year }} Excel Statement
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Filter Form -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('history.index') }}" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Category</label>
+                <select name="category" class="form-select">
+                    <option value="">All 6 Categories</option>
+                    {% for cat_key, cat_label in categories %}
+                    <option value="{{ cat_key }}" {% if category == cat_key %}selected{% endif %}>{{ cat_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Year</label>
+                <input type="number" name="year" class="form-control" value="{{ year or 2026 }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Month</label>
+                <select name="month" class="form-select">
+                    <option value="">All Months</option>
+                    {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                    {% for m_idx in range(1, 13) %}
+                    <option value="{{ m_idx }}" {% if month == m_idx %}selected{% endif %}>{{ months[m_idx - 1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Search</label>
+                <input type="text" name="search" class="form-control" value="{{ search or '' }}" placeholder="Emp No, Name, Dept...">
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <i class="fa-solid fa-filter me-1"></i> Filter
+                </button>
+                <a href="{{ url_for('history.index') }}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Records Table -->
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Emp No</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Category</th>
+                    <th>Period</th>
+                    <th class="text-end">Gross Salary</th>
+                    <th class="text-end">Deductions</th>
+                    <th class="text-end fw-bold">Net Salary</th>
+                    <th class="text-center">Payslip</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td class="fw-bold">{{ r.Emp_No }}</td>
+                    <td>{{ r.Employee_Name }}</td>
+                    <td>{{ r.Department or '-' }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ r.Category }}</span></td>
+                    <td>{{ r.Payroll_Month }}/{{ r.Payroll_Year }}</td>
+                    <td class="text-end">₹{{ "%.2f"|format(r.Gross_Wages) }}</td>
+                    <td class="text-end text-danger">₹{{ "%.2f"|format(r.Total_Deduction) }}</td>
+                    <td class="text-end fw-bold text-success">₹{{ "%.2f"|format(r.Net_Salary) }}</td>
+                    <td class="text-center">
+                        <a href="{{ url_for('payslips.download_payslip', year=r.Payroll_Year, month=r.Payroll_Month, emp_no=r.Emp_No, category=r.Category) }}" class="btn btn-sm btn-outline-primary me-1" title="Download PDF">
+                            <i class="fa-solid fa-file-pdf"></i> PDF
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-secondary">
+                        No payroll records match your search criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if records %}
+    <!-- Summary Footer Bar -->
+    <div class="p-3 bg-light border-top">
+        <div class="row text-center fw-bold">
+            <div class="col-md-3">
+                <span class="text-secondary small d-block">TOTAL RECORDS</span>
+                <span class="fs-5 text-dark">{{ records|length }}</span>
+            </div>
+            <div class="col-md-3">
+                <span class="text-secondary small d-block">SUM GROSS SALARY</span>
+                <span class="fs-5 text-primary">₹{{ "{:,.2f}".format(total_gross) }}</span>
+            </div>
+            <div class="col-md-3">
+                <span class="text-secondary small d-block">SUM DEDUCTIONS</span>
+                <span class="fs-5 text-danger">₹{{ "{:,.2f}".format(total_ded) }}</span>
+            </div>
+            <div class="col-md-3">
+                <span class="text-secondary small d-block">SUM NET PAYABLE</span>
+                <span class="fs-5 text-success">₹{{ "{:,.2f}".format(total_net) }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,567 @@
+{% extends 'base.html' %}
+
+{% block title %}Payroll Formula Configuration — BHIPL Payroll{% endblock %}
+
+{% block content %}
+
+{% if not is_authenticated %}
+<!-- PASSWORD LOGIN SCREEN -->
+<div class="row justify-content-center my-5 py-4">
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card card-custom shadow-lg border-0 rounded-4 p-4 text-center">
+            <div class="mb-3">
+                <div class="icon-shape bg-primary text-white rounded-circle mx-auto mb-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 70px; height: 70px; font-size: 1.8rem;">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h4 class="fw-bold text-gradient">Payroll Formula Configuration</h4>
+                <p class="text-muted small">Enter Admin Password to access formula rules engine</p>
+            </div>
+
+            {% if error_msg %}
+            <div class="alert alert-danger border-0 rounded-3 py-2 px-3 mb-3 small shadow-sm">
+                <i class="fa-solid fa-circle-exclamation me-1"></i> {{ error_msg }}
+            </div>
+            {% endif %}
+
+            <form action="{{ url_for('payroll_formulas.login') }}" method="POST">
+                <div class="form-floating mb-4 text-start">
+                    <input type="password" class="form-control form-control-custom" id="adminPassword" name="password" placeholder="Enter Password" required autofocus>
+                    <label for="adminPassword"><i class="fa-solid fa-key me-2"></i>Admin Password</label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm rounded-3 text-uppercase tracking-wider">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i> LOGIN
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- PROTECTED FORMULA CONFIGURATION PAGE -->
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h3 class="fw-bold text-gradient mb-0"><i class="fa-solid fa-sliders text-primary me-2"></i>PAYROLL FORMULA CONFIGURATION</h3>
+        <p class="text-muted mb-0 small">Define, test, and version category-specific mathematical calculation rules</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill small fw-semibold">
+            <i class="fa-solid fa-shield-halved me-1"></i> Admin Authenticated
+        </span>
+        <a href="{{ url_for('payroll_formulas.logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+            <i class="fa-solid fa-power-off me-1"></i> LOGOUT
+        </a>
+    </div>
+</div>
+
+<!-- CATEGORY SELECTOR TOOLBAR -->
+<div class="card card-custom mb-4 p-3 shadow-sm border-0 rounded-4">
+    <div class="row align-items-center g-3">
+        <div class="col-12 col-md-5">
+            <label class="form-label fw-semibold text-muted mb-1 small text-uppercase"><i class="fa-solid fa-layer-group me-1"></i>Payroll Category:</label>
+            <select class="form-select form-select-custom fw-bold text-primary" id="categorySelect" onchange="changeCategory(this.value)">
+                <option value="STAFF_PF_ESI" {% if category == 'STAFF_PF_ESI' %}selected{% endif %}>1. Staff — PF / ESI</option>
+                <option value="WORKER_PF_ESI" {% if category == 'WORKER_PF_ESI' %}selected{% endif %}>2. Worker — PF / ESI</option>
+                <option value="STAFF_NAPS" {% if category == 'STAFF_NAPS' %}selected{% endif %}>3. Staff — NAPS Apprentice</option>
+                <option value="WORKER_NAPS" {% if category == 'WORKER_NAPS' %}selected{% endif %}>4. Worker — NAPS Apprentice</option>
+                <option value="STAFF_NON_PF_ESI" {% if category == 'STAFF_NON_PF_ESI' %}selected{% endif %}>5. Staff — Non PF / ESI</option>
+                <option value="WORKER_NON_PF_ESI" {% if category == 'WORKER_NON_PF_ESI' %}selected{% endif %}>6. Worker — Non PF / ESI</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-7 d-flex justify-content-end gap-2 pt-md-4">
+            <button type="button" class="btn btn-info text-white fw-bold px-3 shadow-sm rounded-3" onclick="openTestModal()">
+                <i class="fa-solid fa-flask me-1"></i> TEST FORMULAS
+            </button>
+            <button type="button" class="btn btn-success fw-bold px-4 shadow-sm rounded-3" onclick="saveFormulas()">
+                <i class="fa-solid fa-floppy-disk me-1"></i> SAVE FORMULAS
+            </button>
+            <button type="button" class="btn btn-outline-secondary fw-semibold px-3 rounded-3" onclick="resetFormulas()">
+                <i class="fa-solid fa-arrow-rotate-left me-1"></i> RESET
+            </button>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-danger fw-semibold px-3 rounded-3">
+                <i class="fa-solid fa-xmark me-1"></i> CANCEL
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- FORMULA EDITOR & VARIABLE SIDEBAR GRID -->
+<div class="row g-4 mb-5">
+    <!-- FORMULA INPUT SECTIONS (LEFT COLUMN) -->
+    <div class="col-12 col-lg-8">
+        <form id="formulaForm">
+
+            <!-- SECTION A: ATTENDANCE RULES -->
+            <div class="card card-custom mb-4 shadow-sm border-0 rounded-4">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center">
+                    <i class="fa-solid fa-calendar-check text-primary me-2"></i>
+                    <h5 class="fw-bold mb-0">SECTION A — ATTENDANCE RULES</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Standard Working Days</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="STANDARD_WORKING_DAYS" name="STANDARD_WORKING_DAYS" value="{{ rules.get('STANDARD_WORKING_DAYS', '26.0') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Total Worked Days Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="TOTAL_WORKED_DAYS" name="TOTAL_WORKED_DAYS" value="{{ rules.get('TOTAL_WORKED_DAYS', 'Present_Days + PH + CL + SL + PL') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION B: BASIC & DA SALARY RULES -->
+            <div class="card card-custom mb-4 shadow-sm border-0 rounded-4">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center">
+                    <i class="fa-solid fa-money-bill-wave text-success me-2"></i>
+                    <h5 class="fw-bold mb-0">SECTION B — BASIC & DA SALARY FORMULAS</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Fixed Basic + DA Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="BASIC_DA" name="BASIC_DA" value="{{ rules.get('BASIC_DA', 'Gross * 0.50') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Earned Basic + DA Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="EARNED_BASIC_DA" name="EARNED_BASIC_DA" value="{{ rules.get('EARNED_BASIC_DA', 'Fixed_Basic / Working_Days * Worked_Days') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION C: ALLOWANCES (HRA, CONVEYANCE, WASHING, OTHER, SPECIAL) -->
+            <div class="card card-custom mb-4 shadow-sm border-0 rounded-4">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center">
+                    <i class="fa-solid fa-hand-holding-dollar text-warning me-2"></i>
+                    <h5 class="fw-bold mb-0">SECTION C — ALLOWANCES FORMULAS</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Fixed HRA Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="HRA_FIXED" name="HRA_FIXED" value="{{ rules.get('HRA_FIXED', 'Gross * 0.20') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Earned HRA Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="HRA_EARNED" name="HRA_EARNED" value="{{ rules.get('HRA_EARNED', 'Fixed_HRA / Working_Days * Worked_Days') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Fixed Conveyance Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="CONVEYANCE_FIXED" name="CONVEYANCE_FIXED" value="{{ rules.get('CONVEYANCE_FIXED', 'Gross * 0.10') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Earned Conveyance Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="CONVEYANCE_EARNED" name="CONVEYANCE_EARNED" value="{{ rules.get('CONVEYANCE_EARNED', 'Fixed_Conveyance / Working_Days * Worked_Days') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Fixed Washing Allowance Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="WASHING_FIXED" name="WASHING_FIXED" value="{{ rules.get('WASHING_FIXED', 'Gross * 0.10') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Earned Washing Allowance Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="WASHING_EARNED" name="WASHING_EARNED" value="{{ rules.get('WASHING_EARNED', 'Fixed_Washing / Working_Days * Worked_Days') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Fixed Other Allowance Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="OTHER_FIXED" name="OTHER_FIXED" value="{{ rules.get('OTHER_FIXED', 'Gross * 0.10') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Earned Other Allowance Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="OTHER_EARNED" name="OTHER_EARNED" value="{{ rules.get('OTHER_EARNED', 'Fixed_Other / Working_Days * Worked_Days') }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small text-muted">Special Allowance Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="SPECIAL_ALLOWANCE" name="SPECIAL_ALLOWANCE" value="{{ rules.get('SPECIAL_ALLOWANCE', 'Special_Allowance') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION D: WORKER PER-DAY WAGE & OT RULES -->
+            <div class="card card-custom mb-4 shadow-sm border-0 rounded-4">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center">
+                    <i class="fa-solid fa-clock text-info me-2"></i>
+                    <h5 class="fw-bold mb-0">SECTION D — OVERTIME & WAGE RULES</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        {% if 'WORKER' in category %}
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small text-muted">Worker Per-Day Wage Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="PER_DAY_WAGE" name="PER_DAY_WAGE" value="{{ rules.get('PER_DAY_WAGE', 'Per_Day_Wage') }}">
+                        </div>
+                        {% endif %}
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">OT Enabled (1 = Yes, 0 = No)</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="OT_ENABLED" name="OT_ENABLED" value="{{ rules.get('OT_ENABLED', '1' if 'WORKER' in category else '0') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">OT Rate Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="OT_RATE" name="OT_RATE" value="{{ rules.get('OT_RATE', 'Per_Day_Wage / 8.0') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Normal OT Wages Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="OT_WAGES" name="OT_WAGES" value="{{ rules.get('OT_WAGES', 'min(OT_Hours, 50.0) * OT_Rate') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Special OT Allowance Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="SPECIAL_OT_ALLOWANCE" name="SPECIAL_OT_ALLOWANCE" value="{{ rules.get('SPECIAL_OT_ALLOWANCE', 'max(OT_Hours - 50.0, 0.0) * OT_Rate') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION E: GROSS SALARY -->
+            <div class="card card-custom mb-4 shadow-sm border-0 rounded-4">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center">
+                    <i class="fa-solid fa-wallet text-success me-2"></i>
+                    <h5 class="fw-bold mb-0">SECTION E — GROSS SALARY FORMULA</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold small text-muted">Gross Salary Formula</label>
+                        <input type="text" class="form-control form-control-custom formula-input fw-bold" id="GROSS_SALARY" name="GROSS_SALARY" value="{{ rules.get('GROSS_SALARY', 'Earned_Basic_DA + Earned_HRA + Earned_Conveyance + Earned_Washing + Earned_Other + OT_Wages + Special_OT_Amount + Arrears') }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION F: STATUTORY PF & ESI -->
+            <div class="card card-custom mb-4 shadow-sm border-0 rounded-4">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center">
+                    <i class="fa-solid fa-building-columns text-danger me-2"></i>
+                    <h5 class="fw-bold mb-0">SECTION F — STATUTORY PF & ESI FORMULAS</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">PF Applicable (1 = Yes, 0 = No)</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="PF_APPLICABLE" name="PF_APPLICABLE" value="{{ rules.get('PF_APPLICABLE', '1' if 'PF_ESI' in category else '0') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">PF Gross Wages Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="PF_GROSS" name="PF_GROSS" value="{{ rules.get('PF_GROSS', 'min(Gross * 0.80, 15000.0)' if 'STAFF' in category else 'min(max(Gross - Earned_HRA - OT_Wages, 0.0), 15000.0)') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Employee PF Deduction Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="PF_EMPLOYEE" name="PF_EMPLOYEE" value="{{ rules.get('PF_EMPLOYEE', 'min(PF_Gross * 0.12, 1800.0)') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">ESI Applicable (1 = Yes, 0 = No)</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="ESI_APPLICABLE" name="ESI_APPLICABLE" value="{{ rules.get('ESI_APPLICABLE', '1' if 'PF_ESI' in category else '0') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">ESI Gross Wages Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="ESI_GROSS" name="ESI_GROSS" value="{{ rules.get('ESI_GROSS', 'if_else(Fixed_Gross <= 21000.0, min(Gross * 0.90, 21000.0), 0.0)') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Employee ESI Deduction Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="ESI_EMPLOYEE" name="ESI_EMPLOYEE" value="{{ rules.get('ESI_EMPLOYEE', 'if_else(Fixed_Gross <= 21000.0, ESI_Gross * 0.0075, 0.0)') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION G: DEDUCTIONS, TOTAL & NET PAY -->
+            <div class="card card-custom mb-4 shadow-sm border-0 rounded-4">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center">
+                    <i class="fa-solid fa-calculator text-primary me-2"></i>
+                    <h5 class="fw-bold mb-0">SECTION G — TOTAL DEDUCTIONS & NET PAY</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small text-muted">Total Deductions Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input" id="TOTAL_DEDUCTIONS" name="TOTAL_DEDUCTIONS" value="{{ rules.get('TOTAL_DEDUCTIONS', 'PF + ESI + LIC + Advance + Accommodation + Other_Deduction') }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small text-muted">Net Salary Formula</label>
+                            <input type="text" class="form-control form-control-custom formula-input fw-bold text-success fs-5" id="NET_SALARY" name="NET_SALARY" value="{{ rules.get('NET_SALARY', 'Gross + Arrears - Total_Deduction') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- STANDARDIZED VARIABLE REFERENCE SIDEBAR (RIGHT COLUMN) -->
+    <div class="col-12 col-lg-4">
+        <div class="card card-custom shadow-sm border-0 rounded-4 sticky-top" style="top: 90px;">
+            <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center justify-content-between">
+                <h6 class="fw-bold mb-0"><i class="fa-solid fa-code me-2 text-primary"></i>Formula Variables</h6>
+                <span class="badge bg-secondary rounded-pill small">Click to Insert</span>
+            </div>
+            <div class="card-body p-3" style="max-height: 75vh; overflow-y: auto;">
+                <p class="text-muted extra-small mb-3">Click any variable chip below to insert it into the active formula field.</p>
+
+                <!-- GROUP 1: EMPLOYEE MASTER -->
+                <div class="mb-3">
+                    <span class="fw-semibold text-muted extra-small text-uppercase d-block mb-2">1. Employee Master Variables</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge var-chip bg-primary bg-opacity-10 text-primary border" onclick="insertVariable('Basic')">Basic</span>
+                        <span class="badge var-chip bg-primary bg-opacity-10 text-primary border" onclick="insertVariable('DA')">DA</span>
+                        <span class="badge var-chip bg-primary bg-opacity-10 text-primary border" onclick="insertVariable('HRA')">HRA</span>
+                        <span class="badge var-chip bg-primary bg-opacity-10 text-primary border" onclick="insertVariable('Conveyance')">Conveyance</span>
+                        <span class="badge var-chip bg-primary bg-opacity-10 text-primary border" onclick="insertVariable('Washing')">Washing</span>
+                        <span class="badge var-chip bg-primary bg-opacity-10 text-primary border" onclick="insertVariable('Other_Allowance')">Other_Allowance</span>
+                        <span class="badge var-chip bg-primary bg-opacity-10 text-primary border" onclick="insertVariable('Special_Allowance')">Special_Allowance</span>
+                        <span class="badge var-chip bg-primary bg-opacity-10 text-primary border" onclick="insertVariable('Per_Day_Wage')">Per_Day_Wage</span>
+                        <span class="badge var-chip bg-primary bg-opacity-10 text-primary border" onclick="insertVariable('Fixed_Gross')">Fixed_Gross</span>
+                    </div>
+                </div>
+
+                <!-- GROUP 2: ATTENDANCE -->
+                <div class="mb-3">
+                    <span class="fw-semibold text-muted extra-small text-uppercase d-block mb-2">2. Attendance Variables</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge var-chip bg-success bg-opacity-10 text-success border" onclick="insertVariable('Working_Days')">Working_Days</span>
+                        <span class="badge var-chip bg-success bg-opacity-10 text-success border" onclick="insertVariable('Present_Days')">Present_Days</span>
+                        <span class="badge var-chip bg-success bg-opacity-10 text-success border" onclick="insertVariable('PH')">PH</span>
+                        <span class="badge var-chip bg-success bg-opacity-10 text-success border" onclick="insertVariable('CL')">CL</span>
+                        <span class="badge var-chip bg-success bg-opacity-10 text-success border" onclick="insertVariable('SL')">SL</span>
+                        <span class="badge var-chip bg-success bg-opacity-10 text-success border" onclick="insertVariable('PL')">PL</span>
+                        <span class="badge var-chip bg-success bg-opacity-10 text-success border" onclick="insertVariable('Worked_Days')">Worked_Days</span>
+                    </div>
+                </div>
+
+                <!-- GROUP 3: OVERTIME -->
+                <div class="mb-3">
+                    <span class="fw-semibold text-muted extra-small text-uppercase d-block mb-2">3. Overtime Variables</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge var-chip bg-info bg-opacity-10 text-info border" onclick="insertVariable('OT_Hours')">OT_Hours</span>
+                        <span class="badge var-chip bg-info bg-opacity-10 text-info border" onclick="insertVariable('OT_Rate')">OT_Rate</span>
+                        <span class="badge var-chip bg-info bg-opacity-10 text-info border" onclick="insertVariable('OT_Wages')">OT_Wages</span>
+                        <span class="badge var-chip bg-info bg-opacity-10 text-info border" onclick="insertVariable('Special_OT_Amount')">Special_OT_Amount</span>
+                    </div>
+                </div>
+
+                <!-- GROUP 4: EARNED SALARY -->
+                <div class="mb-3">
+                    <span class="fw-semibold text-muted extra-small text-uppercase d-block mb-2">4. Earned Components</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge var-chip bg-warning bg-opacity-10 text-warning border" onclick="insertVariable('Earned_Basic_DA')">Earned_Basic_DA</span>
+                        <span class="badge var-chip bg-warning bg-opacity-10 text-warning border" onclick="insertVariable('Earned_HRA')">Earned_HRA</span>
+                        <span class="badge var-chip bg-warning bg-opacity-10 text-warning border" onclick="insertVariable('Earned_Conveyance')">Earned_Conveyance</span>
+                        <span class="badge var-chip bg-warning bg-opacity-10 text-warning border" onclick="insertVariable('Earned_Washing')">Earned_Washing</span>
+                        <span class="badge var-chip bg-warning bg-opacity-10 text-warning border" onclick="insertVariable('Earned_Other')">Earned_Other</span>
+                    </div>
+                </div>
+
+                <!-- GROUP 5: PAYROLL & DEDUCTIONS -->
+                <div class="mb-2">
+                    <span class="fw-semibold text-muted extra-small text-uppercase d-block mb-2">5. Payroll & Deductions</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('Gross')">Gross</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('PF_Gross')">PF_Gross</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('PF')">PF</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('ESI_Gross')">ESI_Gross</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('ESI')">ESI</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('NAPS')">NAPS</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('LIC')">LIC</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('Advance')">Advance</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('Arrears')">Arrears</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('Total_Deduction')">Total_Deduction</span>
+                        <span class="badge var-chip bg-danger bg-opacity-10 text-danger border" onclick="insertVariable('Net_Salary')">Net_Salary</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LIVE FORMULA TEST MODAL -->
+<div class="modal fade" id="testModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content card-custom border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-flask text-info me-2"></i>FORMULA EVALUATION TEST</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">Provide sample employee inputs to test the configured formulas in real-time:</p>
+                <div class="row g-3 mb-4">
+                    <div class="col-4">
+                        <label class="form-label extra-small fw-semibold text-muted">Fixed Gross / Base</label>
+                        <input type="number" class="form-control form-control-sm" id="test_gross" value="25000">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label extra-small fw-semibold text-muted">Per Day Wage</label>
+                        <input type="number" class="form-control form-control-sm" id="test_per_day" value="900">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label extra-small fw-semibold text-muted">Working Days</label>
+                        <input type="number" class="form-control form-control-sm" id="test_working_days" value="26">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label extra-small fw-semibold text-muted">Present Days</label>
+                        <input type="number" class="form-control form-control-sm" id="test_present_days" value="25">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label extra-small fw-semibold text-muted">OT Hours</label>
+                        <input type="number" class="form-control form-control-sm" id="test_ot_hours" value="10">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label extra-small fw-semibold text-muted">LIC Deduction</label>
+                        <input type="number" class="form-control form-control-sm" id="test_lic" value="250">
+                    </div>
+                </div>
+
+                <div id="testResultsContainer" class="d-none">
+                    <h6 class="fw-bold border-bottom pb-2 text-gradient"><i class="fa-solid fa-square-poll-vertical me-2"></i>Formula Test Calculation Breakdown</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-dark table-hover border rounded">
+                            <thead>
+                                <tr class="text-muted extra-small">
+                                    <th>Field / Component</th>
+                                    <th class="text-end">Evaluated Result</th>
+                                </tr>
+                            </thead>
+                            <tbody id="testResultsBody" class="small">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-3">
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info text-white btn-sm rounded-pill px-4 fw-bold shadow-sm" onclick="runFormulaTest()">
+                    <i class="fa-solid fa-play me-1"></i> RUN TEST EVALUATION
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if is_authenticated %}
+<style>
+.var-chip { cursor: pointer; user-select: none; transition: all 0.2s; font-size: 0.78rem; padding: 5px 8px; }
+.var-chip:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); filter: brightness(1.1); }
+.formula-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 0.2rem rgba(59,130,246,0.25); }
+.extra-small { font-size: 0.75rem; }
+</style>
+
+<script>
+let activeInput = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.formula-input');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            activeInput = this;
+        });
+    });
+});
+
+function insertVariable(varName) {
+    if (!activeInput) {
+        activeInput = document.getElementById('GROSS_SALARY');
+    }
+    if (activeInput) {
+        const start = activeInput.selectionStart || activeInput.value.length;
+        const end = activeInput.selectionEnd || activeInput.value.length;
+        const text = activeInput.value;
+        const before = text.substring(0, start);
+        const after = text.substring(end, text.length);
+        activeInput.value = before + (before.endsWith(' ') || before === '' ? '' : ' ') + varName + ' ' + after;
+        activeInput.focus();
+        activeInput.setSelectionRange(start + varName.length + 2, start + varName.length + 2);
+    }
+}
+
+function changeCategory(cat) {
+    window.location.href = "{{ url_for('payroll_formulas.index') }}?category=" + cat;
+}
+
+function openTestModal() {
+    const modal = new bootstrap.Modal(document.getElementById('testModal'));
+    modal.show();
+}
+
+function runFormulaTest() {
+    const category = document.getElementById('categorySelect').value;
+    const rules = {};
+
+    const inputs = document.querySelectorAll('.formula-input');
+    inputs.forEach(input => {
+        rules[input.name] = input.value;
+    });
+
+    const sampleInputs = {
+        'Gross': parseFloat(document.getElementById('test_gross').value) || 25000,
+        'Per_Day_Wage': parseFloat(document.getElementById('test_per_day').value) || 900,
+        'Working_Days': parseFloat(document.getElementById('test_working_days').value) || 26,
+        'Present_Days': parseFloat(document.getElementById('test_present_days').value) || 25,
+        'OT_Hours': parseFloat(document.getElementById('test_ot_hours').value) || 10,
+        'LIC': parseFloat(document.getElementById('test_lic').value) || 250
+    };
+
+    fetch("{{ url_for('payroll_formulas.test_formulas') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: category, rules: rules, sample_inputs: sampleInputs })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const res = data.result;
+            const body = document.getElementById('testResultsBody');
+            body.innerHTML = `
+                <tr><td>Standard Working Days</td><td class="text-end font-monospace">${res.standard_days}</td></tr>
+                <tr><td>Total Worked Days</td><td class="text-end font-monospace">${res.worked_days}</td></tr>
+                <tr><td>Earned Basic + DA</td><td class="text-end font-monospace">₹${res.earned_basic_da.toFixed(2)}</td></tr>
+                <tr><td>Earned HRA</td><td class="text-end font-monospace">₹${res.earned_hra.toFixed(2)}</td></tr>
+                <tr><td>OT Wages</td><td class="text-end font-monospace">₹${res.ot_wages.toFixed(2)}</td></tr>
+                <tr class="table-primary font-bold"><td>EARNED GROSS SALARY</td><td class="text-end font-monospace fw-bold">₹${res.earned_gross.toFixed(2)}</td></tr>
+                <tr><td>PF Gross / Deduction</td><td class="text-end font-monospace">₹${res.pf_gross.toFixed(2)} / ₹${res.pf_deduction.toFixed(2)}</td></tr>
+                <tr><td>ESI Gross / Deduction</td><td class="text-end font-monospace">₹${res.esi_gross.toFixed(2)} / ₹${res.esi_deduction.toFixed(2)}</td></tr>
+                <tr><td>Total Deductions</td><td class="text-end font-monospace text-danger">₹${res.total_deduction.toFixed(2)}</td></tr>
+                <tr class="table-success font-bold"><td>NET SALARY PAYABLE</td><td class="text-end font-monospace fw-bold text-success fs-6">₹${res.net_salary.toFixed(2)}</td></tr>
+            `;
+            document.getElementById('testResultsContainer').classList.remove('d-none');
+        } else {
+            alert("Test Evaluation Error: " + data.error);
+        }
+    })
+    .catch(err => alert("Server error running test: " + err));
+}
+
+function saveFormulas() {
+    const category = document.getElementById('categorySelect').value;
+    const rules = {};
+
+    const inputs = document.querySelectorAll('.formula-input');
+    inputs.forEach(input => {
+        rules[input.name] = input.value;
+    });
+
+    fetch("{{ url_for('payroll_formulas.save_rules') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: category, rules: rules })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert("Error Saving Formulas:\n" + data.error + (data.details ? "\n\n- " + data.details.join("\n- ") : ""));
+        }
+    })
+    .catch(err => alert("Server error saving formulas: " + err));
+}
+
+function resetFormulas() {
+    if (confirm("Reset formula inputs to last saved values?")) {
+        window.location.reload();
+    }
+}
+</script>
+{% endif %}
+{% endblock %}

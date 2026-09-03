@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manual Deductions – Employees</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background:#f8f9fa; }
+    .card { border-radius:12px; }
+    table { font-size:14px; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark mb-3">
+  <div class="container-fluid">
+    <span class="navbar-brand fw-bold">Manual Deductions</span>
+    <a href="{{ url_for('main.master') }}" class="btn btn-sm btn-outline-light">Master</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-0">Select Employee for {{ month }}/{{ year }}</h5>
+        <small class="text-muted">Click an employee to open the deduction profile</small>
+      </div>
+      <div>
+        <a class="btn btn-sm btn-secondary" href="{{ url_for('attendance_payroll.attendance_payroll') }}">Back to Payroll</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0 align-middle">
+          <thead class="table-light text-center">
+            <tr>
+              <th>Emp No</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th class="text-end">Gross</th>
+              <th class="text-end">Net</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for e in employees %}
+            <tr>
+              <td class="text-center">{{ e.Emp_No }}</td>
+              <td>{{ e.Emp_Name }}</td>
+              <td class="text-center">{{ e.Category }}</td>
+              <td class="text-end">{{ "%.2f"|format(e.Gross_Wages) if e.Gross_Wages is defined else '-' }}</td>
+              <td class="text-end">{{ "%.2f"|format(e.Net_Pay) if e.Net_Pay is defined else '-' }}</td>
+              <td class="text-center">
+                <a class="btn btn-sm btn-primary" href="{{ url_for('manual.manual_redirect', emp_no=e.Emp_No, year=year, month=month) }}">Open</a>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

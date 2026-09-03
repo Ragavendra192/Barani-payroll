@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Employees | Barani Payroll{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="card-header-custom">
+        <div>
+            <h4 class="card-title-custom"><i class="fa-solid fa-user-tie me-2 text-primary"></i>Staff Employee Master</h4>
+            <span class="text-secondary small">Manage components (Basic, DA, HRA, Washing, Conveyance, Special Allowance)</span>
+        </div>
+        <a href="{{ url_for('staff_employees.add_employee') }}" class="btn btn-primary">
+            <i class="fa-solid fa-plus me-1"></i> Add Staff Employee
+        </a>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-secondary"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search by Emp No, Name, Department, Designation...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active Only</option>
+                    <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>Inactive Only</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-filter me-1"></i> Filter</button>
+                {% if q or status_filter %}
+                <a href="{{ url_for('staff_employees.list_employees') }}" class="btn btn-outline-secondary">Reset</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th>Emp No</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th class="text-end">Basic</th>
+                    <th class="text-end">DA</th>
+                    <th class="text-end">HRA</th>
+                    <th class="text-center">PF / ESI</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr>
+                    <td class="fw-bold">{{ emp.Emp_No }}</td>
+                    <td>{{ emp.Emp_Name }}</td>
+                    <td>{{ emp.Department or '-' }}</td>
+                    <td><span class="badge badge-staff">{{ emp.Designation or 'STAFF' }}</span></td>
+                    <td class="text-end">₹{{ "%.2f"|format(emp.Basic) }}</td>
+                    <td class="text-end">₹{{ "%.2f"|format(emp.DA) }}</td>
+                    <td class="text-end">₹{{ "%.2f"|format(emp.HRA) }}</td>
+                    <td class="text-center">
+                        {% if emp.PF_Eligible %}<span class="badge bg-success-subtle text-success me-1">PF</span>{% endif %}
+                        {% if emp.ESI_Eligible %}<span class="badge bg-info-subtle text-info">ESI</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-status {% if emp.Status == 'Active' %}badge-active{% else %}badge-inactive{% endif %}">
+                            {{ emp.Status }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <a href="{{ url_for('staff_employees.edit_employee', emp_no=emp.Emp_No) }}" class="btn btn-sm btn-outline-primary me-1" title="Edit">
+                            <i class="fa-solid fa-pen"></i> Edit
+                        </a>
+                        <form method="POST" action="{{ url_for('staff_employees.toggle_status', emp_no=emp.Emp_No) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm {% if emp.Status == 'Active' %}btn-outline-danger{% else %}btn-outline-success{% endif %}" title="Toggle Status">
+                                {% if emp.Status == 'Active' %}Deactivate{% else %}Activate{% endif %}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" class="text-center py-4 text-secondary">No staff employees found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

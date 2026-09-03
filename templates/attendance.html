@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance | BHIPL Payroll System{% endblock %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('main.attendance', year=year, month=month, category=category, employee_type=emp_type, department=dept, search=search) }}" enctype="multipart/form-data">
+    <div class="card-custom mb-4">
+        <div class="card-header-custom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h4 class="card-title-custom mb-0"><i class="fa-solid fa-calendar-check text-success me-2"></i>CURRENT MONTH ATTENDANCE ENTRY</h4>
+                <small class="text-secondary">Enter monthly attendance and OT hours for fast payroll calculation</small>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                <div class="input-group input-group-sm" style="width: 140px;">
+                    <span class="input-group-text bg-dark text-white fw-bold">Year</span>
+                    <select id="year_select" name="year" class="form-select fw-bold" onchange="navigateAttendancePeriod();">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="input-group input-group-sm" style="width: 180px;">
+                    <span class="input-group-text bg-dark text-white fw-bold">Month</span>
+                    <select id="month_select" name="month" class="form-select fw-bold" onchange="navigateAttendancePeriod();">
+                        {% for m_num, m_name in months %}
+                        <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="input-group input-group-sm" style="width: 290px;">
+                    <span class="input-group-text bg-primary text-white fw-bold">Company Working Days</span>
+                    <input type="number" step="0.5" name="standard_days" class="form-control text-center fw-bold" value="{{ standard_days }}">
+                    <button type="submit" name="action" value="apply_std_days" class="btn btn-primary fw-bold">APPLY</button>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" name="action" value="save_attendance" class="btn btn-success fw-bold px-4">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Save Attendance
+                    </button>
+                    <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="visually-hidden">Toggle Dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li><a href="{{ url_for('main.attendance', year=year, month=month, category=category, employee_type=emp_type, department=dept, search=search, action='download_template') }}" class="dropdown-item fw-bold text-primary"><i class="fa-solid fa-file-excel me-2"></i>Download Template</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button type="button" class="dropdown-item fw-bold text-success" onclick="document.getElementById('import_file').click();"><i class="fa-solid fa-file-import me-2"></i>Import Excel</button></li>
+                    </ul>
+                </div>
+                <input type="file" name="import_file" id="import_file" class="d-none" accept=".xlsx, .xls" onchange="document.getElementById('import_action_btn').click();">
+                <button type="submit" name="action" value="import_excel" id="import_action_btn" class="d-none"></button>
+            </div>
+        </div>
+
+        <!-- Top Period Settings Section -->
+        <div class="card-body bg-white border-bottom py-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold mb-1 text-muted">Calendar Days</label>
+                    <input type="text" class="form-control form-control-sm text-center fw-bold bg-light" id="calendar_days_disp" value="{{ calendar_days }}" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold mb-1 text-muted">Sundays</label>
+                    <input type="text" class="form-control form-control-sm text-center fw-bold bg-light" id="sunday_count_disp" value="{{ sunday_count }}" readonly>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold mb-1 text-muted">Calculated Working Days</label>
+                    <input type="text" class="form-control form-control-sm text-center fw-bold bg-light" id="default_working_days_disp" value="{{ default_working_days }}" readonly>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold mb-1 text-primary">Working Days (Final Payroll)</label>
+                    <input type="number" step="0.5" name="standard_days" id="standard_days_input" class="form-control form-control-sm text-center fw-bold border-primary" value="{{ standard_days }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" name="action" value="apply_std_days" class="btn btn-primary btn-sm w-100 fw-bold">SAVE WORKING DAYS</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card-body bg-light border-bottom">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold mb-1">Search Employee</label>
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Employee ID or Name..." value="{{ search or '' }}">
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold mb-1">Employee Type</label>
+                    <select name="employee_type" class="form-select form-select-sm fw-bold">
+                        <option value="ALL">ALL TYPES</option>
+                        <option value="STAFF" {% if emp_type == 'STAFF' %}selected{% endif %}>STAFF</option>
+                        <option value="WORKER" {% if emp_type == 'WORKER' %}selected{% endif %}>WORKER</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold mb-1">Category</label>
+                    <select name="category" class="form-select form-select-sm fw-bold">
+                        <option value="ALL">ALL CATEGORIES</option>
+                        {% for c_code, c_label in categories %}
+                        <option value="{{ c_code }}" {% if category == c_code %}selected{% endif %}>{{ c_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold mb-1">Department</label>
+                    <select name="department" class="form-select form-select-sm fw-bold">
+                        <option value="ALL">ALL DEPARTMENTS</option>
+                        {% for d in departments %}
+                        <option value="{{ d }}" {% if dept == d %}selected{% endif %}>{{ d }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end mt-3 mt-md-0">
+                    <button type="submit" class="btn btn-secondary btn-sm w-100 fw-bold"><i class="fa-solid fa-filter me-1"></i> Filter Table</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Entry Table -->
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 650px;">
+                <table class="table table-hover align-middle mb-0 text-nowrap table-custom">
+                    <thead class="table-dark small text-uppercase">
+                        <tr>
+                            <th class="ps-3 sticky-col-1" style="width: 50px;">#</th>
+                            <th class="sticky-col-2" style="width: 100px;">Emp ID</th>
+                            <th class="sticky-col-3">Employee Name</th>
+                            <th>Type</th>
+                            <th>Category</th>
+                            <th class="text-center bg-secondary bg-opacity-25" style="width: 140px;">Company Working Days</th>
+                            <th class="text-center" style="width: 100px;">Present</th>
+                            <th class="text-center" style="width: 80px;">N/H</th>
+                            <th class="text-center" style="width: 80px;">EL</th>
+                            <th class="text-center" style="width: 80px;">CL</th>
+                            <th class="text-center" style="width: 80px;">SL</th>
+                            <th class="text-center text-danger bg-danger bg-opacity-10" style="width: 100px;">LOP Days</th>
+                            {% if emp_type != 'STAFF' %}
+                            <th class="text-center bg-warning bg-opacity-10 text-dark" style="width: 110px;">OT Hours</th>
+                            <th class="text-center bg-info bg-opacity-10 text-dark" style="width: 100px;">Spl. OT</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if rows %}
+                            {% for r in rows %}
+                            <tr>
+                                <td class="ps-3 text-muted small sticky-col-1">{{ loop.index }}</td>
+                                <td class="fw-bold text-primary sticky-col-2">#{{ r.Emp_No }}</td>
+                                <td class="fw-bold sticky-col-3">{{ r.Employee_Name }}</td>
+                                <td>
+                                    {% if r.Employee_Type == 'STAFF' %}
+                                    <span class="badge bg-primary px-2 py-1">STAFF</span>
+                                    {% else %}
+                                    <span class="badge bg-success px-2 py-1">WORKER</span>
+                                    {% endif %}
+                                </td>
+                                <td><span class="small fw-semibold text-secondary">{{ r.Category }}</span></td>
+                                <td class="text-center bg-light fw-bold text-dark border-start border-end">
+                                    {{ standard_days }}
+                                </td>
+
+                                <!-- EDITABLE ATTENDANCE CELL INPUTS -->
+                                <td class="p-1 text-center">
+                                    <input type="number" step="0.5" min="0" max="365" name="emp_{{ r.Employee_ID }}_present_days" id="emp_{{ r.Employee_ID }}_present_days" 
+                                           class="form-control form-control-sm text-center fw-bold border-success" 
+                                           value="{{ r.Present_Days }}" oninput="recalcRowLOP('{{ r.Employee_ID }}', '{{ standard_days }}', '{{ 1 if r.Employee_Type == 'WORKER' else 0 }}')">
+                                </td>
+                                <td class="p-1 text-center">
+                                    <input type="number" step="0.5" min="0" max="365" name="emp_{{ r.Employee_ID }}_nh" id="emp_{{ r.Employee_ID }}_nh" 
+                                           class="form-control form-control-sm text-center" 
+                                           value="{{ r.NH or 0.0 }}" oninput="recalcRowLOP('{{ r.Employee_ID }}', '{{ standard_days }}', '{{ 1 if r.Employee_Type == 'WORKER' else 0 }}')">
+                                </td>
+                                <td class="p-1 text-center">
+                                    <input type="number" step="0.5" min="0" max="365" name="emp_{{ r.Employee_ID }}_el" id="emp_{{ r.Employee_ID }}_el" 
+                                           class="form-control form-control-sm text-center" 
+                                           value="{{ r.EL or 0.0 }}" oninput="recalcRowLOP('{{ r.Employee_ID }}', '{{ standard_days }}', '{{ 1 if r.Employee_Type == 'WORKER' else 0 }}')">
+                                </td>
+                                <td class="p-1 text-center">
+                                    <input type="number" step="0.5" min="0" max="365" name="emp_{{ r.Employee_ID }}_cl" id="emp_{{ r.Employee_ID }}_cl" 
+                                           class="form-control form-control-sm text-center" 
+                                           value="{{ r.CL or 0.0 }}" oninput="recalcRowLOP('{{ r.Employee_ID }}', '{{ standard_days }}', '{{ 1 if r.Employee_Type == 'WORKER' else 0 }}')">
+                                </td>
+                                <td class="p-1 text-center">
+                                    <input type="number" step="0.5" min="0" max="365" name="emp_{{ r.Employee_ID }}_sl" id="emp_{{ r.Employee_ID }}_sl" 
+                                           class="form-control form-control-sm text-center" 
+                                           value="{{ r.SL or 0.0 }}" oninput="recalcRowLOP('{{ r.Employee_ID }}', '{{ standard_days }}', '{{ 1 if r.Employee_Type == 'WORKER' else 0 }}')">
+                                </td>
+                                <td class="p-1 text-center bg-danger bg-opacity-10">
+                                    <input type="number" step="0.5" min="0" name="emp_{{ r.Employee_ID }}_lop" id="emp_{{ r.Employee_ID }}_lop" 
+                                           class="form-control form-control-sm text-center fw-bold border-danger text-danger bg-white" 
+                                           value="{{ r.LOP_Days or 0.0 }}" readonly title="Loss of Pay Days (Company Working Days - Payable Days)">
+                                </td>
+                                {% if emp_type != 'STAFF' %}
+                                <td class="p-1 text-center bg-warning bg-opacity-10">
+                                    <input type="number" step="0.5" min="0" max="999" name="emp_{{ r.Employee_ID }}_act_ot" id="emp_{{ r.Employee_ID }}_act_ot"
+                                           class="form-control form-control-sm text-center fw-bold border-warning" 
+                                           value="{{ r.Act_OT_Hrs or 0.0 }}" oninput="recalcOT('{{ r.Employee_ID }}')">
+                                </td>
+                                <td class="p-1 text-center bg-info bg-opacity-10">
+                                    <input type="number" step="0.5" min="0" name="emp_{{ r.Employee_ID }}_spl_ot" id="emp_{{ r.Employee_ID }}_spl_ot" 
+                                           class="form-control form-control-sm text-center fw-bold border-info text-info bg-white" 
+                                           value="{{ r.Special_OT_Hours or 0.0 }}" readonly title="Special OT (Total OT - 50)">
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="{{ 12 if emp_type == 'STAFF' else 13 }}" class="text-center py-5 text-muted">
+                                    <i class="fa-solid fa-folder-open fa-2xl mb-3 text-secondary d-block"></i>
+                                    No attendance records found matching filters.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+function navigateAttendancePeriod() {
+    const yInp = document.getElementById('year_select');
+    const mInp = document.getElementById('month_select');
+    if (yInp && mInp) {
+        window.location.href = "{{ url_for('main.attendance') }}?year=" + yInp.value + "&month=" + mInp.value + "&category={{ category }}&employee_type={{ emp_type }}&department={{ dept }}&search={{ search }}";
+    }
+}
+
+function recalcRowLOP(empId, stdDays, isWorker) {
+    // LOP is not deducted for all staff and workers
+    const lopInp = document.getElementById('emp_' + empId + '_lop');
+    if (lopInp) {
+        lopInp.value = "0.0";
+    }
+}
+
+function recalcOT(empId) {
+    const otInp = document.getElementById('emp_' + empId + '_act_ot');
+    const splInp = document.getElementById('emp_' + empId + '_spl_ot');
+    
+    if (otInp && splInp) {
+        const actOt = parseFloat(otInp.value) || 0;
+        const splOt = Math.max(0, actOt - 50.0);
+        splInp.value = splOt.toFixed(1);
+    }
+}
+</script>
+{% endblock %}

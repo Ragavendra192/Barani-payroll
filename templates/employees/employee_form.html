@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}{% if employee %}Edit Employee #{{ employee.Emp_No }}{% else %}Add New Employee{% endif %} | BHIPL Payroll{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9">
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h4 class="card-title-custom mb-0">
+                    <i class="fa-solid {% if employee %}fa-user-pen text-primary{% else %}fa-user-plus text-success{% endif %} me-2"></i>
+                    {% if employee %}Edit Employee Master (#{{ employee.Emp_No }}){% else %}Add New Employee Master{% endif %}
+                </h4>
+                <a href="{{ url_for('employees.list_employees') }}" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back to Employee Directory
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{% if employee %}{{ url_for('employees.edit', employee_id=employee.Employee_ID) }}{% else %}{{ url_for('employees.add') }}{% endif %}">
+                    
+                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fa-solid fa-id-badge me-2"></i>1. Personal & Role Information</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Employee Number <span class="text-danger">*</span></label>
+                            <input type="text" name="Emp_No" class="form-control" value="{{ employee.Emp_No if employee else '' }}" {% if employee %}readonly{% endif %} required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">ERP Emp Number</label>
+                            <input type="text" name="ERP_Emp_No" class="form-control" value="{{ employee.ERP_Emp_No if employee else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Employee Code</label>
+                            <input type="text" name="Emp_Code" class="form-control" value="{{ employee.Emp_Code if employee else '' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="Employee_Name" class="form-control" value="{{ employee.Employee_Name if employee else '' }}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Employee Type <span class="text-danger">*</span></label>
+                            <select name="Employee_Type" class="form-select fw-bold" required>
+                                <option value="STAFF" {% if employee and employee.Employee_Type == 'STAFF' %}selected{% endif %}>STAFF</option>
+                                <option value="WORKER" {% if employee and employee.Employee_Type == 'WORKER' %}selected{% endif %}>WORKER</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Payroll Category <span class="text-danger">*</span></label>
+                            <select name="Payroll_Category" class="form-select fw-bold" required>
+                                <option value="PF_ESI" {% if employee and employee.Payroll_Category == 'PF_ESI' %}selected{% endif %}>PF / ESI</option>
+                                <option value="NAPS" {% if employee and employee.Payroll_Category == 'NAPS' %}selected{% endif %}>NAPS</option>
+                                <option value="NON_PF_ESI" {% if employee and employee.Payroll_Category == 'NON_PF_ESI' %}selected{% endif %}>NON PF / ESI</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Department</label>
+                            <input type="text" name="Department" class="form-control" value="{{ employee.Department if employee else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Designation</label>
+                            <input type="text" name="Designation" class="form-control" value="{{ employee.Designation if employee else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Grade</label>
+                            <input type="text" name="Grade" class="form-control" value="{{ employee.Grade if employee else '' }}">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Date of Joining</label>
+                            <input type="date" name="DOJ" class="form-control" value="{{ employee.DOJ if employee else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">UAN Number</label>
+                            <input type="text" name="UAN_No" class="form-control" value="{{ employee.UAN_No if employee else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">ESI Number</label>
+                            <input type="text" name="ESI_No" class="form-control" value="{{ employee.ESI_No if employee else '' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Phone Number (WhatsApp)</label>
+                            <input type="text" name="Phone_Number" class="form-control" placeholder="Enter phone number (e.g. 9876543210)" value="{{ employee.Phone_Number if employee else '' }}">
+                            {% if employee and employee.Phone_Number_Masked %}
+                            <div class="form-text text-muted small"><i class="fa-solid fa-user-shield me-1"></i>Saved Display: <strong>{{ employee.Phone_Number_Masked }}</strong></div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Email ID</label>
+                            <input type="email" name="Email_ID" class="form-control" placeholder="employee@example.com" value="{{ employee.Email_ID if employee else '' }}">
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fa-solid fa-coins me-2"></i>2. Fixed Salary Structure & Wage Rates</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4" id="wrapper_fixed_gross">
+                            <label class="form-label fw-bold text-primary">Fixed Gross Salary (Staff) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-primary text-white fw-bold">₹</span>
+                                <input type="number" step="0.01" name="Fixed_Gross" id="field_fixed_gross" class="form-control fw-bold border-primary" value="{{ employee.Fixed_Gross if (employee and employee.Fixed_Gross) else '0.00' }}" placeholder="Enter total fixed gross">
+                            </div>
+                            <div class="form-text text-muted small"><i class="fa-solid fa-wand-magic-sparkles text-primary me-1"></i>Auto-splits into 50% Basic+DA, 20% HRA, 10% Conv, 10% Wash, 10% Other</div>
+                        </div>
+
+                        <div class="col-md-4" id="wrapper_per_day_wage">
+                            <label class="form-label fw-bold text-success">Per Day Wage (Workers)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-success text-white fw-bold">₹</span>
+                                <input type="number" step="0.01" name="Per_Day_Wage" id="field_per_day_wage" class="form-control fw-bold border-success" value="{{ employee.Per_Day_Wage if employee else '0.00' }}">
+                            </div>
+                            <div class="form-text text-muted small"><i class="fa-solid fa-clock text-success me-1"></i>Worker OT Rate = Daily Wage / 8.0</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary">Basic + DA (50%) <small class="badge bg-secondary">Derived</small></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.01" name="Basic_DA" id="field_basic_da" class="form-control fw-bold" value="{{ employee.Basic_DA if employee else '0.00' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary">Fixed HRA (20%) <small class="badge bg-secondary">Derived</small></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.01" name="HRA" id="field_hra" class="form-control fw-bold" value="{{ employee.HRA if employee else '0.00' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary">Fixed Conveyance (10%) <small class="badge bg-secondary">Derived</small></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.01" name="Conveyance_Allowance" id="field_conveyance" class="form-control fw-bold" value="{{ employee.Conveyance_Allowance if employee else '0.00' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary">Fixed Washing (10%) <small class="badge bg-secondary">Derived</small></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.01" name="Washing_Allowance" id="field_washing" class="form-control fw-bold" value="{{ employee.Washing_Allowance if employee else '0.00' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-secondary">Fixed Other Allowance (10%) <small class="badge bg-secondary">Derived</small></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.01" name="Other_Allowance" id="field_other" class="form-control fw-bold" value="{{ employee.Other_Allowance if employee else '0.00' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fa-solid fa-shield-halved me-2"></i>3. Statutory Coverage & Active Status</h6>
+                    <div class="row g-3 align-items-center mb-4">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch p-2 border rounded-2 bg-light ms-0 ps-5">
+                                <input class="form-check-input" type="checkbox" name="PF_Eligible" id="pf_check" {% if not employee or employee.PF_Eligible %}checked{% endif %}>
+                                <label class="form-check-label fw-bold me-2" for="pf_check">PF Eligible</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch p-2 border rounded-2 bg-light ms-0 ps-5">
+                                <input class="form-check-input" type="checkbox" name="ESI_Eligible" id="esi_check" {% if not employee or employee.ESI_Eligible %}checked{% endif %}>
+                                <label class="form-check-label fw-bold me-2" for="esi_check">ESI Eligible</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Employee Status</label>
+                            <select name="Status" class="form-select fw-bold">
+                                <option value="Active" {% if not employee or employee.Status == 'Active' %}selected{% endif %}>Active</option>
+                                <option value="Inactive" {% if employee and employee.Status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                        <a href="{{ url_for('employees.list_employees') }}" class="btn btn-outline-secondary px-4 fw-semibold">Cancel</a>
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="fa-solid fa-check me-1"></i> Save Employee Master
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const empTypeSelect = document.querySelector('select[name="Employee_Type"]');
+    const fixedGrossInput = document.getElementById('field_fixed_gross');
+    const perDayWageInput = document.getElementById('field_per_day_wage');
+    
+    const basicInput = document.getElementById('field_basic_da');
+    const hraInput = document.getElementById('field_hra');
+    const convInput = document.getElementById('field_conveyance');
+    const washInput = document.getElementById('field_washing');
+    const otherInput = document.getElementById('field_other');
+
+    function calculateStaffComponents() {
+        const empType = empTypeSelect ? empTypeSelect.value : 'STAFF';
+        if (empType === 'STAFF') {
+            const gross = parseFloat(fixedGrossInput.value) || 0.0;
+            if (gross > 0) {
+                basicInput.value = (gross * 0.50).toFixed(2);
+                hraInput.value = (gross * 0.20).toFixed(2);
+                convInput.value = (gross * 0.10).toFixed(2);
+                washInput.value = (gross * 0.10).toFixed(2);
+                otherInput.value = (gross * 0.10).toFixed(2);
+            }
+        }
+    }
+
+    function syncFormMode() {
+        const empType = empTypeSelect ? empTypeSelect.value : 'STAFF';
+        if (empType === 'STAFF') {
+            // Staff Mode
+            basicInput.setAttribute('readonly', 'readonly');
+            hraInput.setAttribute('readonly', 'readonly');
+            convInput.setAttribute('readonly', 'readonly');
+            washInput.setAttribute('readonly', 'readonly');
+            otherInput.setAttribute('readonly', 'readonly');
+            
+            [basicInput, hraInput, convInput, washInput, otherInput].forEach(el => el.classList.add('bg-light'));
+            calculateStaffComponents();
+        } else {
+            // Worker Mode
+            basicInput.removeAttribute('readonly');
+            hraInput.removeAttribute('readonly');
+            convInput.removeAttribute('readonly');
+            washInput.removeAttribute('readonly');
+            otherInput.removeAttribute('readonly');
+
+            [basicInput, hraInput, convInput, washInput, otherInput].forEach(el => el.classList.remove('bg-light'));
+        }
+    }
+
+    if (empTypeSelect) {
+        empTypeSelect.addEventListener('change', syncFormMode);
+    }
+    
+    if (fixedGrossInput) {
+        fixedGrossInput.addEventListener('input', calculateStaffComponents);
+        fixedGrossInput.addEventListener('change', calculateStaffComponents);
+    }
+
+    if (perDayWageInput) {
+        perDayWageInput.addEventListener('input', function() {
+            const empType = empTypeSelect ? empTypeSelect.value : 'STAFF';
+            if (empType === 'WORKER') {
+                const pd = parseFloat(perDayWageInput.value) || 0.0;
+                if (pd > 0) {
+                    const estGross = (pd * 26.0).toFixed(2);
+                    fixedGrossInput.value = estGross;
+                    basicInput.value = (estGross * 0.50).toFixed(2);
+                    hraInput.value = (estGross * 0.20).toFixed(2);
+                    convInput.value = (estGross * 0.10).toFixed(2);
+                    washInput.value = (estGross * 0.10).toFixed(2);
+                    otherInput.value = (estGross * 0.10).toFixed(2);
+                }
+            }
+        });
+    }
+
+    // Initial setup
+    syncFormMode();
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Calculation Audit Trace — {{ trace.employee_name or emp.Employee_Name or emp.Emp_No }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- TOP TOOLBAR & BACK BUTTON -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}"><i class="fa-solid fa-house me-1"></i>Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('payroll.dynamic_payroll', year=year, month=month, standard_days=standard_days) }}">Monthly Payroll</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Calculation Audit Trace</li>
+                </ol>
+            </nav>
+            <h2 class="h4 fw-bold mb-0 text-dark">
+                <i class="fa-solid fa-calculator text-primary me-2"></i>Calculation Audit Trace Report
+            </h2>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('payroll.dynamic_payroll', year=year, month=month, standard_days=standard_days) }}" class="btn btn-outline-secondary fw-semibold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Back to Monthly Payroll
+            </a>
+            <button onclick="window.print()" class="btn btn-primary fw-semibold">
+                <i class="fa-solid fa-print me-1"></i> Print Trace Report
+            </button>
+        </div>
+    </div>
+
+    <!-- EMPLOYEE & PERIOD SUMMARY HEADER CARD -->
+    <div class="card shadow-sm border-0 mb-4 text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 12px;">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+                <div class="col-12 col-lg-7">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar-box bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-3" style="width: 56px; height: 56px;">
+                            {{ (trace.employee_name or emp.Employee_Name or 'E')[0] }}
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <h3 class="h4 fw-bold mb-0 text-white">{{ trace.employee_name or emp.Employee_Name or 'Employee' }}</h3>
+                                <span class="badge bg-primary text-white px-2 py-1 fs-6">ID: {{ trace.employee_id or emp.Emp_No }}</span>
+                                <span class="badge bg-info text-dark px-2 py-1 fs-6">{{ trace.category or emp.Category }}</span>
+                            </div>
+                            <div class="text-light opacity-75 small mt-1">
+                                <span><i class="fa-solid fa-building me-1"></i>{{ emp.Department or 'Department N/A' }}</span>
+                                <span class="mx-2">•</span>
+                                <span><i class="fa-solid fa-briefcase me-1"></i>{{ emp.Designation or 'Staff / Worker' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-5 text-lg-end">
+                    <div class="d-inline-flex flex-wrap gap-2 justify-content-lg-end">
+                        <div class="bg-white bg-opacity-10 rounded px-3 py-2 text-start text-lg-end">
+                            <span class="d-block text-white opacity-75 small fw-semibold">PAYROLL PERIOD</span>
+                            <span class="fw-bold text-warning fs-6">{{ month }}/{{ year }}</span>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded px-3 py-2 text-start text-lg-end">
+                            <span class="d-block text-white opacity-75 small fw-semibold">STANDARD DAYS</span>
+                            <span class="fw-bold text-info fs-6">{{ "%.1f"|format(standard_days) }} Days</span>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded px-3 py-2 text-start text-lg-end">
+                            <span class="d-block text-white opacity-75 small fw-semibold">WORKED DAYS</span>
+                            <span class="fw-bold text-success fs-6">{{ "%.1f"|format(trace.attendance.total_worked_days or 0.0) }} Days</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- METRIC KPI SUMMARY CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100">
+                <div class="card-body py-3">
+                    <span class="text-muted small fw-semibold text-uppercase">Fixed Monthly Gross</span>
+                    <h3 class="h4 fw-bold text-primary mb-0 mt-1">₹{{ "{:,.2f}".format(trace.earnings.base_gross or 0.0) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-success h-100">
+                <div class="card-body py-3">
+                    <span class="text-muted small fw-semibold text-uppercase">Earned Gross Salary</span>
+                    <h3 class="h4 fw-bold text-success mb-0 mt-1">₹{{ "{:,.2f}".format(trace.earnings.gross_wages or 0.0) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-danger h-100">
+                <div class="card-body py-3">
+                    <span class="text-muted small fw-semibold text-uppercase">Total Deductions</span>
+                    <h3 class="h4 fw-bold text-danger mb-0 mt-1">₹{{ "{:,.2f}".format(trace.deductions.total_deduction or 0.0) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-dark h-100">
+                <div class="card-body py-3">
+                    <span class="text-muted small fw-semibold text-uppercase">Net Payable Salary</span>
+                    <h3 class="h4 fw-bold text-dark mb-0 mt-1">₹{{ "{:,.2f}".format(trace.final.net_salary or 0.0) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN STEP-BY-STEP FORMULA TRACE TABLE -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+            <h5 class="h6 fw-bold mb-0 text-dark">
+                <i class="fa-solid fa-list-check text-primary me-2"></i>Step-by-Step Calculation Engine Trace
+            </h5>
+            <span class="badge bg-secondary">Exact Engine Execution Steps</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 50px;" class="text-center">Step</th>
+                        <th style="min-width: 180px;">Calculation Step</th>
+                        <th style="min-width: 280px;">Formula Applied</th>
+                        <th style="min-width: 320px;">Input Values & Operation</th>
+                        <th style="min-width: 140px;" class="text-end">Result Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for step in trace.formula_trace %}
+                    <tr>
+                        <td class="text-center text-muted fw-bold">{{ loop.index }}</td>
+                        <td class="fw-semibold text-dark">{{ step.field }}</td>
+                        <td>
+                            <code class="text-primary bg-light px-2 py-1 rounded small fw-bold">{{ step.formula_used }}</code>
+                        </td>
+                        <td class="small text-secondary">{{ step.input_values }}</td>
+                        <td class="text-end fw-bold fs-6 {% if 'Deduction' in step.field or 'PF' in step.field or 'ESI' in step.field %}text-danger{% elif 'Gross' in step.field or 'Net' in step.field %}text-success{% else %}text-dark{% endif %}">
+                            {% if step.calculated_result is number %}
+                                {% if 'Days' in step.field %}
+                                    {{ "%.1f"|format(step.calculated_result) }} Days
+                                {% else %}
+                                    ₹{{ "{:,.2f}".format(step.calculated_result) }}
+                                {% endif %}
+                            {% else %}
+                                {{ step.calculated_result }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No step trace recorded.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- EARNINGS & DEDUCTIONS BREAKDOWN DETAILS -->
+    <div class="row g-4 mb-4">
+        
+        <!-- EARNINGS BREAKDOWN CARD -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="h6 fw-bold mb-0 text-success">
+                        <i class="fa-solid fa-money-bill-trend-up me-2"></i>Fixed Master Salary vs Monthly Earned Breakdown
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Salary Component</th>
+                                <th class="text-end">Fixed Component</th>
+                                <th class="text-end">Earned Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Basic + DA</td>
+                                <td class="text-end">₹{{ "{:,.2f}".format(trace.earnings.fixed_basic_da or 0.0) }}</td>
+                                <td class="text-end fw-semibold text-dark">₹{{ "{:,.2f}".format(trace.earnings.earned_basic_da or 0.0) }}</td>
+                            </tr>
+                            <tr>
+                                <td>House Rent Allowance (HRA)</td>
+                                <td class="text-end">₹{{ "{:,.2f}".format(trace.earnings.fixed_hra or 0.0) }}</td>
+                                <td class="text-end fw-semibold text-dark">₹{{ "{:,.2f}".format(trace.earnings.earned_hra or 0.0) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Conveyance Allowance</td>
+                                <td class="text-end">₹{{ "{:,.2f}".format(trace.earnings.fixed_conveyance or 0.0) }}</td>
+                                <td class="text-end fw-semibold text-dark">₹{{ "{:,.2f}".format(trace.earnings.earned_conveyance or 0.0) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Washing Allowance</td>
+                                <td class="text-end">₹{{ "{:,.2f}".format(trace.earnings.fixed_washing or 0.0) }}</td>
+                                <td class="text-end fw-semibold text-dark">₹{{ "{:,.2f}".format(trace.earnings.earned_washing or 0.0) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Other Allowance</td>
+                                <td class="text-end">₹{{ "{:,.2f}".format(trace.earnings.fixed_other or 0.0) }}</td>
+                                <td class="text-end fw-semibold text-dark">₹{{ "{:,.2f}".format(trace.earnings.earned_other or 0.0) }}</td>
+                            </tr>
+                            {% if trace.earnings.ot_wages and trace.earnings.ot_wages > 0 %}
+                            <tr>
+                                <td>Overtime Wages</td>
+                                <td class="text-end">-</td>
+                                <td class="text-end fw-semibold text-dark">₹{{ "{:,.2f}".format(trace.earnings.ot_wages or 0.0) }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr class="table-success fw-bold">
+                                <td>TOTAL GROSS SALARY</td>
+                                <td class="text-end">₹{{ "{:,.2f}".format(trace.earnings.base_gross or 0.0) }}</td>
+                                <td class="text-end text-success fs-6">₹{{ "{:,.2f}".format(trace.earnings.gross_wages or 0.0) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEDUCTIONS BREAKDOWN CARD -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="h6 fw-bold mb-0 text-danger">
+                        <i class="fa-solid fa-hand-holding-dollar me-2"></i>Statutory & Variable Deductions Breakdown
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Deduction Item</th>
+                                <th class="text-center">Statutory Base</th>
+                                <th class="text-end">Deduction Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Provident Fund (PF)</td>
+                                <td class="text-center small text-muted">₹{{ "{:,.2f}".format(trace.deductions.pf_base or 0.0) }}</td>
+                                <td class="text-end fw-semibold text-danger">₹{{ "{:,.2f}".format(trace.deductions.pf_deduction or 0.0) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Employee State Insurance (ESI)</td>
+                                <td class="text-center small text-muted">₹{{ "{:,.2f}".format(trace.deductions.esi_base or 0.0) }}</td>
+                                <td class="text-end fw-semibold text-danger">₹{{ "{:,.2f}".format(trace.deductions.esi_deduction or 0.0) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Advance / Loan Recovery</td>
+                                <td class="text-center small text-muted">-</td>
+                                <td class="text-end fw-semibold text-dark">₹{{ "{:,.2f}".format(trace.deductions.advance or 0.0) }}</td>
+                            </tr>
+                            <tr>
+                                <td>LIC Premium</td>
+                                <td class="text-center small text-muted">-</td>
+                                <td class="text-end fw-semibold text-dark">₹{{ "{:,.2f}".format(trace.deductions.lic or 0.0) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Other Deductions</td>
+                                <td class="text-center small text-muted">-</td>
+                                <td class="text-end fw-semibold text-dark">₹{{ "{:,.2f}".format(trace.deductions.other_deduction or 0.0) }}</td>
+                            </tr>
+                            <tr class="table-danger fw-bold">
+                                <td colspan="2">TOTAL DEDUCTIONS</td>
+                                <td class="text-end text-danger fs-6">₹{{ "{:,.2f}".format(trace.deductions.total_deduction or 0.0) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RAW JSON COLLAPSIBLE FOR ADMIN DEBUGGING -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-light py-2 px-3 d-flex align-items-center justify-content-between">
+            <button class="btn btn-sm btn-link text-decoration-none text-muted p-0 fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#rawJsonCollapse">
+                <i class="fa-solid fa-code me-1"></i> Developer Raw Engine Trace Payload (JSON)
+            </button>
+            <a href="{{ request.url }}&format=json" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2 small">
+                <i class="fa-solid fa-external-link me-1"></i> Open Raw JSON
+            </a>
+        </div>
+        <div class="collapse" id="rawJsonCollapse">
+            <div class="card-body bg-dark text-white font-monospace p-3 small">
+                <pre class="mb-0 text-success" style="max-height: 350px; overflow-y: auto;">{{ trace|tojson(indent=2) }}</pre>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

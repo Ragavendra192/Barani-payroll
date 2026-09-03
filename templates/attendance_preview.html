@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+  <title>Attendance Preview</title>
+  <link href="https://cdn.jsdelivr.net/npmbootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark mb-3">
+  <div class="container-fluid">
+    <span class="navbar-brand fw-bold">Attendance Preview</span>
+    <a href="{{ url_for('main.master') }}" class="btn btn-sm btn-outline-light">Master</a>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <h4>Attendance Preview</h4>
+
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Emp No</th>
+        <th>Date</th>
+        <th>Hours</th>
+        <th>Present</th>
+        <th>OT Hours</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in records.itertuples() %}
+      <tr>
+        <td>{{ r.Emp_No }}</td>
+        <td>{{ r.Work_Date }}</td>
+        <td>{{ r.Working_Hours }}</td>
+        <td>{{ r.Present }}</td>
+        <td>{{ r.OT_Hours }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

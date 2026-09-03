@@ -1,0 +1,9 @@
+# Pinned project dependencies — install with:
+#    pip install -r requirements.txt
+
+Flask==3.1.2
+pandas==2.3.3
+pyodbc==5.3.0
+xlsxwriter==3.2.9
+openpyxl==3.1.5
+Flask-SQLAlchemy==3.1.1

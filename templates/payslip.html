@@ -1,0 +1,634 @@
+{% extends "base.html" %}
+
+{% block title %}Payslips Portal | BHIPL Payroll System{% endblock %}
+
+{% block content %}
+<div class="card-custom mb-4">
+    <div class="card-header-custom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h4 class="card-title-custom mb-0"><i class="fa-solid fa-file-invoice-dollar text-success me-2"></i>PAYSLIPS PORTAL</h4>
+            <small class="text-secondary">View A4 salary slips, download PDF payslips, and send WhatsApp messages</small>
+        </div>
+        
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-success fw-bold shadow-sm" onclick="openBulkWhatsAppModal()">
+                <i class="fa-brands fa-whatsapp me-1"></i> SEND ALL PAYSLIPS TO WHATSAPP
+            </button>
+
+            <a href="{{ url_for('payslips.download_zip', year=year, month=month, category=category) }}" class="btn btn-outline-success btn-sm fw-bold">
+                <i class="fa-solid fa-file-zipper me-1"></i> Download Zip
+            </a>
+
+            <a href="{{ url_for('payslips.download_send_report', year=year, month=month, category=category) }}" class="btn btn-outline-primary btn-sm fw-bold">
+                <i class="fa-solid fa-file-csv me-1"></i> Send Report (.CSV)
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card-body bg-light border-bottom">
+        <form method="GET" action="{{ url_for('main.payslip') }}" class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold mb-1">Search Employee</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Employee ID or Name..." value="{{ search or '' }}">
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Year</label>
+                <select name="year" class="form-select form-select-sm fw-bold" onchange="this.form.submit();">
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Payroll Month</label>
+                <select name="month" class="form-select form-select-sm fw-bold" onchange="this.form.submit();">
+                    {% for m_num, m_name in months %}
+                    <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small fw-bold mb-1">Category Filter</label>
+                <select name="category" class="form-select form-select-sm fw-bold" onchange="this.form.submit();">
+                    <option value="">All Categories</option>
+                    {% for c_code, c_label in categories %}
+                    <option value="{{ c_code }}" {% if category == c_code %}selected{% endif %}>{{ c_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end mt-3 mt-md-0">
+                <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold"><i class="fa-solid fa-filter me-1"></i> Filter</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- WhatsApp Log Status Bar -->
+    <div class="card-body bg-white border-bottom py-2">
+        <div class="row g-2 align-items-center small fw-bold">
+            <div class="col-auto">
+                <span class="text-muted"><i class="fa-solid fa-clock-rotate-left me-1"></i>WhatsApp Log Status:</span>
+            </div>
+            <div class="col-auto">
+                <span class="badge bg-success-subtle text-success border border-success px-3 py-1">
+                    <i class="fa-solid fa-circle-check me-1"></i>Sent: {{ sent_count or 0 }}
+                </span>
+            </div>
+            <div class="col-auto">
+                <span class="badge bg-danger-subtle text-danger border border-danger px-3 py-1">
+                    <i class="fa-solid fa-circle-xmark me-1"></i>Failed: {{ failed_count or 0 }}
+                </span>
+            </div>
+            <div class="col-auto">
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3 py-1">
+                    <i class="fa-solid fa-forward me-1"></i>Skipped: {{ skipped_count or 0 }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payslip Table -->
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-nowrap">
+                <thead class="table-dark small text-uppercase">
+                    <tr>
+                        <th class="ps-3">S.No</th>
+                        <th>Emp ID</th>
+                        <th>Employee Name</th>
+                        <th>Category</th>
+                        <th class="text-end">Net Salary</th>
+                        <th>WhatsApp Number</th>
+                        <th>Email</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if records %}
+                        {% for r in records %}
+                        <tr>
+                            <td class="ps-3 text-muted small">{{ loop.index }}</td>
+                            <td class="fw-bold text-primary">#{{ r.Emp_No }}</td>
+                            <td class="fw-bold">{{ r.Employee_Name or r.Name }}</td>
+                            <td>
+                                {% if 'STAFF' in r.Category %}
+                                <span class="badge bg-primary px-2 py-1">STAFF</span>
+                                {% else %}
+                                <span class="badge bg-success px-2 py-1">WORKER</span>
+                                {% endif %}
+                                <small class="text-muted ms-1">{{ r.Category }}</small>
+                            </td>
+                            <td class="text-end fw-bold text-success font-monospace fs-6">
+                                ₹{{ "{:,.2f}".format(r.Net_Salary or r.Net_Pay or 0.0) }}
+                            </td>
+                            <td><span class="small font-monospace text-muted">{{ r.Phone_Number_Masked or '-' }}</span></td>
+                            <td><span class="small text-muted">{{ r.Email_ID or '-' }}</span></td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success border border-success px-2">GENERATED</span>
+                            </td>
+                            <td class="text-center pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary fw-bold" 
+                                            onclick="openPayslipViewModal('{{ year }}', '{{ month }}', '{{ r.Emp_No }}', '{{ r.Category }}')">
+                                        <i class="fa-solid fa-eye me-1"></i> VIEW
+                                    </button>
+
+                                    <a href="{{ url_for('payslips.download_payslip', year=year, month=month, emp_no=r.Emp_No, category=r.Category) }}" 
+                                       class="btn btn-outline-success fw-bold">
+                                        <i class="fa-solid fa-download me-1"></i> DOWNLOAD
+                                    </a>
+
+                                    <button type="button" class="btn btn-outline-success fw-bold" 
+                                            onclick="openWhatsAppModal('{{ year }}', '{{ month }}', '{{ r.Emp_No }}', '{{ r.Employee_Name or r.Name }}', '{{ r.Phone_Number_Masked or '' }}', '{{ r.Category }}')">
+                                        <i class="fa-brands fa-whatsapp me-1"></i> WHATSAPP
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-folder-open fa-2xl mb-3 text-secondary d-block"></i>
+                                No payslips found for {{ month }}/{{ year }}. Process and save wages first.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- A4 PAYSLIP PREVIEW MODAL -->
+<div class="modal fade" id="payslipViewModal" tabindex="-1" aria-labelledby="payslipViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="payslipViewModalLabel"><i class="fa-solid fa-file-invoice-dollar text-primary me-2"></i>A4 Payslip Preview</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="payslipViewModalBody" style="min-height: 500px;">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted fw-bold">Loading A4 Payslip Preview...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <a id="modalDownloadBtn" href="#" class="btn btn-success fw-bold"><i class="fa-solid fa-download me-1"></i> DOWNLOAD PDF</a>
+                <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- INDIVIDUAL WHATSAPP SEND CONFIRMATION MODAL -->
+<div class="modal fade" id="whatsappModal" tabindex="-1" aria-labelledby="whatsappModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold" id="whatsappModalLabel"><i class="fa-brands fa-whatsapp me-2"></i>Send Payslip via WhatsApp</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-3">
+                    <i class="fa-solid fa-paper-plane fa-3x text-success mb-2"></i>
+                    <p class="mb-0 text-muted">You are about to send the official A4 PDF payslip to:</p>
+                </div>
+                <div class="bg-light p-3 rounded border mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Employee:</span>
+                        <strong id="waModalEmpName" class="text-dark">Ravi Kumar</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">WhatsApp Number:</span>
+                        <strong id="waModalPhone" class="text-success font-monospace">XXXXXX3210</strong>
+                    </div>
+                </div>
+                <div id="waStatusAlert" class="alert d-none"></div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary fw-semibold px-4" data-bs-dismiss="modal">CANCEL</button>
+                <button type="button" id="waSendSubmitBtn" onclick="confirmSendWhatsApp()" class="btn btn-success fw-bold px-4">
+                    <i class="fa-brands fa-whatsapp me-1"></i> SEND PAYSLIP
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 1. BULK WHATSAPP CONFIRMATION PRE-FLIGHT MODAL -->
+<div class="modal fade" id="bulkWhatsAppConfirmModal" tabindex="-1" aria-labelledby="bulkWhatsAppConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold" id="bulkWhatsAppConfirmModalLabel">
+                    <i class="fa-brands fa-whatsapp me-2"></i>BULK WHATSAPP PAYSLIP SENDING
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4">
+                    <i class="fa-solid fa-circle-info fa-2xl text-info me-3"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1">Pre-flight Batch Verification</h6>
+                        <small>Review metrics for selected period before starting WhatsApp batch delivery.</small>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-4">
+                        <div class="p-3 bg-light rounded border text-center">
+                            <span class="text-muted small fw-bold d-block">Payroll Period</span>
+                            <h5 id="bulkSumMonthLabel" class="fw-bold text-dark mb-0">{{ month }}/{{ year }}</h5>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="p-3 bg-light rounded border text-center">
+                            <span class="text-muted small fw-bold d-block">Total Employees</span>
+                            <h5 id="bulkSumTotal" class="fw-bold text-primary mb-0">0</h5>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="p-3 bg-light rounded border text-center">
+                            <span class="text-muted small fw-bold d-block">Valid WhatsApp</span>
+                            <h5 id="bulkSumValid" class="fw-bold text-success mb-0">0</h5>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="p-3 bg-light rounded border text-center">
+                            <span class="text-muted small fw-bold d-block">Missing Numbers</span>
+                            <h5 id="bulkSumMissing" class="fw-bold text-danger mb-0">0</h5>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="p-3 bg-light rounded border text-center">
+                            <span class="text-muted small fw-bold d-block">Invalid Format</span>
+                            <h5 id="bulkSumInvalid" class="fw-bold text-warning text-dark mb-0">0</h5>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="p-3 bg-light rounded border text-center">
+                            <span class="text-muted small fw-bold d-block">Already Sent</span>
+                            <h5 id="bulkSumAlready" class="fw-bold text-secondary mb-0">0</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded mb-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-uppercase small text-muted fw-bold d-block">Target Recipients (Will Send)</span>
+                        <h3 id="bulkSumWill" class="fw-extrabold text-success mb-0">0 Employees</h3>
+                    </div>
+                    <div class="form-check form-switch me-2">
+                        <input class="form-check-input" type="checkbox" id="resendCheckbox" onchange="toggleResendMode()">
+                        <label class="form-check-label fw-bold small text-dark" for="resendCheckbox">RESEND ALREADY SENT</label>
+                    </div>
+                </div>
+
+                <p class="small text-muted mb-0">
+                    <i class="fa-solid fa-shield-check me-1 text-success"></i> Each employee will receive their official BHIPL A4 PDF payslip via WhatsApp. Skipped and missing numbers will be safely logged without stopping the batch.
+                </p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4" data-bs-dismiss="modal">CANCEL</button>
+                <button type="button" id="startBulkSendBtn" onclick="startBulkWhatsAppSend()" class="btn btn-success fw-bold px-4 shadow">
+                    <i class="fa-brands fa-whatsapp me-1"></i> CONFIRM & SEND BULK PAYSLIPS
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. BULK WHATSAPP LIVE PROGRESS MODAL -->
+<div class="modal fade" id="bulkWhatsAppProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="bulkWhatsAppProgressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="bulkWhatsAppProgressModalLabel">
+                    <i class="fa-solid fa-paper-plane me-2 text-success"></i>LIVE BATCH PAYSLIP DISPATCH
+                </h5>
+                <button type="button" id="closeProgressModalBtn" class="btn-close btn-close-white d-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span id="progressTextLabel" class="fw-bold small text-dark">Processing Batch...</span>
+                        <span id="progressPercentLabel" class="fw-bold text-success font-monospace">0%</span>
+                    </div>
+                    <div class="progress" style="height: 18px;">
+                        <div id="bulkProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+
+                <!-- LIVE METRICS BAR -->
+                <div class="row g-2 mb-3 text-center small fw-bold">
+                    <div class="col"><div class="p-2 bg-light rounded border">Sent: <span id="liveSentCount" class="text-primary">0</span></div></div>
+                    <div class="col"><div class="p-2 bg-success bg-opacity-10 text-success rounded border border-success">Success: <span id="liveSuccessCount">0</span></div></div>
+                    <div class="col"><div class="p-2 bg-danger bg-opacity-10 text-danger rounded border border-danger">Failed: <span id="liveFailedCount">0</span></div></div>
+                    <div class="col"><div class="p-2 bg-secondary bg-opacity-10 text-secondary rounded border">Skipped: <span id="liveSkippedCount">0</span></div></div>
+                </div>
+
+                <!-- CURRENT TARGET CARD -->
+                <div id="currentTargetCard" class="p-3 bg-light rounded border mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="small text-muted d-block fw-bold">CURRENT TARGET:</span>
+                            <strong id="currEmpName" class="text-dark fs-6">Preparing batch...</strong>
+                        </div>
+                        <div class="text-end">
+                            <span id="currEmpPhone" class="font-monospace text-muted small d-block">-</span>
+                            <span id="currEmpStatus" class="badge bg-warning text-dark">PENDING</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIVE ITEM BATCH TABLE -->
+                <div class="table-responsive border rounded" style="max-height: 220px; overflow-y: auto;">
+                    <table class="table table-sm table-hover align-middle mb-0 small">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>#</th>
+                                <th>Emp ID</th>
+                                <th>Employee Name</th>
+                                <th>Category</th>
+                                <th>Masked Phone</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bulkProgressTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <a id="downloadReportBtn" href="{{ url_for('payslips.download_send_report', year=year, month=month, category=category) }}" class="btn btn-outline-primary fw-bold d-none">
+                    <i class="fa-solid fa-file-csv me-1"></i> DOWNLOAD SEND REPORT (.CSV)
+                </a>
+                <button type="button" id="stopBulkSendBtn" onclick="stopBulkWhatsAppSend()" class="btn btn-danger fw-bold px-4">
+                    <i class="fa-solid fa-hand me-1"></i> STOP SENDING
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentWaTarget = { year: {{ year }}, month: {{ month }}, empNo: '', category: '' };
+let bulkSummaryData = null;
+let isBulkStopped = false;
+
+function openPayslipViewModal(year, month, empNo, category) {
+    const modal = new bootstrap.Modal(document.getElementById('payslipViewModal'));
+    const body = document.getElementById('payslipViewModalBody');
+    const downloadBtn = document.getElementById('modalDownloadBtn');
+    
+    downloadBtn.href = `/payslips/download/${year}/${month}/${empNo}?category=${category}`;
+    body.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted fw-bold">Loading A4 Payslip Preview...</p>
+        </div>
+    `;
+    modal.show();
+
+    fetch(`/payslips/view/${year}/${month}/${empNo}?category=${category}`)
+        .then(res => res.text())
+        .then(html => {
+            body.innerHTML = `<iframe srcdoc="${html.replace(/"/g, '&quot;')}" style="width:100%; height:650px; border:none;"></iframe>`;
+        })
+        .catch(err => {
+            body.innerHTML = `<div class="alert alert-danger m-3">Error loading preview: ${err}</div>`;
+        });
+}
+
+function openWhatsAppModal(year, month, empNo, empName, phoneMasked, category) {
+    currentWaTarget = { year, month, empNo, category };
+    document.getElementById('waModalEmpName').textContent = empName;
+    document.getElementById('waModalPhone').textContent = phoneMasked || 'XXXXXX3210';
+    
+    const alertBox = document.getElementById('waStatusAlert');
+    alertBox.className = 'alert d-none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('whatsappModal'));
+    modal.show();
+}
+
+function confirmSendWhatsApp() {
+    const submitBtn = document.getElementById('waSendSubmitBtn');
+    const alertBox = document.getElementById('waStatusAlert');
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
+
+    fetch(`/payslips/send_whatsapp/${currentWaTarget.year}/${currentWaTarget.month}/${currentWaTarget.empNo}?category=${currentWaTarget.category}`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-brands fa-whatsapp me-1"></i> SEND PAYSLIP';
+
+        alertBox.className = data.success ? 'alert alert-success' : 'alert alert-danger';
+        alertBox.textContent = data.message;
+        alertBox.classList.remove('d-none');
+    })
+    .catch(err => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-brands fa-whatsapp me-1"></i> SEND PAYSLIP';
+        
+        alertBox.className = 'alert alert-danger';
+        alertBox.textContent = 'Error connecting to WhatsApp service: ' + err;
+        alertBox.classList.remove('d-none');
+    });
+}
+
+// ============================================================
+// BULK WHATSAPP PAYSLIP DISPATCH ENGINE
+// ============================================================
+function openBulkWhatsAppModal() {
+    const resend = document.getElementById('resendCheckbox') ? document.getElementById('resendCheckbox').checked : false;
+    const year = {{ year }};
+    const month = {{ month }};
+    const category = "{{ category or '' }}";
+    const search = "{{ search or '' }}";
+
+    fetch(`/payslips/api/bulk_summary?year=${year}&month=${month}&category=${category}&search=${search}&resend=${resend}`)
+        .then(res => res.json())
+        .then(data => {
+            bulkSummaryData = data;
+            document.getElementById('bulkSumMonthLabel').textContent = data.payroll_month_label;
+            document.getElementById('bulkSumTotal').textContent = data.total_employees;
+            document.getElementById('bulkSumValid').textContent = data.valid_whatsapp_count;
+            document.getElementById('bulkSumMissing').textContent = data.missing_number_count;
+            document.getElementById('bulkSumInvalid').textContent = data.invalid_number_count;
+            document.getElementById('bulkSumAlready').textContent = data.already_sent_count;
+            document.getElementById('bulkSumWill').textContent = data.will_send_count + " Employees";
+
+            const modal = new bootstrap.Modal(document.getElementById('bulkWhatsAppConfirmModal'));
+            modal.show();
+        })
+        .catch(err => {
+            alert('Failed to load bulk summary: ' + err);
+        });
+}
+
+function toggleResendMode() {
+    openBulkWhatsAppModal();
+}
+
+async function startBulkWhatsAppSend() {
+    if (!bulkSummaryData || !bulkSummaryData.employee_list) return;
+
+    const confirmModalEl = document.getElementById('bulkWhatsAppConfirmModal');
+    const confirmModal = bootstrap.Modal.getInstance(confirmModalEl);
+    if (confirmModal) confirmModal.hide();
+
+    const progressModal = new bootstrap.Modal(document.getElementById('bulkWhatsAppProgressModal'));
+    progressModal.show();
+
+    isBulkStopped = false;
+    document.getElementById('stopBulkSendBtn').disabled = false;
+    document.getElementById('stopBulkSendBtn').classList.remove('d-none');
+    document.getElementById('downloadReportBtn').classList.add('d-none');
+    document.getElementById('closeProgressModalBtn').classList.add('d-none');
+
+    const resend = document.getElementById('resendCheckbox').checked;
+    const empList = bulkSummaryData.employee_list;
+    const total = empList.length;
+
+    let successCount = 0;
+    let failedCount = 0;
+    let skippedCount = 0;
+
+    const tbody = document.getElementById('bulkProgressTableBody');
+    tbody.innerHTML = '';
+
+    empList.forEach((emp, index) => {
+        const tr = document.createElement('tr');
+        tr.id = `bulk-row-${index}`;
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td class="fw-bold">#${emp.emp_no}</td>
+            <td class="fw-bold">${emp.emp_name}</td>
+            <td><small class="text-muted">${emp.category || '-'}</small></td>
+            <td class="font-monospace">${emp.phone_masked}</td>
+            <td class="text-center" id="bulk-status-${index}">
+                <span class="badge bg-secondary">PENDING</span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    for (let i = 0; i < total; i++) {
+        if (isBulkStopped) {
+            document.getElementById('progressTextLabel').textContent = 'BATCH STOPPED BY USER';
+            break;
+        }
+
+        const emp = empList[i];
+        const percent = Math.round(((i + 1) / total) * 100);
+        
+        document.getElementById('bulkProgressBar').style.width = percent + '%';
+        document.getElementById('bulkProgressBar').textContent = percent + '%';
+        document.getElementById('progressPercentLabel').textContent = percent + '%';
+        document.getElementById('progressTextLabel').textContent = `Processing ${i + 1} of ${total}...`;
+
+        document.getElementById('currEmpName').textContent = `#${emp.emp_no} - ${emp.emp_name}`;
+        document.getElementById('currEmpPhone').textContent = emp.phone_masked;
+        document.getElementById('currEmpStatus').className = 'badge bg-warning text-dark';
+        document.getElementById('currEmpStatus').textContent = 'SENDING...';
+
+        const rowStatusTd = document.getElementById(`bulk-status-${i}`);
+        rowStatusTd.innerHTML = '<span class="badge bg-warning text-dark"><span class="spinner-border spinner-border-sm me-1"></span>SENDING</span>';
+
+        // Auto-scroll to row
+        document.getElementById(`bulk-row-${i}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        if (emp.status === 'MISSING_NUMBER' || emp.status === 'INVALID_NUMBER') {
+            skippedCount++;
+            rowStatusTd.innerHTML = '<span class="badge bg-secondary">SKIPPED</span>';
+            document.getElementById('currEmpStatus').className = 'badge bg-secondary';
+            document.getElementById('currEmpStatus').textContent = 'SKIPPED';
+        } else if (emp.status === 'ALREADY_SENT' && !resend) {
+            skippedCount++;
+            rowStatusTd.innerHTML = '<span class="badge bg-info text-dark">ALREADY SENT</span>';
+            document.getElementById('currEmpStatus').className = 'badge bg-info text-dark';
+            document.getElementById('currEmpStatus').textContent = 'ALREADY SENT';
+        } else {
+            try {
+                const response = await fetch('/payslips/api/bulk_send_single', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        year: bulkSummaryData.year,
+                        month: bulkSummaryData.month,
+                        emp_no: emp.emp_no,
+                        category: emp.category,
+                        resend: resend
+                    })
+                });
+
+                const resData = await response.json();
+                if (resData.status === 'SENT') {
+                    successCount++;
+                    rowStatusTd.innerHTML = '<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>SENT</span>';
+                    document.getElementById('currEmpStatus').className = 'badge bg-success';
+                    document.getElementById('currEmpStatus').textContent = 'SENT';
+                } else if (resData.status === 'SKIPPED') {
+                    skippedCount++;
+                    rowStatusTd.innerHTML = `<span class="badge bg-secondary" title="${resData.message}">SKIPPED</span>`;
+                    document.getElementById('currEmpStatus').className = 'badge bg-secondary';
+                    document.getElementById('currEmpStatus').textContent = 'SKIPPED';
+                } else {
+                    failedCount++;
+                    rowStatusTd.innerHTML = `<span class="badge bg-danger" title="${resData.message}"><i class="fa-solid fa-xmark me-1"></i>FAILED</span>`;
+                    document.getElementById('currEmpStatus').className = 'badge bg-danger';
+                    document.getElementById('currEmpStatus').textContent = 'FAILED';
+                }
+            } catch (err) {
+                failedCount++;
+                rowStatusTd.innerHTML = '<span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i>FAILED</span>';
+                document.getElementById('currEmpStatus').className = 'badge bg-danger';
+                document.getElementById('currEmpStatus').textContent = 'FAILED';
+            }
+        }
+
+        document.getElementById('liveSentCount').textContent = i + 1;
+        document.getElementById('liveSuccessCount').textContent = successCount;
+        document.getElementById('liveFailedCount').textContent = failedCount;
+        document.getElementById('liveSkippedCount').textContent = skippedCount;
+    }
+
+    document.getElementById('stopBulkSendBtn').classList.add('d-none');
+    document.getElementById('downloadReportBtn').classList.remove('d-none');
+    document.getElementById('closeProgressModalBtn').classList.remove('d-none');
+
+    if (!isBulkStopped) {
+        document.getElementById('progressTextLabel').textContent = 'BATCH PAYSLIP SEND COMPLETE';
+        document.getElementById('currEmpName').textContent = 'All operations completed!';
+        document.getElementById('currEmpStatus').className = 'badge bg-success';
+        document.getElementById('currEmpStatus').textContent = 'FINISHED';
+    }
+}
+
+function stopBulkWhatsAppSend() {
+    isBulkStopped = true;
+    document.getElementById('stopBulkSendBtn').disabled = true;
+    document.getElementById('stopBulkSendBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Stopping...';
+}
+</script>
+{% endblock %}

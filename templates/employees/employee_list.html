@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Master | BHIPL Payroll{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="card-header-custom">
+        <div>
+            <h4 class="card-title-custom mb-1"><i class="fa-solid fa-users text-primary me-2"></i>Employee Master Directory</h4>
+            <span class="text-secondary small">Central directory of BHIPL Unit-I staff, workers, and NAPS apprentices</span>
+        </div>
+        <a href="{{ url_for('employees.add') }}" class="btn btn-primary fw-bold">
+            <i class="fa-solid fa-user-plus me-1"></i> Add New Employee
+        </a>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('employees.list_employees') }}" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Category</label>
+                <select name="category" class="form-select">
+                    <option value="">All 6 Categories</option>
+                    {% for cat_key, cat_label in categories %}
+                    <option value="{{ cat_key }}" {% if selected_category == cat_key %}selected{% endif %}>{{ cat_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Type</label>
+                <select name="employee_type" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="STAFF" {% if selected_type == 'STAFF' %}selected{% endif %}>Staff</option>
+                    <option value="WORKER" {% if selected_type == 'WORKER' %}selected{% endif %}>Worker</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Coverage</label>
+                <select name="payroll_category" class="form-select">
+                    <option value="">All Coverages</option>
+                    <option value="PF_ESI" {% if selected_pay_cat == 'PF_ESI' %}selected{% endif %}>PF / ESI</option>
+                    <option value="NAPS" {% if selected_pay_cat == 'NAPS' %}selected{% endif %}>NAPS</option>
+                    <option value="NON_PF_ESI" {% if selected_pay_cat == 'NON_PF_ESI' %}selected{% endif %}>Non PF / ESI</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Search</label>
+                <input type="text" name="search" class="form-control" value="{{ search or '' }}" placeholder="Name, Emp No, Dept...">
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <i class="fa-solid fa-filter me-1"></i> Filter
+                </button>
+                <a href="{{ url_for('employees.list_employees') }}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Emp No</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th>Contact</th>
+                    <th class="text-end">Base Rate / Salary</th>
+                    <th class="text-center">Coverage</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-end text-nowrap">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr>
+                    <td class="fw-bold text-primary">{{ emp.Emp_No }}</td>
+                    <td>
+                        <div class="fw-bold text-dark">{{ emp.Employee_Name }}</div>
+                        {% if emp.ERP_Emp_No and emp.ERP_Emp_No != emp.Emp_No %}
+                        <small class="text-secondary">ERP: {{ emp.ERP_Emp_No }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if emp.Employee_Type == 'STAFF' %}
+                        <span class="badge badge-staff">STAFF</span>
+                        {% else %}
+                        <span class="badge badge-worker">WORKER</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border fw-semibold">{{ emp.Category }}</span>
+                    </td>
+                    <td>{{ emp.Department or '-' }}</td>
+                    <td>{{ emp.Designation or '-' }}</td>
+                    <td>
+                        {% if emp.Phone_Number_Masked %}
+                        <div class="small fw-semibold text-primary"><i class="fa-brands fa-whatsapp text-success me-1"></i>{{ emp.Phone_Number_Masked }}</div>
+                        {% else %}
+                        <div class="small text-muted"><i class="fa-solid fa-phone-slash me-1"></i>No Phone</div>
+                        {% endif %}
+                        {% if emp.Email_ID %}
+                        <div class="small text-muted"><i class="fa-solid fa-envelope me-1"></i>{{ emp.Email_ID }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="text-end fw-bold">
+                        {% if emp.Per_Day_Wage and emp.Per_Day_Wage > 0 %}
+                        ₹{{ "%.2f"|format(emp.Per_Day_Wage) }} / day
+                        {% else %}
+                        ₹{{ "%.2f"|format(emp.Basic_DA or 0.0) }} fixed
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if emp.PF_Eligible %}<span class="badge bg-primary me-1">PF</span>{% endif %}
+                        {% if emp.ESI_Eligible %}<span class="badge bg-info">ESI</span>{% endif %}
+                        {% if not emp.PF_Eligible and not emp.ESI_Eligible %}<span class="badge bg-secondary">None</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if emp.Status == 'Active' %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end text-nowrap">
+                        <div class="d-inline-flex gap-1">
+                            <a href="{{ url_for('employees.edit', employee_id=emp.Employee_ID) }}" class="btn btn-sm btn-outline-primary fw-semibold" title="Edit">
+                                <i class="fa-solid fa-pen me-1"></i>Edit
+                            </a>
+                            <form method="POST" action="{{ url_for('employees.toggle', employee_id=emp.Employee_ID) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm {% if emp.Status == 'Active' %}btn-outline-danger{% else %}btn-outline-success{% endif %} fw-semibold">
+                                    {% if emp.Status == 'Active' %}Deactivate{% else %}Activate{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" class="text-center py-4 text-secondary">
+                        No employees match your search criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

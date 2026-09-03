@@ -1,0 +1,444 @@
+/* ============================================================================
+   BHIPL Payroll Application — Modern Premium UI Design System
+   ============================================================================ */
+
+:root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #dbeafe;
+    
+    --secondary: #64748b;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    
+    --info: #0284c7;
+    --info-light: #e0f2fe;
+    
+    --dark: #0f172a;
+    --light: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --border-hover: #cbd5e1;
+    
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
+    
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f1f5f9;
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================================
+   Navbar Header
+   ============================================================================ */
+.navbar-custom {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 1050 !important;
+}
+
+.brand-logo-icon {
+    font-size: 1.75rem;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    padding: 10px;
+    border-radius: 12px;
+    margin-right: 12px;
+}
+
+.brand-logo-img {
+    height: 52px;
+    width: auto;
+    object-fit: contain;
+    padding: 0;
+    margin-right: 12px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.brand-logo-img:hover {
+    transform: scale(1.06);
+    filter: drop-shadow(0 4px 10px rgba(56, 189, 248, 0.5));
+}
+
+.brand-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    line-height: 1.1;
+}
+
+.brand-subtitle {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #38bdf8;
+    letter-spacing: 1.5px;
+    margin-top: 2px;
+}
+
+.nav-link {
+    color: #94a3b8 !important;
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.9rem !important;
+    border-radius: var(--radius-md);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+
+.nav-link.active {
+    color: #ffffff !important;
+    background-color: var(--primary) !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+.dropdown-menu {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    padding: 8px;
+}
+
+.dropdown-item {
+    font-size: 0.875rem;
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    transition: background-color 0.15s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f1f5f9;
+}
+
+/* ============================================================================
+   Cards & Layout
+   ============================================================================ */
+.card-custom {
+    background-color: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.card-custom:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.card-header-custom {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 1.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title-custom {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--dark);
+    margin: 0;
+}
+
+/* Stat Cards */
+.stat-card {
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.stat-icon-wrapper {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Category Badges */
+.badge-staff {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.badge-worker {
+    background-color: #d1fae5;
+    color: #065f46;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.badge-naps {
+    background-color: #fef3c7;
+    color: #92400e;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+/* ============================================================================
+   Tables
+   ============================================================================ */
+.table-custom {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+}
+
+.table-custom th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.85rem 1rem;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+}
+
+.table-custom td {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.875rem;
+}
+
+.table-custom tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.table-custom tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Actions Column Alignment Fix */
+.actions-cell {
+    white-space: nowrap;
+    width: 1%;
+}
+
+.actions-cell .btn {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    border-radius: var(--radius-sm);
+    border: 1px solid #cbd5e1;
+    font-size: 0.875rem;
+    padding: 0.45rem 0.75rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Attendance Table Input Field Optimization */
+.table-custom input[type=number] {
+    min-width: 65px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+/* Remove number spinner arrows for easy click & typing */
+.table-custom input[type=number]::-webkit-inner-spin-button,
+.table-custom input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.table-custom input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Sticky Left Columns and Headers for Monthly Payroll & Attendance Tables */
+.table-custom thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-custom td.sticky-col-1 {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background-color: #ffffff !important;
+}
+
+.table-custom td.sticky-col-2 {
+    position: sticky;
+    left: 45px;
+    z-index: 5;
+    background-color: #ffffff !important;
+}
+
+.table-custom td.sticky-col-3 {
+    position: sticky;
+    left: 130px;
+    z-index: 5;
+    background-color: #ffffff !important;
+    box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.08);
+}
+
+/* Corner Sticky Header Cells (Top-Left intersection of Headers and Sticky Columns) */
+.table-custom thead th.sticky-col-1 {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 15 !important;
+    background-color: #212529 !important;
+    color: #ffffff !important;
+}
+
+.table-custom thead th.sticky-col-2 {
+    position: sticky;
+    left: 45px;
+    top: 0;
+    z-index: 15 !important;
+    background-color: #212529 !important;
+    color: #ffffff !important;
+}
+
+.table-custom thead th.sticky-col-3 {
+    position: sticky;
+    left: 130px;
+    top: 0;
+    z-index: 15 !important;
+    background-color: #212529 !important;
+    color: #ffffff !important;
+    box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.08);
+}
+
+/* Table Hover Row Background for Sticky Cells */
+.table-custom tbody tr:hover td.sticky-col-1,
+.table-custom tbody tr:hover td.sticky-col-2,
+.table-custom tbody tr:hover td.sticky-col-3 {
+    background-color: #f8fafc !important;
+}
+
+/* Sticky Summary Bar */
+.sticky-summary-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    background-color: #ffffff;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.08);
+    border-top: 2px solid var(--primary);
+}
+
+/* Print Overrides */
+@media print {
+    .no-print, nav, footer, .sticky-summary-bar { display: none !important; }
+    body { background-color: #ffffff; }
+    .card-custom { border: none; box-shadow: none; }
+}
+
+.table-custom thead.table-dark th.sticky-col-1,
+.table-custom thead.table-dark th.sticky-col-2,
+.table-custom thead.table-dark th.sticky-col-3 {
+    background-color: #212529 !important;
+    color: #fff !important;
+}
+
+/* ============================================================================
+   Navigation Grid Cards (Landing Page)
+   ============================================================================ */
+.nav-grid-card {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.nav-grid-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 35px rgba(15, 23, 42, 0.12) !important;
+    border-color: #cbd5e1 !important;
+}
+
+.nav-grid-card .btn i {
+    transition: transform 0.2s ease;
+}
+
+.nav-grid-card:hover .btn i {
+    transform: translateX(5px);
+}
+
+.backdrop-blur {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.fw-extrabold {
+    font-weight: 800;
+}

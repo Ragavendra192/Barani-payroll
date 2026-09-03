@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Payslips Portal | BHIPL Payroll{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="card-header-custom">
+        <div>
+            <h4 class="card-title-custom mb-1"><i class="fa-solid fa-file-invoice-dollar text-primary me-2"></i>Payslips Portal</h4>
+            <span class="text-secondary small">View and download A4-printable monthly payslips and bulk ZIP packages across all 6 categories</span>
+        </div>
+        <a href="{{ url_for('payslips.download_zip', year=year, month=month, category=category) }}" class="btn btn-primary fw-bold">
+            <i class="fa-solid fa-file-zipper me-1"></i> Download All {{ month }}/{{ year }} Payslips (ZIP)
+        </a>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('payslips.index') }}" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Year</label>
+                <input type="number" name="year" class="form-control" value="{{ year }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Month</label>
+                <select name="month" class="form-select">
+                    {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                    {% for m_idx in range(1, 13) %}
+                    <option value="{{ m_idx }}" {% if month == m_idx %}selected{% endif %}>{{ months[m_idx - 1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Category</label>
+                <select name="category" class="form-select">
+                    <option value="">All 6 Categories</option>
+                    {% for cat_key, cat_label in categories %}
+                    <option value="{{ cat_key }}" {% if category == cat_key %}selected{% endif %}>{{ cat_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Search</label>
+                <input type="text" name="search" class="form-control" value="{{ search or '' }}" placeholder="Emp No, Name, Dept...">
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <i class="fa-solid fa-filter me-1"></i> Filter
+                </button>
+                <a href="{{ url_for('payslips.index') }}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Emp No</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Department</th>
+                    <th class="text-center">Days</th>
+                    <th class="text-end">Earned Gross</th>
+                    <th class="text-end">Deductions</th>
+                    <th class="text-end fw-bold">Net Salary</th>
+                    <th class="text-center text-nowrap">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td class="fw-bold text-primary">{{ r.Emp_No }}</td>
+                    <td class="fw-semibold">{{ r.Employee_Name }}</td>
+                    <td><span class="badge bg-light text-dark border fw-semibold">{{ r.Category }}</span></td>
+                    <td>{{ r.Department or '-' }}</td>
+                    <td class="text-center">{{ r.Working_Days }}</td>
+                    <td class="text-end">₹{{ "%.2f"|format(r.Gross_Wages) }}</td>
+                    <td class="text-end text-danger">₹{{ "%.2f"|format(r.Total_Deduction) }}</td>
+                    <td class="text-end fw-bold text-success">₹{{ "%.2f"|format(r.Net_Salary) }}</td>
+                    <td class="text-center text-nowrap">
+                        <div class="d-inline-flex gap-1">
+                            <a href="{{ url_for('payslips.view_payslip', year=r.Payroll_Year, month=r.Payroll_Month, emp_no=r.Emp_No, category=r.Category) }}" class="btn btn-sm btn-outline-primary fw-semibold" target="_blank">
+                                <i class="fa-solid fa-eye me-1"></i> View
+                            </a>
+                            <a href="{{ url_for('payslips.download_payslip', year=r.Payroll_Year, month=r.Payroll_Month, emp_no=r.Emp_No, category=r.Category) }}" class="btn btn-sm btn-outline-danger fw-semibold">
+                                <i class="fa-solid fa-file-pdf me-1"></i> PDF
+                            </a>
+                            <button type="button" 
+                                    class="btn btn-sm btn-success fw-bold btn-send-payslip"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#sendPayslipModal"
+                                    data-emp-name="{{ r.Employee_Name }}"
+                                    data-emp-no="{{ r.Emp_No }}"
+                                    data-month="{{ r.Payroll_Month }}/{{ r.Payroll_Year }}"
+                                    data-phone="{{ r.Phone_Number_Masked or 'No Phone' }}"
+                                    data-has-phone="{{ 'true' if r.Phone_Number else 'false' }}"
+                                    data-filename="Payslip_{{ r.Emp_No }}_{{ r.Employee_Name|replace(' ', '_') }}_{{ r.Payroll_Year }}_{{ '%02d'|format(r.Payroll_Month) }}.pdf"
+                                    data-action-url="{{ url_for('payslips.send_whatsapp', year=r.Payroll_Year, month=r.Payroll_Month, emp_no=r.Emp_No, category=r.Category) }}">
+                                <i class="fa-brands fa-whatsapp me-1"></i> Send Payslip
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-secondary">
+                        No payslips found for {{ month }}/{{ year }}. Ensure monthly payroll is calculated and saved!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Send Payslip Confirmation Modal -->
+<div class="modal fade" id="sendPayslipModal" tabindex="-1" aria-labelledby="sendPayslipModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 12px;">
+            <div class="modal-header bg-success text-white py-3">
+                <h5 class="modal-title fw-bold" id="sendPayslipModalLabel">
+                    <i class="fa-brands fa-whatsapp me-2"></i>Send Payslip via WhatsApp
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="sendPayslipForm" method="POST" action="">
+                <div class="modal-body p-4">
+                    <div id="modalAlertBox" class="alert d-none py-2 mb-3 small"></div>
+
+                    <div id="missingPhoneAlert" class="alert alert-danger d-none py-2 mb-3 small">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                        Phone number is not available for this employee. Please update Employee Master.
+                    </div>
+
+                    <div class="card bg-light border-0 mb-3" style="border-radius: 8px;">
+                        <div class="card-body py-3 px-3">
+                            <div class="row g-2 small">
+                                <div class="col-5 text-muted">Employee Name:</div>
+                                <div class="col-7 fw-bold text-end text-dark" id="modalEmpName">-</div>
+                                <div class="col-5 text-muted">Employee ID:</div>
+                                <div class="col-7 fw-bold text-end text-primary" id="modalEmpNo">-</div>
+                                <div class="col-5 text-muted">Payroll Month:</div>
+                                <div class="col-7 fw-bold text-end text-dark" id="modalMonth">-</div>
+                                <div class="col-5 text-muted">WhatsApp Number:</div>
+                                <div class="col-7 fw-bold text-end text-success" id="modalPhone">-</div>
+                                <div class="col-5 text-muted">Payslip File:</div>
+                                <div class="col-7 fw-semibold text-end text-secondary text-truncate" id="modalFilename">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="mb-0 text-center small text-muted">
+                        Are you sure you want to send the final PDF payslip to this employee?
+                    </p>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-outline-secondary fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="btnConfirmSend" class="btn btn-success fw-bold px-4">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Send Payslip
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('sendPayslipModal');
+    var sendForm = document.getElementById('sendPayslipForm');
+    var btnConfirm = document.getElementById('btnConfirmSend');
+    var alertBox = document.getElementById('modalAlertBox');
+    var missingPhoneAlert = document.getElementById('missingPhoneAlert');
+
+    modal.addEventListener('show.bs.modal', function(event) {
+        var button = event.relatedTarget;
+        var empName = button.getAttribute('data-emp-name');
+        var empNo = button.getAttribute('data-emp-no');
+        var month = button.getAttribute('data-month');
+        var phone = button.getAttribute('data-phone');
+        var hasPhone = button.getAttribute('data-has-phone') === 'true';
+        var filename = button.getAttribute('data-filename');
+        var actionUrl = button.getAttribute('data-action-url');
+
+        document.getElementById('modalEmpName').textContent = empName;
+        document.getElementById('modalEmpNo').textContent = empNo;
+        document.getElementById('modalMonth').textContent = month;
+        document.getElementById('modalPhone').textContent = phone;
+        document.getElementById('modalFilename').textContent = filename;
+        sendForm.action = actionUrl;
+
+        alertBox.classList.add('d-none');
+        btnConfirm.disabled = false;
+        btnConfirm.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Send Payslip';
+
+        if (!hasPhone || phone === 'No Phone') {
+            missingPhoneAlert.classList.remove('d-none');
+            btnConfirm.disabled = true;
+        } else {
+            missingPhoneAlert.classList.add('d-none');
+        }
+    });
+
+    sendForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        btnConfirm.disabled = true;
+        btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Sending...';
+
+        alertBox.classList.add('d-none');
+
+        fetch(sendForm.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-request'
+            }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            alertBox.classList.remove('d-none', 'alert-success', 'alert-danger');
+            if (data.success) {
+                alertBox.classList.add('alert-success');
+                alertBox.textContent = data.message || 'Payslip sent successfully to WhatsApp.';
+                btnConfirm.innerHTML = '<i class="fa-solid fa-check me-1"></i> Sent!';
+            } else {
+                alertBox.classList.add('alert-danger');
+                alertBox.textContent = data.message || 'Payslip could not be sent. Please check the phone number and WhatsApp configuration.';
+                btnConfirm.disabled = false;
+                btnConfirm.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Retry Send';
+            }
+        })
+        .catch(function(err) {
+            alertBox.classList.remove('d-none', 'alert-success', 'alert-danger');
+            alertBox.classList.add('alert-danger');
+            alertBox.textContent = 'Network connection failed. Please try again.';
+            btnConfirm.disabled = false;
+            btnConfirm.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Retry Send';
+        });
+    });
+});
+</script>
+{% endblock %}

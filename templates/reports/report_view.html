@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Salary Statement Reports | BHIPL Payroll{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="card-header-custom">
+        <div>
+            <h4 class="card-title-custom mb-1"><i class="fa-solid fa-file-excel text-success me-2"></i>Monthly Salary Statement Reports</h4>
+            <span class="text-secondary small">View category reports and export the complete 6-sheet BHIPL Unit-I Excel workbook</span>
+        </div>
+        <a href="{{ url_for('reports.export_excel', year=year, month=month) }}" class="btn btn-success fw-bold">
+            <i class="fa-solid fa-file-excel me-1"></i> Export 6-Sheet Excel Statement
+        </a>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('reports.index') }}" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Year</label>
+                <input type="number" name="year" class="form-control" value="{{ year }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Month</label>
+                <select name="month" class="form-select">
+                    {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                    {% for m_idx in range(1, 13) %}
+                    <option value="{{ m_idx }}" {% if month == m_idx %}selected{% endif %}>{{ months[m_idx - 1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-bold">Category Statement Sheet</label>
+                <select name="category" class="form-select fw-bold text-primary">
+                    {% for cat_key, cat_label in categories %}
+                    <option value="{{ cat_key }}" {% if category == cat_key %}selected{% endif %}>{{ cat_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <i class="fa-solid fa-filter me-1"></i> View Statement Sheet
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Emp No</th>
+                    <th>Name</th>
+                    <th>Dept</th>
+                    <th class="text-center">Days</th>
+                    <th class="text-center">OT Hrs</th>
+                    <th class="text-end">Basic+DA</th>
+                    <th class="text-end">HRA</th>
+                    <th class="text-end">Allowances</th>
+                    <th class="text-end">OT Wages</th>
+                    <th class="text-end fw-bold">Earned Gross</th>
+                    {% if 'PF_ESI' in category %}
+                    <th class="text-end">PF</th>
+                    <th class="text-end">ESI</th>
+                    {% endif %}
+                    <th class="text-end">Other Dedn</th>
+                    <th class="text-end text-danger">Total Dedn</th>
+                    <th class="text-end fw-bold text-success">Net Salary</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td class="fw-bold">{{ r.Emp_No }}</td>
+                    <td>{{ r.Employee_Name }}</td>
+                    <td>{{ r.Department or '-' }}</td>
+                    <td class="text-center">{{ r.Working_Days }}</td>
+                    <td class="text-center">{{ r.OT_Hours }}</td>
+                    <td class="text-end">₹{{ "%.2f"|format(r.Basic_DA_Earned) }}</td>
+                    <td class="text-end">₹{{ "%.2f"|format(r.HRA_Earned) }}</td>
+                    <td class="text-end">₹{{ "%.2f"|format(r.Conveyance_Earned + r.Washing_Allowance_Earned + r.Other_Allowance_Earned + r.Special_Allowance_Earned) }}</td>
+                    <td class="text-end">₹{{ "%.2f"|format(r.OT_Wages) }}</td>
+                    <td class="text-end fw-bold text-dark">₹{{ "%.2f"|format(r.Gross_Wages) }}</td>
+                    {% if 'PF_ESI' in category %}
+                    <td class="text-end text-danger">₹{{ "%.2f"|format(r.PF_Deduction) }}</td>
+                    <td class="text-end text-danger">₹{{ "%.2f"|format(r.ESI_Deduction) }}</td>
+                    {% endif %}
+                    <td class="text-end text-danger">₹{{ "%.2f"|format(r.NAPS_Deduction + r.LIC_Deduction + r.Advance_Deduction + r.Accommodation_Deduction + r.Other_Deduction) }}</td>
+                    <td class="text-end text-danger fw-bold">₹{{ "%.2f"|format(r.Total_Deduction) }}</td>
+                    <td class="text-end fw-bold text-success">₹{{ "%.2f"|format(r.Net_Salary) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="15" class="text-center py-4 text-secondary">
+                        No payroll statement records found for {{ category }} ({{ month }}/{{ year }}).
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if records %}
+    <!-- Summary Footer -->
+    <div class="p-3 bg-light border-top">
+        <div class="row text-center fw-bold">
+            <div class="col-md-2">
+                <span class="text-secondary small d-block">RECORD COUNT</span>
+                <span class="fs-5 text-dark">{{ records|length }}</span>
+            </div>
+            <div class="col-md-3">
+                <span class="text-secondary small d-block">TOTAL GROSS</span>
+                <span class="fs-5 text-primary">₹{{ "{:,.2f}".format(tot_gross) }}</span>
+            </div>
+            {% if 'PF_ESI' in category %}
+            <div class="col-md-2">
+                <span class="text-secondary small d-block">TOTAL PF</span>
+                <span class="fs-5 text-danger">₹{{ "{:,.2f}".format(tot_pf) }}</span>
+            </div>
+            <div class="col-md-2">
+                <span class="text-secondary small d-block">TOTAL ESI</span>
+                <span class="fs-5 text-danger">₹{{ "{:,.2f}".format(tot_esi) }}</span>
+            </div>
+            {% endif %}
+            <div class="col-md-2">
+                <span class="text-secondary small d-block">TOTAL DEDUCTIONS</span>
+                <span class="fs-5 text-danger">₹{{ "{:,.2f}".format(tot_ded) }}</span>
+            </div>
+            <div class="col-md-3">
+                <span class="text-secondary small d-block">TOTAL NET PAYABLE</span>
+                <span class="fs-5 text-success">₹{{ "{:,.2f}".format(tot_net) }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

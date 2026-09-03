@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Payroll Processing | Barani Payroll{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="card-header-custom">
+        <div>
+            <h4 class="card-title-custom"><i class="fa-solid fa-calculator me-2 text-primary"></i>Staff Monthly Payroll</h4>
+            <span class="text-secondary small">Enter Working Days, OT Hours, and Deductions to compute monthly staff salaries</span>
+        </div>
+        {% if already_saved %}
+        <span class="badge bg-success fs-6 px-3 py-2">
+            <i class="fa-solid fa-lock me-1"></i> Saved for {{ month }}/{{ year }}
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Controls Form -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('staff_payroll.manage_payroll') }}" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Select Year</label>
+                <select name="year" class="form-select">
+                    {% for y in range(2025, 2028) %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Select Month</label>
+                <select name="month" class="form-select">
+                    {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                    {% for m_idx in range(1, 13) %}
+                    <option value="{{ m_idx }}" {% if m_idx == month %}selected{% endif %}>
+                        {{ months[m_idx - 1] }} ({{ "%02d"|format(m_idx) }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Standard Days</label>
+                <input type="number" step="0.5" name="standard_days" id="standard_days_val" class="form-control" value="{{ standard_days }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <i class="fa-solid fa-users-viewfinder me-1"></i> Load Staff Employees
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Payroll Computation Form -->
+    <form method="POST" action="{{ url_for('staff_payroll.manage_payroll') }}">
+        <input type="hidden" name="year" value="{{ year }}">
+        <input type="hidden" name="month" value="{{ month }}">
+        <input type="hidden" name="standard_days" value="{{ standard_days }}">
+        <input type="hidden" id="ot_rate_val" value="56.25">
+
+        <div class="table-responsive">
+            <table class="table table-custom align-middle mb-0" id="interactive-payroll-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Emp No</th>
+                        <th>Employee & Dept</th>
+                        <th style="width: 120px;" class="text-center">Working Days</th>
+                        <th style="width: 110px;" class="text-center">OT Hours</th>
+                        <th style="width: 130px;" class="text-center">Other Ded (₹)</th>
+                        <th class="text-end">OT Pay</th>
+                        <th class="text-end">Gross Salary</th>
+                        <th class="text-end">PF</th>
+                        <th class="text-end">ESI</th>
+                        <th class="text-end">Total Ded</th>
+                        <th class="text-end fw-bold">Net Salary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in payroll_rows %}
+                    <tr data-empno="{{ r.Emp_No }}"
+                        data-basic="{{ r.Basic_Earned if not r.Working_Days else (r.Basic_Earned / r.Working_Days * standard_days)|round(2) }}"
+                        data-da="{{ r.DA_Earned if not r.Working_Days else (r.DA_Earned / r.Working_Days * standard_days)|round(2) }}"
+                        data-hra="{{ r.HRA_Earned if not r.Working_Days else (r.HRA_Earned / r.Working_Days * standard_days)|round(2) }}"
+                        data-washing="{{ r.Washing_Earned if not r.Working_Days else (r.Washing_Earned / r.Working_Days * standard_days)|round(2) }}"
+                        data-conv="{{ r.Conveyance_Earned if not r.Working_Days else (r.Conveyance_Earned / r.Working_Days * standard_days)|round(2) }}"
+                        data-special="{{ r.Special_Allowance_Earned if not r.Working_Days else (r.Special_Allowance_Earned / r.Working_Days * standard_days)|round(2) }}"
+                        data-pf-eligible="1"
+                        data-esi-eligible="1">
+                        
+                        <td class="fw-bold">
+                            {{ r.Emp_No }}
+                            <input type="hidden" name="emp_no[]" value="{{ r.Emp_No }}">
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ r.Emp_Name }}</div>
+                            <div class="text-secondary small">{{ r.Department or 'GENERAL' }}</div>
+                        </td>
+                        <td>
+                            <input type="number" step="0.5" min="0" max="31" name="working_days[]" class="form-control input-table text-center calc-trigger input-wdays" value="{{ r.Working_Days }}">
+                        </td>
+                        <td>
+                            <input type="number" step="0.5" min="0" name="ot_hours[]" class="form-control input-table text-center calc-trigger input-othours" value="{{ r.OT_Hours }}">
+                        </td>
+                        <td>
+                            <input type="number" step="0.01" min="0" name="other_deduction[]" class="form-control input-table text-end calc-trigger input-otherded" value="{{ r.Other_Deduction }}">
+                        </td>
+                        <td class="text-end cell-ot">₹{{ "%.2f"|format(r.OT_Amount) }}</td>
+                        <td class="text-end fw-semibold cell-gross">₹{{ "%.2f"|format(r.Gross_Salary) }}</td>
+                        <td class="text-end text-muted cell-pf">₹{{ "%.2f"|format(r.PF) }}</td>
+                        <td class="text-end text-muted cell-esi">₹{{ "%.2f"|format(r.ESI) }}</td>
+                        <td class="text-end text-danger cell-totalded">₹{{ "%.2f"|format(r.Total_Deduction) }}</td>
+                        <td class="text-end fw-bold text-success cell-net fs-6">₹{{ "%.2f"|format(r.Net_Salary) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="11" class="text-center py-4 text-secondary">
+                            No employee records loaded. Select Year/Month above and click "Load Staff Employees".
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if summary %}
+        <!-- Summary Cards Bar -->
+        <div class="p-3 bg-light border-top">
+            <div class="row g-3 text-center mb-3">
+                <div class="col-md-2 col-6">
+                    <div class="border rounded bg-white p-2">
+                        <span class="text-secondary small d-block">TOTAL STAFF</span>
+                        <strong class="fs-5 text-dark">{{ summary.total_employees }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="border rounded bg-white p-2">
+                        <span class="text-secondary small d-block">TOTAL GROSS</span>
+                        <strong class="fs-5 text-primary" id="stat-total-gross">₹{{ "{:,.2f}".format(summary.total_gross) }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="border rounded bg-white p-2">
+                        <span class="text-secondary small d-block">TOTAL OT</span>
+                        <strong class="fs-5 text-dark" id="stat-total-ot">₹{{ "{:,.2f}".format(summary.total_ot) }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="border rounded bg-white p-2">
+                        <span class="text-secondary small d-block">TOTAL PF</span>
+                        <strong class="fs-5 text-dark" id="stat-total-pf">₹{{ "{:,.2f}".format(summary.total_pf) }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="border rounded bg-white p-2">
+                        <span class="text-secondary small d-block">TOTAL DEDUCTIONS</span>
+                        <strong class="fs-5 text-danger" id="stat-total-ded">₹{{ "{:,.2f}".format(summary.total_deduction) }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="border rounded bg-white p-2">
+                        <span class="text-secondary small d-block">TOTAL NET PAY</span>
+                        <strong class="fs-5 text-success" id="stat-total-net">₹{{ "{:,.2f}".format(summary.total_net) }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-end gap-2">
+                <button type="submit" name="action" value="calculate" class="btn btn-secondary px-4">
+                    <i class="fa-solid fa-rotate me-1"></i> Calculate Payroll
+                </button>
+                <button type="submit" name="action" value="save" class="btn btn-primary px-4 fw-bold">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Payroll
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

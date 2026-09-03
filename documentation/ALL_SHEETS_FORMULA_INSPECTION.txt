@@ -1,0 +1,348 @@
+
+========================================================
+SHEET: STAFFS
+========================================================
+
+--- Row 6 (Employee: 100196077241) ---
+  Col 13 [Experience                      ]: Formula = =DATEDIF(J6,L6,"y")&" years,"&DATEDIF(J6,L6,"ym")&" months" | Value = 35 years,8 months
+  Col 14 [Attendance_Present Days         ]: Formula = =VLOOKUP(C6,'[1]stff-sal'!$B$2:$R$41,17,0)    | Value = 27
+  Col 17 [EL                              ]: Formula = =VLOOKUP(C6,'[1]stff-sal'!$B$2:$S$41,18,0)    | Value = 0
+  Col 20 [Total days                      ]: Formula = =SUM(N6:S6)                                   | Value = 27
+  Col 21 [Fixed Gross_Basic + DA          ]: Formula = =Z6*50%                                       | Value = 31800
+  Col 22 [HRA                             ]: Formula = =Z6*20%                                       | Value = 12720
+  Col 23 [Convey Allow                    ]: Formula = =Z6*10%                                       | Value = 6360
+  Col 24 [Washing Allow                   ]: Formula = =Z6*10%                                       | Value = 6360
+  Col 25 [Other Allow                     ]: Formula = =Z6*10%                                       | Value = 6360
+  Col 27 [Earnings_Basic + DA             ]: Formula = =+U6/$H$4*T6                                  | Value = 31800
+  Col 28 [HRA                             ]: Formula = =+V6/$H$4*T6                                  | Value = 12720
+  Col 29 [Convey Allow                    ]: Formula = =+X6/$H$4*T6                                  | Value = 6360
+  Col 30 [Washing Allow                   ]: Formula = =+X6/$H$4*T6                                  | Value = 6360
+  Col 31 [Other Allow                     ]: Formula = =+Y6/$H$4*T6                                  | Value = 6360
+  Col 32 [Gross Wages                     ]: Formula = =SUM(AA6:AE6)                                 | Value = 63600
+  Col 33 [PF Gross                        ]: Formula = =+IF($AF6*80%>=15000,15000,MIN($AF6*80%))     | Value = 15000
+  Col 34 [ESI Gross                       ]: Formula = =+IF($AF6>21000,0,MIN($AF6*90%))              | Value = 0
+  Col 35 [Deductions_PF Dedn              ]: Formula = =+IF(AG6>15000,1800,MIN(AG6*12%))             | Value = 1800
+  Col 37 [ESI Dedn                        ]: Formula = =+ROUNDUP((IF(Z6>21001,0,MIN(AH6,AH6*0.75%))),0) | Value = 0
+  Col 43 [Total Dedn                      ]: Formula = =SUM(AI6:AP6)                                 | Value = 3944
+  Col 44 [NET Salary                      ]: Formula = =SUM(AF6-AQ6)                                 | Value = 59656
+  Col 48 [Opening Advance                 ]: Formula = =AT6+AU6                                      | Value = 15640
+  Col 49 [Closing Advance                 ]: Formula = =AV6-AP6                                      | Value = 15640
+
+--- Row 7 (Employee: 100271280728) ---
+  Col 13 [Experience                      ]: Formula = =DATEDIF(J7,L7,"y")&" years,"&DATEDIF(J7,L7,"ym")&" months" | Value = 28 years,4 months
+  Col 14 [Attendance_Present Days         ]: Formula = =VLOOKUP(C7,'[1]stff-sal'!$B$2:$R$41,17,0)    | Value = 27
+  Col 17 [EL                              ]: Formula = =VLOOKUP(C7,'[1]stff-sal'!$B$2:$S$41,18,0)    | Value = 0
+  Col 20 [Total days                      ]: Formula = =SUM(N7:S7)                                   | Value = 27
+  Col 21 [Fixed Gross_Basic + DA          ]: Formula = =Z7*50%                                       | Value = 28750
+  Col 22 [HRA                             ]: Formula = =Z7*20%                                       | Value = 11500
+  Col 23 [Convey Allow                    ]: Formula = =Z7*10%                                       | Value = 5750
+  Col 24 [Washing Allow                   ]: Formula = =Z7*10%                                       | Value = 5750
+  Col 25 [Other Allow                     ]: Formula = =Z7*10%                                       | Value = 5750
+  Col 27 [Earnings_Basic + DA             ]: Formula = =+U7/$H$4*T7                                  | Value = 28750
+  Col 28 [HRA                             ]: Formula = =+V7/$H$4*T7                                  | Value = 11500
+  Col 29 [Convey Allow                    ]: Formula = =+X7/$H$4*T7                                  | Value = 5750
+  Col 30 [Washing Allow                   ]: Formula = =+X7/$H$4*T7                                  | Value = 5750
+  Col 31 [Other Allow                     ]: Formula = =+Y7/$H$4*T7                                  | Value = 5750
+  Col 32 [Gross Wages                     ]: Formula = =SUM(AA7:AE7)                                 | Value = 57500
+  Col 33 [PF Gross                        ]: Formula = =+IF($AF7*80%>=15000,15000,MIN($AF7*80%))     | Value = 15000
+  Col 34 [ESI Gross                       ]: Formula = =+IF($AF7>21000,0,MIN($AF7*90%))              | Value = 0
+  Col 35 [Deductions_PF Dedn              ]: Formula = =+IF(AG7>15000,1800,MIN(AG7*12%))             | Value = 1800
+  Col 37 [ESI Dedn                        ]: Formula = =+ROUNDUP((IF(Z7>21001,0,MIN(AH7,AH7*0.75%))),0) | Value = 0
+  Col 43 [Total Dedn                      ]: Formula = =SUM(AI7:AP7)                                 | Value = 5944
+  Col 44 [NET Salary                      ]: Formula = =SUM(AF7-AQ7)                                 | Value = 51556
+  Col 48 [Opening Advance                 ]: Formula = =AT7+AU7                                      | Value = 138000
+  Col 49 [Closing Advance                 ]: Formula = =AV7-AP7                                      | Value = 136000
+
+========================================================
+SHEET: WORKER'S - ESI PF
+========================================================
+
+--- Row 5 (Employee: 100416874388) ---
+  Col 15 [Experience                      ]: Formula = =DATEDIF(L5,N5,"y")&" years,"&DATEDIF(L5,N5,"ym")&" months" | Value = 28 years,11 months
+  Col 18 [EL                              ]: Formula = =VLOOKUP(D5,'[1]work-sAl'!$B$2:$P$39,15,0)    | Value = 2
+  Col 21 [Total days                      ]: Formula = =SUM(P5:T5)                                   | Value = 23.5
+  Col 23 [OT                              ]: Formula = =IF(V5<=50,V5,IF(V5>=50,50,))                 | Value = 34.5
+  Col 24 [Spl                             ]: Formula = =SUM(V5-W5)                                   | Value = 0
+  Col 25 [OT hrs                          ]: Formula = =W5/2                                         | Value = 17.25
+  Col 27 [Fixed Gross_Basic + DA          ]: Formula = =AG5*50%                                      | Value = 14430
+  Col 28 [HRA                             ]: Formula = =AG5*20%                                      | Value = 5772
+  Col 29 [Convey Allow                    ]: Formula = =AG5*10%                                      | Value = 2886
+  Col 30 [Washing Allow                   ]: Formula = =AG5*10%                                      | Value = 2886
+  Col 31 [Other Allow                     ]: Formula = =AG5*10%                                      | Value = 2886
+  Col 32 [OT hrs Wages                    ]: Formula = =Z5/8                                         | Value = 138.75
+  Col 33 [Gross Wages                     ]: Formula = =Z5*26                                        | Value = 28860
+  Col 34 [Earned Gross_Basic + DA         ]: Formula = =+AA5/26*U5                                   | Value = 13042.5
+  Col 35 [HRA                             ]: Formula = =+AB5/26*U5                                   | Value = 5217
+  Col 36 [Conv Allow                      ]: Formula = =+AC5/26*U5                                   | Value = 2608.5
+  Col 37 [Washing Allow                   ]: Formula = =+AD5/26*U5                                   | Value = 2608.5
+  Col 38 [Other Allow                     ]: Formula = =+AE5/26*U5                                   | Value = 2608.5
+  Col 39 [Spl.Allow                       ]: Formula = =SUM(X5*AF5)                                  | Value = 0
+  Col 40 [OT Wages                        ]: Formula = =SUM(W5*AF5)                                  | Value = 4786.875
+  Col 41 [Gross Wages                     ]: Formula = =SUM(AH5:AN5)                                 | Value = 30871.875
+  Col 42 [Gross-OT                        ]: Formula = =+AO5-AN5                                     | Value = 26085
+  Col 43 [PF Gross                        ]: Formula = =IF((AO5-AI5-AN5)>=15000,15000,(AO5-AI5-AN5)) | Value = 15000
+  Col 44 [ESI Gross                       ]: Formula = =IF(AG5>21000,0,IF(((AO5)*90/100)>21000,21000,((AO5)*90/100))) | Value = 0
+  Col 46 [Deductions_PF Dedn              ]: Formula = =AQ5*12%                                      | Value = 1800
+  Col 47 [Accounts PF Dedn                ]: Formula = =VLOOKUP(D5,'[1]work-sAl'!$B$2:$Z$70,25,0)    | Value = 1800
+  Col 48 [ESI Dedn                        ]: Formula = =AR5*0.75%                                    | Value = 0
+  Col 49 [Accounts Esi Dedn               ]: Formula = =VLOOKUP(D5,'[1]work-sAl'!$B$2:$AA$70,26,0)   | Value = 0
+  Col 54 [Total Dedn                      ]: Formula = =SUM(AT5:BA5)                                 | Value = 10875
+  Col 55 [NET Salary                      ]: Formula = =+AO5-BB5+AS5                                 | Value = 19996.875
+  Col 59 [Opening Advance                 ]: Formula = =BE5+BF5                                      | Value = 903000
+  Col 60 [Closing Advance                 ]: Formula = =BG5-AY5                                      | Value = 896000
+
+--- Row 6 (Employee: 100152884874) ---
+  Col 15 [Experience                      ]: Formula = =DATEDIF(L6,N6,"y")&" years,"&DATEDIF(L6,N6,"ym")&" months" | Value = 21 years,3 months
+  Col 18 [EL                              ]: Formula = =VLOOKUP(D6,'[1]work-sAl'!$B$2:$P$39,15,0)    | Value = 2
+  Col 21 [Total days                      ]: Formula = =SUM(P6:T6)                                   | Value = 19
+  Col 23 [OT                              ]: Formula = =IF(V6<=50,V6,IF(V6>=50,50,))                 | Value = 50
+  Col 24 [Spl                             ]: Formula = =SUM(V6-W6)                                   | Value = 0.5
+  Col 25 [OT hrs                          ]: Formula = =W6/2                                         | Value = 25
+  Col 27 [Fixed Gross_Basic + DA          ]: Formula = =AG6*50%                                      | Value = 12532
+  Col 28 [HRA                             ]: Formula = =AG6*20%                                      | Value = 5012.8
+  Col 29 [Convey Allow                    ]: Formula = =AG6*10%                                      | Value = 2506.4
+  Col 30 [Washing Allow                   ]: Formula = =AG6*10%                                      | Value = 2506.4
+  Col 31 [Other Allow                     ]: Formula = =AG6*10%                                      | Value = 2506.4
+  Col 32 [OT hrs Wages                    ]: Formula = =Z6/8                                         | Value = 120.5
+  Col 33 [Gross Wages                     ]: Formula = =Z6*26                                        | Value = 25064
+  Col 34 [Earned Gross_Basic + DA         ]: Formula = =+AA6/26*U6                                   | Value = 9158
+  Col 35 [HRA                             ]: Formula = =+AB6/26*U6                                   | Value = 3663.2000000000003
+  Col 36 [Conv Allow                      ]: Formula = =+AC6/26*U6                                   | Value = 1831.6000000000001
+  Col 37 [Washing Allow                   ]: Formula = =+AD6/26*U6                                   | Value = 1831.6000000000001
+  Col 38 [Other Allow                     ]: Formula = =+AE6/26*U6                                   | Value = 1831.6000000000001
+  Col 39 [Spl.Allow                       ]: Formula = =SUM(X6*AF6)                                  | Value = 60.25
+  Col 40 [OT Wages                        ]: Formula = =SUM(W6*AF6)                                  | Value = 6025
+  Col 41 [Gross Wages                     ]: Formula = =SUM(AH6:AN6)                                 | Value = 24401.25
+  Col 42 [Gross-OT                        ]: Formula = =+AO6-AN6                                     | Value = 18376.25
+  Col 43 [PF Gross                        ]: Formula = =IF((AO6-AI6-AN6)>=15000,15000,(AO6-AI6-AN6)) | Value = 14713.05
+  Col 44 [ESI Gross                       ]: Formula = =IF(AG6>21000,0,IF(((AO6)*90/100)>21000,21000,((AO6)*90/100))) | Value = 0
+  Col 46 [Deductions_PF Dedn              ]: Formula = =AQ6*12%                                      | Value = 1765.5659999999998
+  Col 47 [Accounts PF Dedn                ]: Formula = =VLOOKUP(D6,'[1]work-sAl'!$B$2:$Z$70,25,0)    | Value = 1800
+  Col 48 [ESI Dedn                        ]: Formula = =AR6*0.75%                                    | Value = 0
+  Col 49 [Accounts Esi Dedn               ]: Formula = =VLOOKUP(D6,'[1]work-sAl'!$B$2:$AA$70,26,0)   | Value = 0
+  Col 54 [Total Dedn                      ]: Formula = =SUM(AT6:BA6)                                 | Value = 4812.566
+  Col 55 [NET Salary                      ]: Formula = =+AO6-BB6+AS6                                 | Value = 19588.684
+  Col 59 [Opening Advance                 ]: Formula = =BE6+BF6                                      | Value = 4500
+  Col 60 [Closing Advance                 ]: Formula = =BG6-AY6                                      | Value = 3500
+
+========================================================
+SHEET: STAFF'S (NAPS)
+========================================================
+
+--- Row 5 (Employee: R.NIZANTH) ---
+  Col 12 [Experience                      ]: Formula = =DATEDIF(I5,K5,"y")&" years,"&DATEDIF(I5,K5,"ym")&" months" | Value = 1 years,8 months
+  Col 18 [Total days                      ]: Formula = =SUM(M5:Q5)                                   | Value = 26
+  Col 20 [OT                              ]: Formula = =IF(S5<=50,S5,IF(S5>=50,50,))                 | Value = 0
+  Col 21 [Spl                             ]: Formula = =SUM(S5-T5)                                   | Value = 0
+  Col 22 [OT hrs                          ]: Formula = =T5/2                                         | Value = 0
+  Col 24 [Fixed Gross_Basic + DA          ]: Formula = =AD5*50%                                      | Value = 8500
+  Col 25 [HRA                             ]: Formula = =AD5*20%                                      | Value = 3400
+  Col 26 [Convey Allow                    ]: Formula = =AD5*10%                                      | Value = 1700
+  Col 27 [Washing Allow                   ]: Formula = =AD5*10%                                      | Value = 1700
+  Col 28 [Other Allow                     ]: Formula = =AD5*10%                                      | Value = 1700
+  Col 29 [OT hrs Wages                    ]: Formula = =W5/8                                         | Value = 0
+  Col 31 [Earned Gross_Basic + DA         ]: Formula = =+X5/26*R5                                    | Value = 8500
+  Col 32 [HRA                             ]: Formula = =+Y5/26*R5                                    | Value = 3400
+  Col 33 [Conv Allow                      ]: Formula = =+Z5/26*R5                                    | Value = 1700
+  Col 34 [Washing Allow                   ]: Formula = =+AA5/26*R5                                   | Value = 1700
+  Col 35 [Other Allow                     ]: Formula = =+AB5/26*R5                                   | Value = 1700
+  Col 36 [Spl.Allow                       ]: Formula = =SUM(U5*AC5)                                  | Value = 0
+  Col 37 [OT Wages                        ]: Formula = =SUM(T5*AC5)                                  | Value = 0
+  Col 38 [Gross Wages                     ]: Formula = =SUM(AE5:AK5)                                 | Value = 17000
+  Col 44 [Total Dedn                      ]: Formula = =SUM(AN5:AQ5)                                 | Value = 1500
+  Col 45 [NET Salary                      ]: Formula = =+AL5-AR5                                     | Value = 15500
+  Col 49 [Opening Advance                 ]: Formula = =AU5+AV5                                      | Value = 0
+  Col 50 [Closing Advance                 ]: Formula = =AW5-AP5                                      | Value = 0
+
+--- Row 6 (Employee: VAISHNAVI) ---
+  Col 12 [Experience                      ]: Formula = =DATEDIF(I6,K6,"y")&" years,"&DATEDIF(I6,K6,"ym")&" months" | Value = 1 years,3 months
+  Col 18 [Total days                      ]: Formula = =SUM(M6:Q6)                                   | Value = 22
+  Col 20 [OT                              ]: Formula = =IF(S6<=50,S6,IF(S6>=50,50,))                 | Value = 0
+  Col 21 [Spl                             ]: Formula = =SUM(S6-T6)                                   | Value = 0
+  Col 22 [OT hrs                          ]: Formula = =T6/2                                         | Value = 0
+  Col 24 [Fixed Gross_Basic + DA          ]: Formula = =AD6*50%                                      | Value = 8500
+  Col 25 [HRA                             ]: Formula = =AD6*20%                                      | Value = 3400
+  Col 26 [Convey Allow                    ]: Formula = =AD6*10%                                      | Value = 1700
+  Col 27 [Washing Allow                   ]: Formula = =AD6*10%                                      | Value = 1700
+  Col 28 [Other Allow                     ]: Formula = =AD6*10%                                      | Value = 1700
+  Col 29 [OT hrs Wages                    ]: Formula = =W6/8                                         | Value = 0
+  Col 31 [Earned Gross_Basic + DA         ]: Formula = =+X6/26*R6                                    | Value = 7192.3076923076915
+  Col 32 [HRA                             ]: Formula = =+Y6/26*R6                                    | Value = 2876.923076923077
+  Col 33 [Conv Allow                      ]: Formula = =+Z6/26*R6                                    | Value = 1438.4615384615386
+  Col 34 [Washing Allow                   ]: Formula = =+AA6/26*R6                                   | Value = 1438.4615384615386
+  Col 35 [Other Allow                     ]: Formula = =+AB6/26*R6                                   | Value = 1438.4615384615386
+  Col 36 [Spl.Allow                       ]: Formula = =SUM(U6*AC6)                                  | Value = 0
+  Col 37 [OT Wages                        ]: Formula = =SUM(T6*AC6)                                  | Value = 0
+  Col 38 [Gross Wages                     ]: Formula = =SUM(AE6:AK6)                                 | Value = 14384.615384615387
+  Col 44 [Total Dedn                      ]: Formula = =SUM(AN6:AQ6)                                 | Value = 1500
+  Col 45 [NET Salary                      ]: Formula = =+AL6-AR6                                     | Value = 12884.615384615387
+  Col 49 [Opening Advance                 ]: Formula = =AU6+AV6                                      | Value = 0
+  Col 50 [Closing Advance                 ]: Formula = =AW6-AP6                                      | Value = 0
+
+========================================================
+SHEET: WORKER'S (NAPS) (2)
+========================================================
+
+--- Row 5 (Employee: E.ESSAKIRAJA) ---
+  Col 12 [Experience                      ]: Formula = =DATEDIF(I5,K5,"y")&" years,"&DATEDIF(I5,K5,"ym")&" months" | Value = 1 years,2 months
+  Col 13 [Present Days                    ]: Formula = =VLOOKUP(C5,[1]worker!$B$2:$AL$88,37,0)       | Value = 25
+  Col 15 [EL                              ]: Formula = =VLOOKUP(C5,'[1]work-sAl'!$B$73:$P$113,15,0)  | Value = 2
+  Col 18 [Total days                      ]: Formula = =SUM(M5:Q5)                                   | Value = 27
+  Col 19 [Act. OT hrs                     ]: Formula = =VLOOKUP(C5,[1]worker!$B$2:$AO$88,40,0)       | Value = 55
+  Col 20 [OT                              ]: Formula = =IF(S5<=50,S5,IF(S5>=50,50,))                 | Value = 50
+  Col 21 [Spl                             ]: Formula = =SUM(S5-T5)                                   | Value = 5
+  Col 22 [OT hrs                          ]: Formula = =T5/2                                         | Value = 25
+  Col 24 [Fixed Gross_Basic + DA          ]: Formula = =AD5*50%                                      | Value = 6142.5
+  Col 25 [HRA                             ]: Formula = =AD5*20%                                      | Value = 2457
+  Col 26 [Convey Allow                    ]: Formula = =AD5*10%                                      | Value = 1228.5
+  Col 27 [Washing Allow                   ]: Formula = =AD5*10%                                      | Value = 1228.5
+  Col 28 [Other Allow                     ]: Formula = =AD5*10%                                      | Value = 1228.5
+  Col 29 [OT hrs Wages                    ]: Formula = =W5/8                                         | Value = 56.875
+  Col 30 [Gross Wages                     ]: Formula = =W5*27                                        | Value = 12285
+  Col 31 [Earned Gross_Basic + DA         ]: Formula = =+X5/27*R5                                    | Value = 6142.5
+  Col 32 [HRA                             ]: Formula = =+Y5/27*R5                                    | Value = 2457
+  Col 33 [Conv Allow                      ]: Formula = =+Z5/27*R5                                    | Value = 1228.5
+  Col 34 [Washing Allow                   ]: Formula = =+AA5/27*R5                                   | Value = 1228.5
+  Col 35 [Other Allow                     ]: Formula = =+AB5/27*R5                                   | Value = 1228.5
+  Col 36 [Spl.Allow                       ]: Formula = =SUM(U5*AC5)                                  | Value = 284.375
+  Col 37 [OT Wages                        ]: Formula = =SUM(T5*AC5)                                  | Value = 2843.75
+  Col 38 [Gross Wages                     ]: Formula = =SUM(AE5:AK5)                                 | Value = 15413.125
+  Col 44 [Total Dedn                      ]: Formula = =SUM(AN5:AQ5)                                 | Value = 3500
+  Col 45 [NET Salary                      ]: Formula = =+AL5-AR5                                     | Value = 11913.125
+
+--- Row 6 (Employee: N.RAGUL) ---
+  Col 12 [Experience                      ]: Formula = =DATEDIF(I6,K6,"y")&" years,"&DATEDIF(I6,K6,"ym")&" months" | Value = 1 years,4 months
+  Col 13 [Present Days                    ]: Formula = =VLOOKUP(C6,[1]worker!$B$2:$AL$88,37,0)       | Value = 26
+  Col 15 [EL                              ]: Formula = =VLOOKUP(C6,'[1]work-sAl'!$B$73:$P$113,15,0)  | Value = 1
+  Col 18 [Total days                      ]: Formula = =SUM(M6:Q6)                                   | Value = 27
+  Col 19 [Act. OT hrs                     ]: Formula = =VLOOKUP(C6,[1]worker!$B$2:$AO$88,40,0)       | Value = 88
+  Col 20 [OT                              ]: Formula = =IF(S6<=50,S6,IF(S6>=50,50,))                 | Value = 50
+  Col 21 [Spl                             ]: Formula = =SUM(S6-T6)                                   | Value = 38
+  Col 22 [OT hrs                          ]: Formula = =T6/2                                         | Value = 25
+  Col 24 [Fixed Gross_Basic + DA          ]: Formula = =AD6*50%                                      | Value = 6412.5
+  Col 25 [HRA                             ]: Formula = =AD6*20%                                      | Value = 2565
+  Col 26 [Convey Allow                    ]: Formula = =AD6*10%                                      | Value = 1282.5
+  Col 27 [Washing Allow                   ]: Formula = =AD6*10%                                      | Value = 1282.5
+  Col 28 [Other Allow                     ]: Formula = =AD6*10%                                      | Value = 1282.5
+  Col 29 [OT hrs Wages                    ]: Formula = =W6/8                                         | Value = 59.375
+  Col 30 [Gross Wages                     ]: Formula = =W6*27                                        | Value = 12825
+  Col 31 [Earned Gross_Basic + DA         ]: Formula = =+X6/27*R6                                    | Value = 6412.5
+  Col 32 [HRA                             ]: Formula = =+Y6/27*R6                                    | Value = 2565
+  Col 33 [Conv Allow                      ]: Formula = =+Z6/27*R6                                    | Value = 1282.5
+  Col 34 [Washing Allow                   ]: Formula = =+AA6/27*R6                                   | Value = 1282.5
+  Col 35 [Other Allow                     ]: Formula = =+AB6/27*R6                                   | Value = 1282.5
+  Col 36 [Spl.Allow                       ]: Formula = =SUM(U6*AC6)                                  | Value = 2256.25
+  Col 37 [OT Wages                        ]: Formula = =SUM(T6*AC6)                                  | Value = 2968.75
+  Col 38 [Gross Wages                     ]: Formula = =SUM(AE6:AK6)                                 | Value = 18050
+  Col 44 [Total Dedn                      ]: Formula = =SUM(AN6:AQ6)                                 | Value = 1500
+  Col 45 [NET Salary                      ]: Formula = =+AL6-AR6                                     | Value = 16550
+  Col 49 [Opening Advance                 ]: Formula = =AU6+AV6                                      | Value = 0
+  Col 50 [Closing Advance                 ]: Formula = =AW6-AP6                                      | Value = 0
+
+========================================================
+SHEET: Non-pf ESi staff
+========================================================
+
+--- Row 5 (Employee: M.SENTHILMANI) ---
+  Col 12 [Experience                      ]: Formula = =DATEDIF(I5,K5,"y")&" years,"&DATEDIF(I5,K5,"ym")&" months" | Value = 0 years,0 months
+  Col 18 [Total days                      ]: Formula = =SUM(M5:Q5)                                   | Value = 27
+  Col 20 [OT                              ]: Formula = =IF(S5<=50,S5,IF(S5>=50,50,))                 | Value = 0
+  Col 21 [Spl                             ]: Formula = =SUM(S5-T5)                                   | Value = 0
+  Col 22 [OT hrs                          ]: Formula = =T5/2                                         | Value = 0
+  Col 24 [Fixed Gross_Basic + DA          ]: Formula = =AD5*50%                                      | Value = 27500
+  Col 25 [HRA                             ]: Formula = =AD5*20%                                      | Value = 11000
+  Col 26 [Convey Allow                    ]: Formula = =AD5*10%                                      | Value = 5500
+  Col 27 [Washing Allow                   ]: Formula = =AD5*10%                                      | Value = 5500
+  Col 28 [Other Allow                     ]: Formula = =AD5*10%                                      | Value = 5500
+  Col 29 [OT hrs Wages                    ]: Formula = =W5/8                                         | Value = 0
+  Col 31 [Earned Gross_Basic + DA         ]: Formula = =+X5/27*R5                                    | Value = 27500
+  Col 32 [HRA                             ]: Formula = =+Y5/27*R5                                    | Value = 11000
+  Col 33 [Conv Allow                      ]: Formula = =+Z5/27*R5                                    | Value = 5500
+  Col 34 [Washing Allow                   ]: Formula = =+AA5/27*R5                                   | Value = 5500
+  Col 35 [Other Allow                     ]: Formula = =+AB5/27*R5                                   | Value = 5500
+  Col 36 [Spl.Allow                       ]: Formula = =SUM(U5*AC5)                                  | Value = 0
+  Col 37 [OT Wages                        ]: Formula = =SUM(T5*AC5)                                  | Value = 0
+  Col 38 [Gross Wages                     ]: Formula = =SUM(AE5:AK5)                                 | Value = 55000
+  Col 44 [Total Dedn                      ]: Formula = =SUM(AN5:AQ5)                                 | Value = 0
+  Col 45 [NET Salary                      ]: Formula = =+AL5-AR5                                     | Value = 55000
+  Col 49 [Opening Advance                 ]: Formula = =AU5+AV5                                      | Value = 0
+  Col 50 [Closing Advance                 ]: Formula = =AW5-AP5                                      | Value = 0
+
+--- Row 6 (Employee: T.K.MUTHUSAMY) ---
+  Col 12 [Experience                      ]: Formula = =DATEDIF(I6,K6,"y")&" years,"&DATEDIF(I6,K6,"ym")&" months" | Value = 0 years,0 months
+  Col 18 [Total days                      ]: Formula = =SUM(M6:Q6)                                   | Value = 27
+  Col 20 [OT                              ]: Formula = =IF(S6<=50,S6,IF(S6>=50,50,))                 | Value = 0
+  Col 21 [Spl                             ]: Formula = =SUM(S6-T6)                                   | Value = 0
+  Col 22 [OT hrs                          ]: Formula = =T6/2                                         | Value = 0
+  Col 24 [Fixed Gross_Basic + DA          ]: Formula = =AD6*50%                                      | Value = 13750
+  Col 25 [HRA                             ]: Formula = =AD6*20%                                      | Value = 5500
+  Col 26 [Convey Allow                    ]: Formula = =AD6*10%                                      | Value = 2750
+  Col 27 [Washing Allow                   ]: Formula = =AD6*10%                                      | Value = 2750
+  Col 28 [Other Allow                     ]: Formula = =AD6*10%                                      | Value = 2750
+  Col 29 [OT hrs Wages                    ]: Formula = =W6/8                                         | Value = 0
+  Col 31 [Earned Gross_Basic + DA         ]: Formula = =+X6/27*R6                                    | Value = 13750
+  Col 32 [HRA                             ]: Formula = =+Y6/27*R6                                    | Value = 5500
+  Col 33 [Conv Allow                      ]: Formula = =+Z6/27*R6                                    | Value = 2750
+  Col 34 [Washing Allow                   ]: Formula = =+AA6/27*R6                                   | Value = 2750
+  Col 35 [Other Allow                     ]: Formula = =+AB6/27*R6                                   | Value = 2750
+  Col 36 [Spl.Allow                       ]: Formula = =SUM(U6*AC6)                                  | Value = 0
+  Col 37 [OT Wages                        ]: Formula = =SUM(T6*AC6)                                  | Value = 0
+  Col 38 [Gross Wages                     ]: Formula = =SUM(AE6:AK6)                                 | Value = 27500
+  Col 44 [Total Dedn                      ]: Formula = =SUM(AN6:AQ6)                                 | Value = 0
+  Col 45 [NET Salary                      ]: Formula = =+AL6-AR6                                     | Value = 27500
+  Col 49 [Opening Advance                 ]: Formula = =AU6+AV6                                      | Value = 0
+  Col 50 [Closing Advance                 ]: Formula = =AW6-AP6                                      | Value = 0
+
+========================================================
+SHEET: Non-pf ESi worker
+========================================================
+
+--- Row 5 (Employee: D.JESU BALAN) ---
+  Col 12 [Experience                      ]: Formula = =DATEDIF(I5,K5,"y")&" years,"&DATEDIF(I5,K5,"ym")&" months" | Value = 8 years,1 months
+  Col 18 [Total days                      ]: Formula = =SUM(M5:Q5)                                   | Value = 27
+  Col 20 [OT                              ]: Formula = =IF(S5<=50,S5,IF(S5>=50,50,))                 | Value = 50
+  Col 21 [Spl                             ]: Formula = =SUM(S5-T5)                                   | Value = 15.5
+  Col 22 [OT hrs                          ]: Formula = =T5/2                                         | Value = 25
+  Col 24 [Fixed Gross_Basic + DA          ]: Formula = =AD5*50%                                      | Value = 12231
+  Col 25 [HRA                             ]: Formula = =AD5*20%                                      | Value = 4892.400000000001
+  Col 26 [Convey Allow                    ]: Formula = =AD5*10%                                      | Value = 2446.2000000000003
+  Col 27 [Washing Allow                   ]: Formula = =AD5*10%                                      | Value = 2446.2000000000003
+  Col 28 [Other Allow                     ]: Formula = =AD5*10%                                      | Value = 2446.2000000000003
+  Col 29 [OT hrs Wages                    ]: Formula = =W5/8                                         | Value = 113.25
+  Col 30 [Gross Wages                     ]: Formula = =+W5*27                                       | Value = 24462
+  Col 31 [Earned Gross_Basic + DA         ]: Formula = =+X5/27*R5                                    | Value = 12231
+  Col 32 [HRA                             ]: Formula = =+Y5/27*R5                                    | Value = 4892.400000000001
+  Col 33 [Conv Allow                      ]: Formula = =+Z5/27*R5                                    | Value = 2446.2000000000003
+  Col 34 [Washing Allow                   ]: Formula = =+AA5/27*R5                                   | Value = 2446.2000000000003
+  Col 35 [Other Allow                     ]: Formula = =+AB5/27*R5                                   | Value = 2446.2000000000003
+  Col 36 [Spl.Allow                       ]: Formula = =SUM(U5*AC5)                                  | Value = 1755.375
+  Col 37 [OT Wages                        ]: Formula = =SUM(T5*AC5)                                  | Value = 5662.5
+  Col 38 [Gross Wages                     ]: Formula = =SUM(AE5:AK5)                                 | Value = 31879.875000000004
+  Col 44 [Total Dedn                      ]: Formula = =SUM(AN5:AQ5)                                 | Value = 1000
+  Col 45 [NET Salary                      ]: Formula = =+AL5-AR5                                     | Value = 30879.875000000004
+  Col 50 [Closing Advance                 ]: Formula = =AW5-AP5                                      | Value = 51000
+
+--- Row 6 (Employee: N.POOSAIDURAI) ---
+  Col 12 [Experience                      ]: Formula = =DATEDIF(I6,K6,"y")&" years,"&DATEDIF(I6,K6,"ym")&" months" | Value = 0 years,4 months
+  Col 18 [Total days                      ]: Formula = =SUM(M6:Q6)                                   | Value = 27
+  Col 20 [OT                              ]: Formula = =IF(S6<=50,S6,IF(S6>=50,50,))                 | Value = 50
+  Col 21 [Spl                             ]: Formula = =SUM(S6-T6)                                   | Value = 5.5
+  Col 22 [OT hrs                          ]: Formula = =T6/2                                         | Value = 25
+  Col 24 [Fixed Gross_Basic + DA          ]: Formula = =AD6*50%                                      | Value = 6412.5
+  Col 25 [HRA                             ]: Formula = =AD6*20%                                      | Value = 2565
+  Col 26 [Convey Allow                    ]: Formula = =AD6*10%                                      | Value = 1282.5
+  Col 27 [Washing Allow                   ]: Formula = =AD6*10%                                      | Value = 1282.5
+  Col 28 [Other Allow                     ]: Formula = =AD6*10%                                      | Value = 1282.5
+  Col 29 [OT hrs Wages                    ]: Formula = =W6/8                                         | Value = 59.375
+  Col 30 [Gross Wages                     ]: Formula = =+W6*27                                       | Value = 12825
+  Col 31 [Earned Gross_Basic + DA         ]: Formula = =+X6/27*R6                                    | Value = 6412.5
+  Col 32 [HRA                             ]: Formula = =+Y6/27*R6                                    | Value = 2565
+  Col 33 [Conv Allow                      ]: Formula = =+Z6/27*R6                                    | Value = 1282.5
+  Col 34 [Washing Allow                   ]: Formula = =+AA6/27*R6                                   | Value = 1282.5
+  Col 35 [Other Allow                     ]: Formula = =+AB6/27*R6                                   | Value = 1282.5
+  Col 36 [Spl.Allow                       ]: Formula = =SUM(U6*AC6)                                  | Value = 326.5625
+  Col 37 [OT Wages                        ]: Formula = =SUM(T6*AC6)                                  | Value = 2968.75
+  Col 38 [Gross Wages                     ]: Formula = =SUM(AE6:AK6)                                 | Value = 16120.3125
+  Col 44 [Total Dedn                      ]: Formula = =SUM(AN6:AQ6)                                 | Value = 0
+  Col 45 [NET Salary                      ]: Formula = =+AL6-AR6                                     | Value = 16120.3125
+  Col 50 [Closing Advance                 ]: Formula = =AW6-AP6                                      | Value = 0

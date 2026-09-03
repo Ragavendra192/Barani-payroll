@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payslip - {{ row.Emp_No }} - {{ row.Emp_Name }}</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            color: #000;
+            margin: 0;
+            padding: 15px;
+            background: #fff;
+        }
+        .payslip-box {
+            border: 2px solid #000;
+            padding: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .company-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .company-sub {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+        .payslip-title {
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 5px;
+            text-decoration: underline;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+            font-size: 10px;
+        }
+        .no-border td { border: none; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .section-header {
+            background-color: #e2e8f0;
+            font-weight: bold;
+            text-align: center;
+        }
+        .sig-container {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .sig-block {
+            text-align: center;
+            width: 200px;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+        .btn-print {
+            margin: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    {% if not is_pdf %}
+    <div style="text-align: center; margin-bottom: 15px;" class="no-print">
+        <button onclick="window.print()" style="padding: 8px 16px; font-weight: bold; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
+            Print Payslip
+        </button>
+    </div>
+    {% endif %}
+
+    <div class="payslip-box">
+        <div class="company-header">
+            <div class="company-name">BARANI HYDRAULICS INDIA PRIVATE LIMITED</div>
+            <div class="company-sub">UNIT - I</div>
+            <div class="payslip-title">PAYSLIP FOR THE MONTH OF {{ month_label|upper }}</div>
+        </div>
+
+        <!-- Employee Info Table -->
+        <table>
+            <tr>
+                <td class="bold" style="width: 20%;">Employee Code:</td>
+                <td style="width: 30%;">{{ row.Emp_No }}</td>
+                <td class="bold" style="width: 20%;">Employee Name:</td>
+                <td style="width: 30%;">{{ row.Emp_Name }}</td>
+            </tr>
+            <tr>
+                <td class="bold">Department:</td>
+                <td>{{ row.Department or 'N/A' }}</td>
+                <td class="bold">Designation:</td>
+                <td>{{ row.Designation or 'STAFF' }}</td>
+            </tr>
+            <tr>
+                <td class="bold">Date of Joining:</td>
+                <td>{{ row.DOJ or 'N/A' }}</td>
+                <td class="bold">Working Days:</td>
+                <td>{{ row.Working_Days }} Days</td>
+            </tr>
+            <tr>
+                <td class="bold">UAN Number:</td>
+                <td>{{ row.UAN or 'N/A' }}</td>
+                <td class="bold">ESI Number:</td>
+                <td>{{ row.ESI_No or 'N/A' }}</td>
+            </tr>
+        </table>
+
+        <!-- Earnings & Deductions Table -->
+        <table>
+            <thead>
+                <tr class="section-header">
+                    <th style="width: 35%;">EARNINGS</th>
+                    <th style="width: 15%;">AMOUNT (₹)</th>
+                    <th style="width: 35%;">DEDUCTIONS</th>
+                    <th style="width: 15%;">AMOUNT (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Basic Earned</td>
+                    <td class="text-right">{{ "%.2f"|format(row.Basic_Earned) }}</td>
+                    <td>Provident Fund (PF)</td>
+                    <td class="text-right">{{ "%.2f"|format(row.PF) }}</td>
+                </tr>
+                <tr>
+                    <td>DA Earned</td>
+                    <td class="text-right">{{ "%.2f"|format(row.DA_Earned) }}</td>
+                    <td>ESI Deduction</td>
+                    <td class="text-right">{{ "%.2f"|format(row.ESI) }}</td>
+                </tr>
+                <tr>
+                    <td>HRA Earned</td>
+                    <td class="text-right">{{ "%.2f"|format(row.HRA_Earned) }}</td>
+                    <td>Other Deduction</td>
+                    <td class="text-right">{{ "%.2f"|format(row.Other_Deduction) }}</td>
+                </tr>
+                <tr>
+                    <td>Washing Allowance</td>
+                    <td class="text-right">{{ "%.2f"|format(row.Washing_Earned) }}</td>
+                    <td></td>
+                    <td class="text-right"></td>
+                </tr>
+                <tr>
+                    <td>Conveyance Earned</td>
+                    <td class="text-right">{{ "%.2f"|format(row.Conveyance_Earned) }}</td>
+                    <td></td>
+                    <td class="text-right"></td>
+                </tr>
+                <tr>
+                    <td>Special Allowance</td>
+                    <td class="text-right">{{ "%.2f"|format(row.Special_Allowance_Earned) }}</td>
+                    <td></td>
+                    <td class="text-right"></td>
+                </tr>
+                <tr>
+                    <td>Overtime Pay ({{ row.OT_Hours }} hrs)</td>
+                    <td class="text-right">{{ "%.2f"|format(row.OT_Amount) }}</td>
+                    <td></td>
+                    <td class="text-right"></td>
+                </tr>
+                <tr class="bold" style="background-color: #f8fafc;">
+                    <td>GROSS SALARY</td>
+                    <td class="text-right">₹{{ "%.2f"|format(row.Gross_Salary) }}</td>
+                    <td>TOTAL DEDUCTIONS</td>
+                    <td class="text-right">₹{{ "%.2f"|format(row.Total_Deduction) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Net Salary Bar -->
+        <table style="margin-bottom: 30px;">
+            <tr style="background-color: #e2e8f0;">
+                <td class="bold fs-6" style="padding: 10px;">NET SALARY PAYABLE:</td>
+                <td class="bold text-right fs-6" style="padding: 10px;">₹{{ "%.2f"|format(row.Net_Salary) }}</td>
+            </tr>
+        </table>
+
+        <!-- Signatures -->
+        <table class="no-border" style="margin-top: 50px;">
+            <tr>
+                <td style="width: 50%; text-align: left; vertical-align: bottom;">
+                    <div style="border-top: 1px solid #000; width: 180px; text-align: center; padding-top: 4px; font-weight: bold;">
+                        Employee Signature
+                    </div>
+                </td>
+                <td style="width: 50%; text-align: right; vertical-align: bottom;">
+                    <div style="border-top: 1px solid #000; width: 180px; text-align: center; padding-top: 4px; font-weight: bold; float: right;">
+                        Authorized Signature
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+</html>
