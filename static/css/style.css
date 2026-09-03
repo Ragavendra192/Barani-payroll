@@ -308,9 +308,17 @@ body {
 
 /* Attendance Table Input Field Optimization */
 .table-custom input[type=number] {
-    min-width: 65px;
-    padding-left: 6px;
-    padding-right: 6px;
+    width: 100%;
+    min-width: 48px;
+    max-width: 62px;
+    height: 30px;
+    padding: 2px 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 4px;
+    text-align: center;
+    margin: 0 auto;
+    display: block;
 }
 
 /* Remove number spinner arrows for easy click & typing */
@@ -328,11 +336,43 @@ body {
     position: sticky;
     top: 0;
     z-index: 10;
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid #0f172a !important;
+    white-space: nowrap;
+    text-align: center;
+    vertical-align: middle;
+    padding: 8px 4px;
+}
+
+/* Specific solid header colors to completely prevent background bleeding */
+.table-custom thead th.th-std-days {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+}
+.table-custom thead th.th-present {
+    background-color: #1e293b !important;
+    color: #4ade80 !important;
+}
+.table-custom thead th.th-lop {
+    background-color: #881337 !important; /* Solid Dark Red/Burgundy */
+    color: #ffffff !important;
+}
+.table-custom thead th.th-ot {
+    background-color: #78350f !important; /* Solid Dark Amber */
+    color: #ffffff !important;
+}
+.table-custom thead th.th-spl-ot {
+    background-color: #0e7490 !important; /* Solid Dark Cyan */
+    color: #ffffff !important;
 }
 
 .table-custom td.sticky-col-1 {
     position: sticky;
     left: 0;
+    width: 45px;
+    min-width: 45px;
+    max-width: 45px;
     z-index: 5;
     background-color: #ffffff !important;
 }
@@ -340,6 +380,9 @@ body {
 .table-custom td.sticky-col-2 {
     position: sticky;
     left: 45px;
+    width: 85px;
+    min-width: 85px;
+    max-width: 85px;
     z-index: 5;
     background-color: #ffffff !important;
 }
@@ -347,9 +390,11 @@ body {
 .table-custom td.sticky-col-3 {
     position: sticky;
     left: 130px;
+    min-width: 140px;
+    max-width: 180px;
     z-index: 5;
     background-color: #ffffff !important;
-    box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.08);
+    box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.08);
 }
 
 /* Corner Sticky Header Cells (Top-Left intersection of Headers and Sticky Columns) */
@@ -357,8 +402,11 @@ body {
     position: sticky;
     left: 0;
     top: 0;
-    z-index: 15 !important;
-    background-color: #212529 !important;
+    width: 45px;
+    min-width: 45px;
+    max-width: 45px;
+    z-index: 25 !important;
+    background-color: #0f172a !important;
     color: #ffffff !important;
 }
 
@@ -366,8 +414,11 @@ body {
     position: sticky;
     left: 45px;
     top: 0;
-    z-index: 15 !important;
-    background-color: #212529 !important;
+    width: 85px;
+    min-width: 85px;
+    max-width: 85px;
+    z-index: 25 !important;
+    background-color: #0f172a !important;
     color: #ffffff !important;
 }
 
@@ -375,10 +426,12 @@ body {
     position: sticky;
     left: 130px;
     top: 0;
-    z-index: 15 !important;
-    background-color: #212529 !important;
+    min-width: 140px;
+    max-width: 180px;
+    z-index: 25 !important;
+    background-color: #0f172a !important;
     color: #ffffff !important;
-    box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.08);
+    box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.08);
 }
 
 /* Table Hover Row Background for Sticky Cells */
