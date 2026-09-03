@@ -45,15 +45,15 @@
     </div>
 
     <!-- Main Wages Card -->
-    <div class="card-custom mb-4">
+    <div class="card-custom mb-2">
         <div class="card-header-custom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
                 <h4 class="card-title-custom mb-0"><i class="fa-solid fa-calculator text-primary me-2"></i>WAGES PROCESSING</h4>
-                <small class="text-secondary">Central monthly payroll calculation and wages batch processing</small>
+                <!-- <small class="text-secondary">Central monthly payroll calculation and wages batch processing</small> -->
             </div>
             
             <div class="d-flex align-items-center flex-wrap gap-2">
-                <div class="input-group input-group-sm" style="width: 140px; flex-shrink: 0;">
+                <div class="input-group input-group-sm" style="width: 130px; flex-shrink: 0;">
                     <span class="input-group-text bg-dark text-white fw-bold">Year</span>
                     <select name="year" class="form-select fw-bold" onchange="document.getElementById('wagesForm').submit();">
                         {% for y in years %}
@@ -61,22 +61,19 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="input-group input-group-sm" style="width: 220px; min-width: 210px; flex-shrink: 0;">
+                <div class="input-group input-group-sm" style="width: 160px; flex-shrink: 0;">
                     <span class="input-group-text bg-dark text-white fw-bold">Month</span>
-                    <select name="month" class="form-select fw-bold" onchange="document.getElementById('wagesForm').submit();" style="min-width: 140px;">
+                    <select name="month" class="form-select fw-bold" onchange="document.getElementById('wagesForm').submit();">
                         {% for m_num, m_name in months %}
                         <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <button type="submit" name="action" value="refresh_attendance" class="btn btn-outline-info fw-bold px-3">
-                    <i class="fa-solid fa-arrows-rotate me-1"></i> REFRESH ATTENDANCE
-                </button>
                 <button type="submit" name="action" value="calculate" class="btn btn-primary fw-bold px-3">
                     <i class="fa-solid fa-rotate me-1"></i> CALCULATE
                 </button>
-                <button type="submit" name="action" value="save" class="btn btn-success fw-bold px-4">
+                <button type="submit" name="action" value="save" class="btn btn-success fw-bold px-3">
                     <i class="fa-solid fa-check-double me-1"></i> SAVE PAYROLL
                 </button>
                 <a href="{{ url_for('main.download_wages_excel', year=year, month=month, category=category) }}" class="btn btn-outline-success fw-bold px-3">
