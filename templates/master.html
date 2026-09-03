@@ -103,87 +103,45 @@
     <!-- Master Employee Table -->
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 text-nowrap">
+            <table class="table table-hover align-middle mb-0 w-100">
                 <thead class="table-dark small text-uppercase">
                     <tr>
-                        <th class="ps-3">S.No</th>
-                        <th>Employee ID</th>
-                        <th>Employee Name</th>
-                        <th>Department</th>
-                        <th>Designation</th>
-                        <th>Date of Joining</th>
-                        <th>Experience</th>
-                        <th>Category</th>
-                        <th class="text-center">PF</th>
-                        <th class="text-center">ESI</th>
-                        <th class="text-end">LIC (Dedn)</th>
-                        <th>Phone</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-center pe-3">Action</th>
+                        <th class="ps-3 text-center" style="width: 6%;">S.No</th>
+                        <th style="width: 14%;">Employee ID</th>
+                        <th style="width: 26%;">Name</th>
+                        <th style="width: 20%;">Department</th>
+                        <th style="width: 20%;">Designation</th>
+                        <th class="text-center" style="width: 8%;">Status</th>
+                        <th class="text-center pe-3" style="width: 6%;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% if employees %}
                         {% for emp in employees %}
                         <tr>
-                            <td class="ps-3 fw-bold text-secondary">{{ loop.index }}</td>
+                            <td class="ps-3 text-center fw-bold text-secondary">{{ loop.index }}</td>
                             <td class="fw-bold text-primary">#{{ emp.Emp_No }}</td>
-                            <td class="fw-bold">{{ emp.Employee_Name }}</td>
-                            <td><span class="small fw-semibold text-dark">{{ emp.Department or '-' }}</span></td>
-                            <td><span class="small text-muted">{{ emp.Designation or '-' }}</span></td>
-                            <td><span class="small font-monospace">{{ emp.DOJ or '-' }}</span></td>
-                            <td><span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1">{{ emp.Experience_Formatted or '-' }}</span></td>
-                            <td>
-                                {% if emp.Employee_Type == 'STAFF' %}
-                                <span class="badge bg-primary px-2 py-1 me-1">STAFF</span>
-                                {% else %}
-                                <span class="badge bg-success px-2 py-1 me-1">WORKER</span>
-                                {% endif %}
-
-                                {% if 'PF_ESI' in emp.Payroll_Category or 'PF_ESI' in emp.Category %}
-                                <span class="badge bg-info text-dark">PF / ESI</span>
-                                {% elif 'NAPS' in emp.Payroll_Category or 'NAPS' in emp.Category %}
-                                <span class="badge bg-warning text-dark">NAPS</span>
-                                {% else %}
-                                <span class="badge bg-secondary">Non-PF/ESI</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                {% if emp.PF_Eligible %}
-                                <span class="badge bg-success-subtle text-success border border-success px-2">YES</span>
-                                {% else %}
-                                <span class="badge bg-light text-secondary border px-2">NO</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                {% if emp.ESI_Eligible %}
-                                <span class="badge bg-success-subtle text-success border border-success px-2">YES</span>
-                                {% else %}
-                                <span class="badge bg-light text-secondary border px-2">NO</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end fw-bold text-danger">₹{{ "{:,.2f}".format(emp.LIC or 0.0) }}</td>
-                            <td>
-                                <span class="small font-monospace text-muted">{{ emp.Phone_Number_Masked or '-' }}</span>
-                            </td>
+                            <td class="fw-bold text-dark">{{ emp.Employee_Name }}</td>
+                            <td><span class="fw-semibold text-secondary">{{ emp.Department or '-' }}</span></td>
+                            <td><span class="text-muted">{{ emp.Designation or '-' }}</span></td>
                             <td class="text-center">
                                 {% if emp.Status == 'Active' %}
-                                <span class="badge bg-success">Active</span>
+                                <span class="badge bg-success px-3 py-1">Active</span>
                                 {% else %}
-                                <span class="badge bg-danger">Inactive</span>
+                                <span class="badge bg-danger px-3 py-1">Inactive</span>
                                 {% endif %}
                             </td>
-                            <td class="text-center pe-3">
-                                <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-2 py-0" 
+                            <td class="text-center pe-3 text-nowrap">
+                                <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3 py-1 shadow-sm" 
                                         onclick="openEditEmployeeModal('{{ emp.Employee_ID }}', '{{ emp.Emp_No }}', '{{ emp.Employee_Name|escape }}', '{{ emp.Father_Name or '' }}', '{{ emp.DOB or '' }}', '{{ emp.Employee_Type }}', '{{ emp.Payroll_Category }}', '{{ emp.Department or '' }}', '{{ emp.Designation or '' }}', '{{ emp.DOJ or '' }}', '{{ emp.UAN_No or '' }}', '{{ emp.ESI_No or '' }}', '{{ emp.Phone_Number or '' }}', '{{ emp.Email_ID or '' }}', '{{ emp.Bank_Acc_No or '' }}', '{{ emp.Bank_IFSC or '' }}', '{{ emp.Status }}', '{{ emp.Fixed_Gross or 0.0 }}', '{{ emp.Basic_DA or 0.0 }}', '{{ emp.HRA or 0.0 }}', '{{ emp.Conveyance_Allowance or 0.0 }}', '{{ emp.Washing_Allowance or 0.0 }}', '{{ emp.Other_Allowance or 0.0 }}', '{{ emp.Per_Day_Wage or 0.0 }}', '{{ 1 if emp.PF_Eligible else 0 }}', '{{ 1 if emp.ESI_Eligible else 0 }}', '{{ emp.LIC or 0.0 }}')">
-                                    <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+                                    <i class="fa-solid fa-eye me-1"></i> View
                                 </button>
                             </td>
                         </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="13" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="fa-solid fa-folder-open fa-2xl mb-3 text-secondary d-block"></i>
                                 No employees found matching the selected filters.
                             </td>
@@ -579,7 +537,7 @@ function openAddEmployeeModal() {
 }
 
 function openEditEmployeeModal(empId, empNo, name, fatherName, dob, empType, payCat, dept, desig, doj, uan, esi, phone, email, bankAcc, bankIfsc, status, fixedGross, basic, hra, conv, wash, other, perDay, pfEligible, esiEligible, lic) {
-    document.getElementById('employeeModalLabel').innerHTML = '<i class="fa-solid fa-user-pen text-primary me-2"></i>Edit Employee Master (#' + empNo + ')';
+    document.getElementById('employeeModalLabel').innerHTML = '<i class="fa-solid fa-eye text-primary me-2"></i>Employee Details (#' + empNo + ')';
     const form = document.getElementById('employeeMasterForm');
     form.action = "/employees/edit/" + empId;
 
