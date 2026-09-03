@@ -324,16 +324,20 @@ def add_employee(data):
     per_day_wage = float(data.get('Per_Day_Wage', 0.0) or 0.0)
     lic = float(data.get('LIC', 0.0) or 0.0)
 
-    # For Staff employees, auto-split Fixed_Gross if present
+    components_sum = b_da + hra + conv + wash + other
+    # For Staff employees, auto-split Fixed_Gross if present without component breakdown
     if 'STAFF' in emp_type.upper() and fixed_gross > 0:
-        b_da = round(fixed_gross * 0.50, 2)
-        hra = round(fixed_gross * 0.20, 2)
-        conv = round(fixed_gross * 0.10, 2)
-        wash = round(fixed_gross * 0.10, 2)
-        other = round(fixed_gross * 0.10, 2)
+        if components_sum == 0:
+            b_da = round(fixed_gross * 0.50, 2)
+            hra = round(fixed_gross * 0.20, 2)
+            conv = round(fixed_gross * 0.10, 2)
+            wash = round(fixed_gross * 0.10, 2)
+            other = round(fixed_gross * 0.10, 2)
+        else:
+            fixed_gross = round(components_sum, 2)
     elif fixed_gross == 0:
-        if (b_da + hra + conv + wash + other) > 0:
-            fixed_gross = round(b_da + hra + conv + wash + other, 2)
+        if components_sum > 0:
+            fixed_gross = round(components_sum, 2)
         elif per_day_wage > 0:
             fixed_gross = round(per_day_wage * 26.0, 2)
 
@@ -352,7 +356,7 @@ def add_employee(data):
             Phone_Number, Email_ID, Fixed_Gross, LIC
         ) 
         OUTPUT INSERTED.Employee_ID
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data['Emp_No'], data.get('ERP_Emp_No'), data.get('Emp_Code'),
         data['Employee_Name'], data['Employee_Name'],
@@ -361,6 +365,7 @@ def add_employee(data):
         data.get('DOJ'), father_name, dob,
         bank_acc, bank_acc, bank_ifsc,
         data.get('UAN_No'), data.get('UAN_No'), data.get('ESI_No'),
+        data.get('Status', 'Active'),
         norm_phone, data.get('Email_ID'), fixed_gross, lic
     ))
     employee_id = cur.fetchone()[0]
@@ -405,16 +410,20 @@ def update_employee(employee_id, data):
     per_day_wage = float(data.get('Per_Day_Wage', 0.0) or 0.0)
     lic = float(data.get('LIC', 0.0) or 0.0)
 
-    # For Staff employees, auto-split Fixed_Gross if present
+    components_sum = b_da + hra + conv + wash + other
+    # For Staff employees, auto-split Fixed_Gross if present without component breakdown
     if 'STAFF' in emp_type.upper() and fixed_gross > 0:
-        b_da = round(fixed_gross * 0.50, 2)
-        hra = round(fixed_gross * 0.20, 2)
-        conv = round(fixed_gross * 0.10, 2)
-        wash = round(fixed_gross * 0.10, 2)
-        other = round(fixed_gross * 0.10, 2)
+        if components_sum == 0:
+            b_da = round(fixed_gross * 0.50, 2)
+            hra = round(fixed_gross * 0.20, 2)
+            conv = round(fixed_gross * 0.10, 2)
+            wash = round(fixed_gross * 0.10, 2)
+            other = round(fixed_gross * 0.10, 2)
+        else:
+            fixed_gross = round(components_sum, 2)
     elif fixed_gross == 0:
-        if (b_da + hra + conv + wash + other) > 0:
-            fixed_gross = round(b_da + hra + conv + wash + other, 2)
+        if components_sum > 0:
+            fixed_gross = round(components_sum, 2)
         elif per_day_wage > 0:
             fixed_gross = round(per_day_wage * 26.0, 2)
 
@@ -518,6 +527,7 @@ def bulk_import_employees(df):
         "EMPLOYEE_NAME": ["EMPLOYEE_NAME", "EMPLOYEE NAME", "EMP_NAME", "EMP NAME", "NAME"],
         "EMPLOYEE_TYPE": ["EMPLOYEE_TYPE", "EMPLOYEE TYPE", "TYPE", "EMP_TYPE"],
         "PAYROLL_CATEGORY": ["PAYROLL_CATEGORY", "PAYROLL CATEGORY", "CATEGORY", "PAYROLL CAT"],
+        "STATUS": ["STATUS", "EMP_STATUS", "EMPLOYEE_STATUS", "ACTIVE", "IS_ACTIVE"],
         "DEPARTMENT": ["DEPARTMENT", "DEPT"],
         "DESIGNATION": ["DESIGNATION", "ROLE", "TITLE"],
         "GRADE": ["GRADE"],
@@ -603,23 +613,31 @@ def bulk_import_employees(df):
         doj = parse_excel_date(get_row_val(row, "DOJ"))
         dob = parse_excel_date(get_row_val(row, "DOB"))
 
-        father_name = str(get_row_val(row, "FATHER_NAME") or "").strip()
-        bank_acc = str(get_row_val(row, "BANK_ACC_NO") or "").strip()
-        if bank_acc.endswith(".0"):
-            bank_acc = bank_acc[:-2]
-        bank_ifsc = str(get_row_val(row, "BANK_IFSC") or "").strip()
+        # Parse Status
+        status_raw = get_row_val(row, "STATUS")
+        status_clean = "Active"
+        if status_raw is not None and not pd.isna(status_raw):
+            s_val = str(status_raw).strip().lower()
+            if s_val in ["inactive", "no", "0", "disabled", "false"]:
+                status_clean = "Inactive"
 
-        uan_no = str(get_row_val(row, "UAN_NO") or "").strip()
-        if uan_no.endswith(".0"):
-            uan_no = uan_no[:-2]
-        esi_no = str(get_row_val(row, "ESI_NO") or "").strip()
-        if esi_no.endswith(".0"):
-            esi_no = esi_no[:-2]
+        def clean_import_str(val):
+            if val is None or pd.isna(val):
+                return ""
+            s = str(val).strip()
+            if s.endswith(".0") and s[:-2].isdigit():
+                s = s[:-2]
+            if s.lower() in ["nan", "none", "null"]:
+                return ""
+            return s
 
-        phone = str(get_row_val(row, "PHONE_NUMBER") or "").strip()
-        if phone.endswith(".0"):
-            phone = phone[:-2]
-        email = str(get_row_val(row, "EMAIL_ID") or "").strip()
+        father_name = clean_import_str(get_row_val(row, "FATHER_NAME"))
+        bank_acc = clean_import_str(get_row_val(row, "BANK_ACC_NO"))
+        bank_ifsc = clean_import_str(get_row_val(row, "BANK_IFSC"))
+        uan_no = clean_import_str(get_row_val(row, "UAN_NO"))
+        esi_no = clean_import_str(get_row_val(row, "ESI_NO"))
+        phone = clean_import_str(get_row_val(row, "PHONE_NUMBER"))
+        email = clean_import_str(get_row_val(row, "EMAIL_ID"))
 
         fixed_gross = float(pd.to_numeric(get_row_val(row, "FIXED_GROSS"), errors="coerce") or 0.0)
         basic_da = float(pd.to_numeric(get_row_val(row, "BASIC_DA"), errors="coerce") or 0.0)
@@ -648,6 +666,7 @@ def bulk_import_employees(df):
             'Department': dept,
             'Designation': desig,
             'Grade': grade,
+            'Status': status_clean,
             'DOJ': doj,
             'UAN_No': uan_no,
             'ESI_No': esi_no,

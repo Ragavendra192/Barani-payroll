@@ -8,6 +8,7 @@ from models.payroll_transaction import get_payroll_transactions, get_payroll_att
 from models.payroll_period_settings import get_period_settings, save_period_settings
 from models.payroll_period_settings import get_period_settings, save_period_settings, get_period_settings_info, calculate_month_working_days
 from services.payroll_engine import calculate_payroll
+from services.excel_service import generate_employee_master_excel
 from utils.payroll_calculation_engine import get_worker_calculation_trace, get_staff_pf_esi_calculation_trace
 from utils.contact_utils import normalize_indian_phone, mask_phone_number
 
@@ -104,15 +105,48 @@ def master():
 
 @main_bp.route('/master/download-template', methods=['GET'])
 def download_employee_template():
-    """Download Employee Master Excel Template for HR."""
-    template_path = os.path.join(current_app.root_path, 'static', 'Employee_Master_Import_Template.xlsx')
-    if not os.path.exists(template_path):
-        template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'Employee_Master_Import_Template.xlsx')
-    
+    """
+    Download Employee Master Excel.
+    By default, exports the current Master employee data pre-filled in the Excel format
+    so HR can alter values and re-upload.
+    If 'blank=1' or 'format=empty', generates a clean blank template.
+    """
+    include_blank = request.args.get('blank', '0') in ['1', 'true', 'True'] or request.args.get('format') == 'empty'
+
+    if include_blank:
+        excel_io = generate_employee_master_excel(employees=[], include_sample=False)
+        filename = "Employee_Master_Blank_Template.xlsx"
+    else:
+        # Check if filter parameters are passed from Master page
+        search = request.args.get('search', '').strip()
+        category = request.args.get('category')
+        emp_type = request.args.get('employee_type')
+        pay_cat = request.args.get('payroll_category')
+        dept = request.args.get('department')
+        status = request.args.get('status')
+
+        # If status is None or 'ALL', fetch all employees without status filtering
+        employees = get_all_employees(status=status if (status and status != 'ALL') else None)
+
+        if category and category != 'ALL':
+            employees = [e for e in employees if e.get('Category') == category or f"{e.get('Employee_Type')}_{e.get('Payroll_Category')}" == category]
+        if emp_type and emp_type != 'ALL':
+            employees = [e for e in employees if e.get('Employee_Type') == emp_type]
+        if pay_cat and pay_cat != 'ALL':
+            employees = [e for e in employees if e.get('Payroll_Category') == pay_cat]
+        if dept and dept != 'ALL':
+            employees = [e for e in employees if e.get('Department') == dept]
+        if search:
+            s = search.lower()
+            employees = [e for e in employees if s in str(e.get('Emp_No')).lower() or s in str(e.get('Employee_Name')).lower() or s in str(e.get('Emp_Name')).lower()]
+
+        excel_io = generate_employee_master_excel(employees=employees, include_sample=False)
+        filename = f"Employee_Master_Data_{dt.date.today().strftime('%Y%m%d')}.xlsx"
+
     return send_file(
-        template_path,
+        excel_io,
         as_attachment=True,
-        download_name='Employee_Master_Import_Template.xlsx',
+        download_name=filename,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 

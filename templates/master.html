@@ -10,9 +10,32 @@
             <small class="text-secondary">Unified employee directory and salary master management</small>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <a href="{{ url_for('main.download_employee_template') }}" class="btn btn-outline-primary fw-bold">
-                <i class="fa-solid fa-download me-1"></i> Download Format
-            </a>
+            <div class="btn-group">
+                <a href="{{ url_for('main.download_employee_template', status=status, category=selected_category, employee_type=selected_type, payroll_category=selected_pay_cat, department=selected_dept, search=search) }}" class="btn btn-outline-primary fw-bold" title="Download Master data with current employees to alter and re-upload">
+                    <i class="fa-solid fa-file-arrow-down me-1"></i> Download Master
+                </a>
+                <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('main.download_employee_template', status=status, category=selected_category, employee_type=selected_type, payroll_category=selected_pay_cat, department=selected_dept, search=search) }}">
+                            <i class="fa-solid fa-file-excel text-success me-2"></i> Download Filtered Master ({{ employees|length }} Records)
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('main.download_employee_template', status='ALL') }}">
+                            <i class="fa-solid fa-users text-primary me-2"></i> Download Complete Master (All Employees)
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-menu-divider"></li>
+                    <li>
+                        <a class="dropdown-item text-secondary" href="{{ url_for('main.download_employee_template', blank=1) }}">
+                            <i class="fa-regular fa-file-excel me-2"></i> Download Blank Template (Empty)
+                        </a>
+                    </li>
+                </ul>
+            </div>
             <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#importExcelModal">
                 <i class="fa-solid fa-file-excel me-1"></i> Import Excel
             </button>
@@ -372,14 +395,19 @@
             </div>
             <form action="{{ url_for('main.import_employees') }}" method="POST" enctype="multipart/form-data">
                 <div class="modal-body p-4">
-                    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center justify-content-between mb-4">
+                    <div class="alert alert-info border-0 shadow-sm d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
                         <div>
                             <i class="fa-solid fa-circle-info fa-lg me-2 text-info"></i>
-                            <strong>HR Template:</strong> Download the clean Excel format for entering joining employees.
+                            <strong>Alter & Re-upload Master Data:</strong> Download current Master data with all employees, make bulk updates in Excel, and re-upload here.
                         </div>
-                        <a href="{{ url_for('main.download_employee_template') }}" class="btn btn-primary btn-sm fw-bold text-nowrap ms-3">
-                            <i class="fa-solid fa-download me-1"></i> Download Excel Format
-                        </a>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{{ url_for('main.download_employee_template') }}" class="btn btn-primary btn-sm fw-bold text-nowrap shadow-sm">
+                                <i class="fa-solid fa-download me-1"></i> Master (With Data)
+                            </a>
+                            <a href="{{ url_for('main.download_employee_template', blank=1) }}" class="btn btn-outline-secondary btn-sm fw-bold text-nowrap">
+                                Blank Template
+                            </a>
+                        </div>
                     </div>
 
                     <div class="mb-4">
