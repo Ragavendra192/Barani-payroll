@@ -7,8 +7,8 @@
     <div class="card-custom mb-4">
         <div class="card-header-custom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
-                <h4 class="card-title-custom mb-0"><i class="fa-solid fa-calendar-check text-success me-2"></i>CURRENT MONTH ATTENDANCE ENTRY</h4>
-                <small class="text-secondary">Enter monthly attendance and OT hours for fast payroll calculation</small>
+                <h4 class="card-title-custom mb-0"> ATTENDANCE ENTRY SECTION</h4>
+                <!-- <small class="text-secondary">Enter monthly attendance and OT hours for fast payroll calculation</small> -->
             </div>
             
             <div class="d-flex align-items-center gap-2">
@@ -53,70 +53,20 @@
             </div>
         </div>
 
-        <!-- Top Period Settings Section -->
-        <div class="card-body bg-white border-bottom py-2">
-            <div class="row g-2 align-items-center">
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold mb-1 text-muted">Calendar Days</label>
-                    <input type="text" class="form-control form-control-sm text-center fw-bold bg-light" id="calendar_days_disp" value="{{ calendar_days }}" readonly>
+        <!-- Search Bar -->
+        <div class="card-body bg-light border-bottom py-2">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="input-group input-group-sm" style="max-width: 380px;">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Search Employee ID or Name..." value="{{ search or '' }}">
+                    <button type="submit" class="btn btn-secondary fw-bold px-3">Search</button>
+                    {% if search %}
+                    <a href="{{ url_for('main.attendance', year=year, month=month) }}" class="btn btn-outline-danger" title="Clear Search"><i class="fa-solid fa-xmark"></i></a>
+                    {% endif %}
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold mb-1 text-muted">Sundays</label>
-                    <input type="text" class="form-control form-control-sm text-center fw-bold bg-light" id="sunday_count_disp" value="{{ sunday_count }}" readonly>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1 text-muted">Calculated Working Days</label>
-                    <input type="text" class="form-control form-control-sm text-center fw-bold bg-light" id="default_working_days_disp" value="{{ default_working_days }}" readonly>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1 text-primary">Working Days (Final Payroll)</label>
-                    <input type="number" step="0.5" name="standard_days" id="standard_days_input" class="form-control form-control-sm text-center fw-bold border-primary" value="{{ standard_days }}">
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" name="action" value="apply_std_days" class="btn btn-primary btn-sm w-100 fw-bold">SAVE WORKING DAYS</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filter Bar -->
-        <div class="card-body bg-light border-bottom">
-            <div class="row g-2 align-items-center">
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1">Search Employee</label>
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Employee ID or Name..." value="{{ search or '' }}">
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold mb-1">Employee Type</label>
-                    <select name="employee_type" class="form-select form-select-sm fw-bold">
-                        <option value="ALL">ALL TYPES</option>
-                        <option value="STAFF" {% if emp_type == 'STAFF' %}selected{% endif %}>STAFF</option>
-                        <option value="WORKER" {% if emp_type == 'WORKER' %}selected{% endif %}>WORKER</option>
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1">Category</label>
-                    <select name="category" class="form-select form-select-sm fw-bold">
-                        <option value="ALL">ALL CATEGORIES</option>
-                        {% for c_code, c_label in categories %}
-                        <option value="{{ c_code }}" {% if category == c_code %}selected{% endif %}>{{ c_label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold mb-1">Department</label>
-                    <select name="department" class="form-select form-select-sm fw-bold">
-                        <option value="ALL">ALL DEPARTMENTS</option>
-                        {% for d in departments %}
-                        <option value="{{ d }}" {% if dept == d %}selected{% endif %}>{{ d }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-2 d-flex align-items-end mt-3 mt-md-0">
-                    <button type="submit" class="btn btn-secondary btn-sm w-100 fw-bold"><i class="fa-solid fa-filter me-1"></i> Filter Table</button>
+                <div class="small text-muted">
+                    <span class="me-3">Calculated Working Days: <strong class="text-dark">{{ default_working_days }}</strong></span>
+                    <span>Standard Working Days: <strong class="text-primary">{{ standard_days }}</strong></span>
                 </div>
             </div>
         </div>
@@ -237,7 +187,7 @@ function navigateAttendancePeriod() {
     const yInp = document.getElementById('year_select');
     const mInp = document.getElementById('month_select');
     if (yInp && mInp) {
-        window.location.href = "{{ url_for('main.attendance') }}?year=" + yInp.value + "&month=" + mInp.value + "&category={{ category }}&employee_type={{ emp_type }}&department={{ dept }}&search={{ search }}";
+        window.location.href = "{{ url_for('main.attendance') }}?year=" + yInp.value + "&month=" + mInp.value + "&search={{ search }}";
     }
 }
 
