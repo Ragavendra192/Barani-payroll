@@ -133,6 +133,18 @@ def calculate_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_esi, is_worker=F
     else:
         return calculate_staff_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_esi)
 
+def _extract_advance_info(ded_dict, advance_ded):
+    """Extract and calculate advance tracking fields (Opening, New, Installment/Deduction, Closing)."""
+    op_adv = money(ded_dict.get('opening_adv') or ded_dict.get('Opening_Advance') or ded_dict.get('Opening Adv') or 0.0)
+    nw_adv = money(ded_dict.get('new_adv') or ded_dict.get('New_Advance') or ded_dict.get('New Adv') or 0.0)
+    inst = advance_ded
+    raw_closing = ded_dict.get('closing_adv') or ded_dict.get('Closing_Advance') or ded_dict.get('Closing Adv')
+    if raw_closing is not None and str(raw_closing).strip() != '':
+        cl_adv = money(raw_closing)
+    else:
+        cl_adv = max(Decimal('0.00'), op_adv + nw_adv - inst)
+    return op_adv, nw_adv, inst, cl_adv
+
 # ==============================================================================
 # CATEGORY 1: STAFF_PF_ESI
 # ==============================================================================
@@ -219,12 +231,13 @@ def calculate_staff_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_esi
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
     total_ded = pf_ded + acc_pf + esi_ded + acc_esi + pt + mess + lic + tds + naps + advance + accom + other
+    op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
         'pf_ded': pf_ded, 'accounts_pf_ded': acc_pf, 'esi_ded': esi_ded, 'accounts_esi_ded': acc_esi,
         'pt': pt, 'mess': mess, 'lic': lic, 'tds': tds, 'naps': naps, 'advance': advance,
         'accom': accom, 'other': other, 'total_ded': total_ded,
-        'opening_adv': Decimal('0.00'), 'new_adv': Decimal('0.00'), 'installment': Decimal('0.00'), 'closing_adv': Decimal('0.00')
+        'opening_adv': op_adv, 'new_adv': nw_adv, 'installment': inst, 'closing_adv': cl_adv
     }
 
 def calculate_staff_pf_esi_net(earned_gross, total_deduction, arrears):
@@ -333,12 +346,13 @@ def calculate_worker_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_es
     accom = money(ded_dict.get('accommodation') or ded_dict.get('Accommodation'))
     
     total_ded = pf_ded + acc_pf + esi_ded + acc_esi + lic + advance + naps + accom
+    op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
         'pf_ded': pf_ded, 'accounts_pf_ded': acc_pf, 'esi_ded': esi_ded, 'accounts_esi_ded': acc_esi,
         'pt': Decimal('0.00'), 'mess': Decimal('0.00'), 'lic': lic, 'tds': Decimal('0.00'), 'naps': naps,
         'advance': advance, 'accom': accom, 'other': Decimal('0.00'), 'total_ded': total_ded,
-        'opening_adv': Decimal('0.00'), 'new_adv': Decimal('0.00'), 'installment': Decimal('0.00'), 'closing_adv': Decimal('0.00')
+        'opening_adv': op_adv, 'new_adv': nw_adv, 'installment': inst, 'closing_adv': cl_adv
     }
 
 def calculate_worker_pf_esi_net(earned_gross, total_deduction, arrears):
@@ -393,12 +407,13 @@ def calculate_staff_naps_deductions(ded_dict):
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
     total_ded = naps + advance + lic + accom + other
+    op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
         'pf_ded': Decimal('0.00'), 'accounts_pf_ded': Decimal('0.00'), 'esi_ded': Decimal('0.00'), 'accounts_esi_ded': Decimal('0.00'),
         'pt': Decimal('0.00'), 'mess': Decimal('0.00'), 'lic': lic, 'tds': Decimal('0.00'), 'naps': naps,
         'advance': advance, 'accom': accom, 'other': other, 'total_ded': total_ded,
-        'opening_adv': Decimal('0.00'), 'new_adv': Decimal('0.00'), 'installment': Decimal('0.00'), 'closing_adv': Decimal('0.00')
+        'opening_adv': op_adv, 'new_adv': nw_adv, 'installment': inst, 'closing_adv': cl_adv
     }
 
 def calculate_staff_naps_net(earned_gross, total_deduction, arrears):
@@ -464,12 +479,13 @@ def calculate_worker_naps_deductions(ded_dict):
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
     total_ded = naps + advance + lic + accom + other
+    op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
         'pf_ded': Decimal('0.00'), 'accounts_pf_ded': Decimal('0.00'), 'esi_ded': Decimal('0.00'), 'accounts_esi_ded': Decimal('0.00'),
         'pt': Decimal('0.00'), 'mess': Decimal('0.00'), 'lic': lic, 'tds': Decimal('0.00'), 'naps': naps,
         'advance': advance, 'accom': accom, 'other': other, 'total_ded': total_ded,
-        'opening_adv': Decimal('0.00'), 'new_adv': Decimal('0.00'), 'installment': Decimal('0.00'), 'closing_adv': Decimal('0.00')
+        'opening_adv': op_adv, 'new_adv': nw_adv, 'installment': inst, 'closing_adv': cl_adv
     }
 
 def calculate_worker_naps_net(earned_gross, total_deduction, arrears):
@@ -513,12 +529,13 @@ def calculate_staff_non_pf_esi_deductions(ded_dict):
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
     total_ded = advance + lic + accom + other
+    op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
         'pf_ded': Decimal('0.00'), 'accounts_pf_ded': Decimal('0.00'), 'esi_ded': Decimal('0.00'), 'accounts_esi_ded': Decimal('0.00'),
         'pt': Decimal('0.00'), 'mess': Decimal('0.00'), 'lic': lic, 'tds': Decimal('0.00'), 'naps': Decimal('0.00'),
         'advance': advance, 'accom': accom, 'other': other, 'total_ded': total_ded,
-        'opening_adv': Decimal('0.00'), 'new_adv': Decimal('0.00'), 'installment': Decimal('0.00'), 'closing_adv': Decimal('0.00')
+        'opening_adv': op_adv, 'new_adv': nw_adv, 'installment': inst, 'closing_adv': cl_adv
     }
 
 def calculate_staff_non_pf_esi_net(earned_gross, total_deduction, arrears):
@@ -578,12 +595,13 @@ def calculate_worker_non_pf_esi_deductions(ded_dict):
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
     total_ded = advance + lic + accom + other
+    op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
         'pf_ded': Decimal('0.00'), 'accounts_pf_ded': Decimal('0.00'), 'esi_ded': Decimal('0.00'), 'accounts_esi_ded': Decimal('0.00'),
         'pt': Decimal('0.00'), 'mess': Decimal('0.00'), 'lic': lic, 'tds': Decimal('0.00'), 'naps': Decimal('0.00'),
         'advance': advance, 'accom': accom, 'other': other, 'total_ded': total_ded,
-        'opening_adv': Decimal('0.00'), 'new_adv': Decimal('0.00'), 'installment': Decimal('0.00'), 'closing_adv': Decimal('0.00')
+        'opening_adv': op_adv, 'new_adv': nw_adv, 'installment': inst, 'closing_adv': cl_adv
     }
 
 def calculate_worker_non_pf_esi_net(earned_gross, total_deduction, arrears):

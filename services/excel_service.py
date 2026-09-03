@@ -34,7 +34,7 @@ def generate_monthly_salary_statement_excel(year, month):
                     "Working Days", "OT Hours", "Per Day Wage",
                     "Basic + DA (Earned)", "HRA (Earned)", "Conveyance (Earned)", "Washing (Earned)", "Other (Earned)",
                     "Special Allowance", "OT Wages", "Gross Wages",
-                    "PF", "ESI", "NAPS", "LIC", "Advance", "Accommodation", "Other Dedn", "Total Dedn", "Net Salary"
+                    "PF", "ESI", "NAPS", "LIC", "Opening Advance", "New Advance", "Advance", "Closing Advance", "Accommodation", "Other Dedn", "Total Dedn", "Net Salary"
                 ])
             else:
                 formatted_rows = []
@@ -64,7 +64,10 @@ def generate_monthly_salary_statement_excel(year, month):
                         "ESI": r.get('ESI_Deduction', 0.0),
                         "NAPS": r.get('NAPS_Deduction', 0.0),
                         "LIC": r.get('LIC_Deduction', 0.0),
+                        "Opening Advance": r.get('Opening_Advance', 0.0),
+                        "New Advance": r.get('New_Advance', 0.0),
                         "Advance": r.get('Advance_Deduction', 0.0),
+                        "Closing Advance": r.get('Closing_Advance', 0.0),
                         "Accommodation": r.get('Accommodation_Deduction', 0.0),
                         "Arrears": r.get('Arrears', 0.0),
                         "Total Dedn": r.get('Total_Deduction', 0.0),
@@ -237,6 +240,183 @@ def generate_employee_master_excel(employees=None, include_sample=False):
         ws.column_dimensions[col_letter].width = default_w
 
     ws.freeze_panes = 'A2'
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+def generate_attendance_template_excel(year, month, employees, standard_days, trans_map=None):
+    """
+    Generate professional Attendance & Monthly Input Excel workbook pre-filled with live data,
+    including Opening Advance, New Advance, Advance Deduction, and Closing Advance.
+    """
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    if trans_map is None:
+        trans_map = {}
+
+    # Query active advances map from DB to pre-fill opening balances & installments
+    adv_map = {}
+    try:
+        from db import get_db_connection
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT Emp_No, SUM(Remaining_Amount) AS Total_Remaining, SUM(Monthly_Amount) AS Total_Monthly
+            FROM Advances
+            WHERE Status = 'Active' AND Remaining_Amount > 0
+            GROUP BY Emp_No
+        """)
+        for row in cur.fetchall():
+            emp_no_val = str(row[0]).strip()
+            adv_map[emp_no_val] = {
+                'remaining': float(row[1] or 0.0),
+                'monthly': float(row[2] or 0.0)
+            }
+        conn.close()
+    except Exception as e:
+        print(f"[ADVANCE PREFILL NOTICE]: {e}")
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Attendance_{month}_{year}"
+    ws.views.sheetView[0].showGridLines = True
+
+    # Column configuration: (Header name, Dict Key, Type, Default width, is_advance_col)
+    columns_config = [
+        ('Emp ID', 'Emp_ID', 'text', 12, False),
+        ('Employee Name', 'Employee_Name', 'text', 24, False),
+        ('Type', 'Type', 'center', 12, False),
+        ('Category', 'Category', 'text', 20, False),
+        ('Company Working Days', 'Company_Working_Days', 'number', 16, False),
+        ('Present', 'Present', 'number', 12, False),
+        ('N/H', 'NH', 'number', 10, False),
+        ('EL', 'EL', 'number', 10, False),
+        ('CL', 'CL', 'number', 10, False),
+        ('SL', 'SL', 'number', 10, False),
+        ('OT Hours', 'OT_Hours', 'number', 12, False),
+        ('Opening Advance', 'Opening_Advance', 'currency', 16, True),
+        ('New Advance', 'New_Advance', 'currency', 16, True),
+        ('Advance Deduction', 'Advance_Deduction', 'currency', 18, True),
+        ('Closing Advance', 'Closing_Advance', 'currency', 16, True),
+        ('Arrears', 'Arrears', 'currency', 14, False),
+        ('NAPS', 'NAPS', 'currency', 14, False),
+        ('LIC', 'LIC', 'currency', 14, False),
+        ('Accommodation', 'Accommodation', 'currency', 16, False),
+        ('Other', 'Other', 'currency', 14, False)
+    ]
+
+    # Styling definitions
+    header_font = Font(name='Segoe UI', size=10, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='1E293B', end_color='1E293B', fill_type='solid') # Slate dark
+    adv_header_fill = PatternFill(start_color='0E7490', end_color='0E7490', fill_type='solid') # Teal blue for Advance columns
+
+    regular_font = Font(name='Segoe UI', size=9, color='000000')
+    bold_font = Font(name='Segoe UI', size=9, bold=True, color='000000')
+    zebra_fill = PatternFill(start_color='F8FAFC', end_color='F8FAFC', fill_type='solid')
+
+    thin_border = Side(style='thin', color='CBD5E1')
+    cell_border = Border(left=thin_border, right=thin_border, top=thin_border, bottom=thin_border)
+
+    # Write headers
+    for c_idx, (header_name, _, _, _, is_adv) in enumerate(columns_config, start=1):
+        cell = ws.cell(row=1, column=c_idx, value=header_name)
+        cell.font = header_font
+        cell.fill = adv_header_fill if is_adv else header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        cell.border = cell_border
+    ws.row_dimensions[1].height = 28
+
+    # Write data rows
+    for r_idx, emp in enumerate(employees, start=2):
+        emp_id = emp['Employee_ID']
+        emp_no = str(emp.get('Emp_No', '')).strip()
+        existing_t = trans_map.get(emp_id) or {}
+        adv_info = adv_map.get(emp_no) or {}
+
+        # Determine Opening Advance
+        if 'Opening_Advance' in existing_t and float(existing_t['Opening_Advance'] or 0.0) > 0:
+            open_adv = float(existing_t['Opening_Advance'])
+        elif adv_info.get('remaining', 0.0) > 0:
+            open_adv = adv_info['remaining']
+        else:
+            open_adv = 0.0
+
+        new_adv = float(existing_t.get('New_Advance', 0.0) or 0.0)
+
+        # Determine Advance Deduction
+        if 'Advance_Deduction' in existing_t and float(existing_t['Advance_Deduction'] or 0.0) > 0:
+            adv_ded = float(existing_t['Advance_Deduction'])
+        elif adv_info.get('monthly', 0.0) > 0:
+            adv_ded = min(open_adv + new_adv, adv_info['monthly'])
+        else:
+            adv_ded = 0.0
+
+        close_adv = max(0.0, open_adv + new_adv - adv_ded)
+
+        row_data = {
+            'Emp_ID': emp.get('Emp_No'),
+            'Employee_Name': emp.get('Employee_Name'),
+            'Type': emp.get('Employee_Type', ''),
+            'Category': emp.get('Category', ''),
+            'Company_Working_Days': standard_days,
+            'Present': float(existing_t.get('Present_Days', standard_days)),
+            'NH': float(existing_t.get('NH', 0.0)),
+            'EL': float(existing_t.get('EL', 0.0)),
+            'CL': float(existing_t.get('CL', 0.0)),
+            'SL': float(existing_t.get('SL', 0.0)),
+            'OT_Hours': float(existing_t.get('Act_OT_Hrs', 0.0)),
+            'Opening_Advance': open_adv,
+            'New_Advance': new_adv,
+            'Advance_Deduction': adv_ded,
+            'Closing_Advance': close_adv,
+            'Arrears': float(existing_t.get('Arrears', 0.0)),
+            'NAPS': float(existing_t.get('NAPS_Deduction', 0.0)),
+            'LIC': float(existing_t.get('LIC_Deduction', 0.0)),
+            'Accommodation': float(existing_t.get('Accommodation_Deduction', 0.0)),
+            'Other': float(existing_t.get('Other_Deduction', 0.0))
+        }
+
+        is_even = (r_idx % 2 == 0)
+        ws.row_dimensions[r_idx].height = 20
+
+        for c_idx, (_, dict_key, col_type, _, is_adv) in enumerate(columns_config, start=1):
+            val = row_data.get(dict_key)
+
+            # Excel formula for Closing Advance (Column O, c_idx=15)
+            # L=12 (Opening), M=13 (New), N=14 (Deduction), O=15 (Closing)
+            if dict_key == 'Closing_Advance':
+                cell = ws.cell(row=r_idx, column=c_idx, value=f"=MAX(0, L{r_idx}+M{r_idx}-N{r_idx})")
+            else:
+                cell = ws.cell(row=r_idx, column=c_idx, value=val)
+
+            cell.font = bold_font if is_adv else regular_font
+            cell.border = cell_border
+            if not is_even:
+                cell.fill = zebra_fill
+
+            if col_type == 'currency':
+                cell.number_format = '#,##0.00'
+                cell.alignment = Alignment(horizontal='right', vertical='center')
+            elif col_type == 'number':
+                cell.number_format = '0.0'
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+            elif col_type == 'center':
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+            elif col_type == 'text':
+                cell.number_format = '@'
+                cell.alignment = Alignment(horizontal='left', vertical='center')
+
+    # Set column widths
+    for c_idx, (_, _, _, default_w, _) in enumerate(columns_config, start=1):
+        col_letter = get_column_letter(c_idx)
+        ws.column_dimensions[col_letter].width = default_w
+
+    ws.freeze_panes = 'C2'
 
     output = io.BytesIO()
     wb.save(output)

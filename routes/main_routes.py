@@ -8,7 +8,7 @@ from models.payroll_transaction import get_payroll_transactions, get_payroll_att
 from models.payroll_period_settings import get_period_settings, save_period_settings
 from models.payroll_period_settings import get_period_settings, save_period_settings, get_period_settings_info, calculate_month_working_days
 from services.payroll_engine import calculate_payroll
-from services.excel_service import generate_employee_master_excel
+from services.excel_service import generate_employee_master_excel, generate_attendance_template_excel
 from utils.payroll_calculation_engine import get_worker_calculation_trace, get_staff_pf_esi_calculation_trace
 from utils.contact_utils import normalize_indian_phone, mask_phone_number
 
@@ -270,9 +270,19 @@ def attendance():
             att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
             sal_dict = {'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
             
-            # Preserve existing deductions if present
+            # Preserve existing deductions and advance tracking if present
             existing_t = trans_map.get(emp_id) or {}
-            ded_dict = {'arrears': float(existing_t.get('Arrears', 0.0) or 0.0), 'naps': float(existing_t.get('NAPS_Deduction', 0.0) or 0.0), 'lic': float(existing_t.get('LIC_Deduction', 0.0) or 0.0), 'advance': float(existing_t.get('Advance_Deduction', 0.0) or 0.0), 'accommodation': float(existing_t.get('Accommodation_Deduction', 0.0) or 0.0), 'other': float(existing_t.get('Other_Deduction', 0.0) or 0.0)}
+            ded_dict = {
+                'arrears': float(existing_t.get('Arrears', 0.0) or 0.0),
+                'naps': float(existing_t.get('NAPS_Deduction', 0.0) or 0.0),
+                'lic': float(existing_t.get('LIC_Deduction', 0.0) or 0.0),
+                'advance': float(existing_t.get('Advance_Deduction', 0.0) or 0.0),
+                'opening_adv': float(existing_t.get('Opening_Advance', 0.0) or 0.0),
+                'new_adv': float(existing_t.get('New_Advance', 0.0) or 0.0),
+                'closing_adv': float(existing_t.get('Closing_Advance', 0.0) or 0.0),
+                'accommodation': float(existing_t.get('Accommodation_Deduction', 0.0) or 0.0),
+                'other': float(existing_t.get('Other_Deduction', 0.0) or 0.0)
+            }
 
             calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=standard_days)
             calculated_rows.append(calc_res)
@@ -301,6 +311,15 @@ def attendance():
                 except:
                     pass
 
+            def _get_float_val(data_dict, keys, default=0.0):
+                for k in keys:
+                    if k in data_dict and pd.notna(data_dict[k]):
+                        try:
+                            return float(data_dict[k])
+                        except Exception:
+                            pass
+                return default
+
             calculated_rows = []
             for emp in employees:
                 emp_id = emp['Employee_ID']
@@ -318,13 +337,34 @@ def attendance():
                 att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
                 sal_dict = {'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
                 
+                # Advance tracking support
+                opening_adv = _get_float_val(r_data, ['Opening Advance', 'Opening_Advance', 'Opening Adv'], float(existing_t.get('Opening_Advance', 0.0) or 0.0))
+                new_adv = _get_float_val(r_data, ['New Advance', 'New_Advance', 'New Adv'], float(existing_t.get('New_Advance', 0.0) or 0.0))
+                advance_ded = _get_float_val(r_data, ['Advance Deduction', 'Advance_Deduction', 'Advance', 'Adv Dedn'], float(existing_t.get('Advance_Deduction', 0.0) or 0.0))
+
+                closing_adv_input = None
+                for k in ['Closing Advance', 'Closing_Advance', 'Closing Adv']:
+                    if k in r_data and pd.notna(r_data[k]):
+                        try:
+                            closing_adv_input = float(r_data[k])
+                            break
+                        except Exception:
+                            pass
+                if closing_adv_input is not None:
+                    closing_adv = closing_adv_input
+                else:
+                    closing_adv = max(0.0, opening_adv + new_adv - advance_ded)
+
                 ded_dict = {
-                    'arrears': float(r_data.get('Arrears', 0.0)) if pd.notna(r_data.get('Arrears')) else float(existing_t.get('Arrears', 0.0)),
-                    'naps': float(r_data.get('NAPS', 0.0)) if pd.notna(r_data.get('NAPS')) else float(existing_t.get('NAPS_Deduction', 0.0)),
-                    'lic': float(r_data.get('LIC', 0.0)) if pd.notna(r_data.get('LIC')) else float(existing_t.get('LIC_Deduction', 0.0)),
-                    'advance': float(r_data.get('Advance', 0.0)) if pd.notna(r_data.get('Advance')) else float(existing_t.get('Advance_Deduction', 0.0)),
-                    'accommodation': float(r_data.get('Accommodation', 0.0)) if pd.notna(r_data.get('Accommodation')) else float(existing_t.get('Accommodation_Deduction', 0.0)),
-                    'other': float(r_data.get('Other', 0.0)) if pd.notna(r_data.get('Other')) else float(existing_t.get('Other_Deduction', 0.0))
+                    'arrears': _get_float_val(r_data, ['Arrears'], float(existing_t.get('Arrears', 0.0) or 0.0)),
+                    'naps': _get_float_val(r_data, ['NAPS', 'NAPS_Deduction'], float(existing_t.get('NAPS_Deduction', 0.0) or 0.0)),
+                    'lic': _get_float_val(r_data, ['LIC', 'LIC_Deduction'], float(existing_t.get('LIC_Deduction', 0.0) or 0.0)),
+                    'advance': advance_ded,
+                    'opening_adv': opening_adv,
+                    'new_adv': new_adv,
+                    'closing_adv': closing_adv,
+                    'accommodation': _get_float_val(r_data, ['Accommodation', 'Accommodation_Deduction'], float(existing_t.get('Accommodation_Deduction', 0.0) or 0.0)),
+                    'other': _get_float_val(r_data, ['Other', 'Other_Deduction'], float(existing_t.get('Other_Deduction', 0.0) or 0.0))
                 }
 
                 calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=standard_days)
@@ -338,35 +378,8 @@ def attendance():
         return redirect(url_for('main.attendance', year=year, month=month, category=category, employee_type=emp_type, department=dept, search=search))
 
     elif action == 'download_template':
-        data = []
-        for emp in employees:
-            emp_id = emp['Employee_ID']
-            existing_t = trans_map.get(emp_id) or {}
-            data.append({
-                'Emp ID': emp['Emp_No'],
-                'Employee Name': emp['Employee_Name'],
-                'Type': emp.get('Employee_Type', ''),
-                'Category': emp.get('Category', ''),
-                'Company Working Days': standard_days,
-                'Present': existing_t.get('Present_Days', standard_days),
-                'N/H': existing_t.get('NH', 0.0),
-                'EL': existing_t.get('EL', 0.0),
-                'CL': existing_t.get('CL', 0.0),
-                'SL': existing_t.get('SL', 0.0),
-                'OT Hours': existing_t.get('Act_OT_Hrs', 0.0),
-                'Arrears': existing_t.get('Arrears', 0.0),
-                'NAPS': existing_t.get('NAPS_Deduction', 0.0),
-                'LIC': existing_t.get('LIC_Deduction', 0.0),
-                'Advance': existing_t.get('Advance_Deduction', 0.0),
-                'Accommodation': existing_t.get('Accommodation_Deduction', 0.0),
-                'Other': existing_t.get('Other_Deduction', 0.0)
-            })
-        df = pd.DataFrame(data)
-        out = io.BytesIO()
-        with pd.ExcelWriter(out, engine='xlsxwriter') as writer:
-            df.to_excel(writer, index=False, sheet_name='Monthly_Input')
-        out.seek(0)
-        return send_file(out, download_name=f"Monthly_Input_Template_{month}_{year}.xlsx", as_attachment=True)
+        output = generate_attendance_template_excel(year, month, employees, standard_days, trans_map=trans_map)
+        return send_file(output, download_name=f"Attendance_Template_{month}_{year}.xlsx", as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
     # Read month-specific attendance records from PayrollAttendance
     att_records = get_payroll_attendance(year, month)

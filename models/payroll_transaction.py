@@ -30,6 +30,10 @@ def ensure_attendance_columns():
             BEGIN
                 ALTER TABLE PayrollTransaction ADD LOP_Deduction DECIMAL(18,2) DEFAULT 0.0;
             END
+            IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'PayrollTransaction' AND COLUMN_NAME = 'Opening_Advance')
+            BEGIN
+                ALTER TABLE PayrollTransaction ADD Opening_Advance DECIMAL(18,2) DEFAULT 0.0, New_Advance DECIMAL(18,2) DEFAULT 0.0, Closing_Advance DECIMAL(18,2) DEFAULT 0.0;
+            END
         """)
         conn.commit()
         conn.close()
@@ -57,6 +61,9 @@ def get_payroll_transactions(year, month, category=None, emp_type=None, search=N
             t.Special_Allowance_Earned, t.OT_Wages, t.Gross_Wages,
             t.PF_Gross, t.ESI_Gross, t.PF_Deduction, t.Accounts_PF_Deduction, t.ESI_Deduction, t.Accounts_ESI_Deduction,
             t.Arrears, t.NAPS_Deduction, t.LIC_Deduction, t.Advance_Deduction, t.Accommodation_Deduction, t.Other_Deduction,
+            ISNULL(t.Opening_Advance, 0.0) AS Opening_Advance,
+            ISNULL(t.New_Advance, 0.0) AS New_Advance,
+            ISNULL(t.Closing_Advance, 0.0) AS Closing_Advance,
             t.Total_Deduction, t.Net_Salary,
             p.Payroll_Year, p.Payroll_Month, p.Standard_Working_Days
         FROM PayrollPeriod p WITH (NOLOCK)
@@ -194,6 +201,7 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                     r.get('ESI_Deduction', 0.0), r.get('Accounts_ESI_Deduction', 0.0),
                     r.get('Arrears', 0.0), r.get('NAPS_Deduction', 0.0), r.get('LIC_Deduction', 0.0),
                     r.get('Advance_Deduction', 0.0), r.get('Accommodation_Deduction', 0.0), r.get('Other_Deduction', 0.0),
+                    float(r.get('Opening_Advance', 0.0) or 0.0), float(r.get('New_Advance', 0.0) or 0.0), float(r.get('Closing_Advance', 0.0) or 0.0),
                     lop_ded, r.get('Total_Deduction', 0.0), r.get('Net_Salary', 0.0),
 
                     period_id, emp_id,
@@ -208,6 +216,7 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                     r.get('ESI_Deduction', 0.0), r.get('Accounts_ESI_Deduction', 0.0),
                     r.get('Arrears', 0.0), r.get('NAPS_Deduction', 0.0), r.get('LIC_Deduction', 0.0),
                     r.get('Advance_Deduction', 0.0), r.get('Accommodation_Deduction', 0.0), r.get('Other_Deduction', 0.0),
+                    float(r.get('Opening_Advance', 0.0) or 0.0), float(r.get('New_Advance', 0.0) or 0.0), float(r.get('Closing_Advance', 0.0) or 0.0),
                     lop_ded, r.get('Total_Deduction', 0.0), r.get('Net_Salary', 0.0)
                 ))
 
@@ -238,6 +247,7 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                             Basic_DA_Earned=?, HRA_Earned=?, Conveyance_Earned=?, Washing_Allowance_Earned=?, Other_Allowance_Earned=?, Special_Allowance_Earned=?,
                             Gross_Wages=?, PF_Gross=?, ESI_Gross=?, PF_Deduction=?, Accounts_PF_Deduction=?, ESI_Deduction=?, Accounts_ESI_Deduction=?,
                             Arrears=?, NAPS_Deduction=?, LIC_Deduction=?, Advance_Deduction=?, Accommodation_Deduction=?, Other_Deduction=?,
+                            Opening_Advance=?, New_Advance=?, Closing_Advance=?,
                             LOP_Deduction=?, Total_Deduction=?, Net_Salary=?, Updated_At=GETDATE()
                     WHEN NOT MATCHED THEN
                         INSERT (
@@ -247,6 +257,7 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                             Basic_DA_Earned, HRA_Earned, Conveyance_Earned, Washing_Allowance_Earned, Other_Allowance_Earned, Special_Allowance_Earned,
                             Gross_Wages, PF_Gross, ESI_Gross, PF_Deduction, Accounts_PF_Deduction, ESI_Deduction, Accounts_ESI_Deduction,
                             Arrears, NAPS_Deduction, LIC_Deduction, Advance_Deduction, Accommodation_Deduction, Other_Deduction,
+                            Opening_Advance, New_Advance, Closing_Advance,
                             LOP_Deduction, Total_Deduction, Net_Salary, Created_At, Updated_At
                         ) VALUES (
                             ?, ?, ?, ?, ?,
@@ -255,18 +266,33 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                             ?, ?, ?, ?, ?, ?,
                             ?, ?, ?, ?, ?, ?, ?,
                             ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?,
                             ?, ?, ?, GETDATE(), GETDATE()
                         );
                 """, transaction_params)
 
             conn.commit()
 
-            # Update Advances table remaining balances for any saved advance deductions
+            # Update Advances table remaining balances and record any new advances
             try:
                 for r in records:
                     emp_no = r.get('Emp_No') or r.get('Emp_Code')
+                    if not emp_no:
+                        continue
+
+                    # 1. Record New Advance if entered
+                    new_adv = float(r.get('New_Advance', 0.0) or 0.0)
+                    if new_adv > 0:
+                        cur.execute("SELECT COUNT(*) FROM Advances WHERE (Emp_No = ? OR CAST(Emp_No AS NVARCHAR) = ?) AND Start_Year = ? AND Start_Month = ? AND Total_Amount = ?", (emp_no, str(emp_no), year, month, new_adv))
+                        if cur.fetchone()[0] == 0:
+                            cur.execute("""
+                                INSERT INTO Advances (Emp_No, Start_Year, Start_Month, Total_Amount, Installments, Monthly_Amount, Remaining_Amount, Status, Note, Created_At)
+                                VALUES (?, ?, ?, ?, 1, ?, ?, 'Active', 'New Advance via Attendance', GETDATE())
+                            """, (emp_no, year, month, new_adv, new_adv, new_adv))
+
+                    # 2. Deduct from Active Advances
                     adv_ded = float(r.get('Advance_Deduction', 0.0) or 0.0)
-                    if adv_ded > 0 and emp_no:
+                    if adv_ded > 0:
                         cur.execute("SELECT Id, Remaining_Amount FROM Advances WHERE (Emp_No = ? OR CAST(Emp_No AS NVARCHAR) = ?) AND Status = 'Active' ORDER BY Created_At ASC", (emp_no, str(emp_no)))
                         adv_rows = cur.fetchall()
                         rem_ded = Decimal(str(adv_ded))
