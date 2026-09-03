@@ -49,6 +49,8 @@ def get_payroll_transactions(year, month, category=None, emp_type=None, search=N
             t.PayrollTransaction_ID, p.PayrollPeriod_ID, m.Employee_ID,
             m.Emp_No, ISNULL(m.Employee_Name, m.Emp_Name) AS Employee_Name,
             m.Emp_Code, m.ERP_Emp_No, m.Department, m.Designation, m.Grade,
+            ISNULL(NULLIF(m.UAN_No, ''), ISNULL(m.UAN, '')) AS UAN_No,
+            ISNULL(m.ESI_No, '') AS ESI_No,
             ISNULL(t.Employee_Type, m.Employee_Type) AS Employee_Type,
             ISNULL(t.Payroll_Category, m.Payroll_Category) AS Payroll_Category,
             ISNULL(t.Category, CASE WHEN m.Category IS NOT NULL AND m.Category != '' THEN m.Category ELSE UPPER(m.Employee_Type) + '_' + UPPER(m.Payroll_Category) END) AS Category,

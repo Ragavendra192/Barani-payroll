@@ -44,12 +44,22 @@ def generate_wages_excel(year, month, category_filter='ALL'):
             t = trans_map.get(emp['Employee_ID'])
             if t and float(t.get('Gross_Wages', 0.0) or 0.0) > 0.0:
                 t['Working_Days'] = standard_days
+                uan = str(t.get('UAN_No') or t.get('UAN') or emp.get('UAN_No') or emp.get('UAN') or '').strip()
+                esi = str(t.get('ESI_No') or emp.get('ESI_No') or '').strip()
+                t['UAN_No'] = uan
+                t['ESI_No'] = esi
+                t['Department'] = t.get('Department') or emp.get('Department') or ''
+                t['Designation'] = t.get('Designation') or emp.get('Designation') or ''
                 payroll_rows.append(t)
             else:
                 att_dict = {'present_days': standard_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': standard_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
                 ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': 0.0, 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
                 sal_dict = {'Fixed_Gross': emp.get('Fixed_Gross', 0.0), 'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
                 c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=standard_days)
+                c_res['UAN_No'] = str(emp.get('UAN_No') or emp.get('UAN') or '').strip()
+                c_res['ESI_No'] = str(emp.get('ESI_No') or '').strip()
+                c_res['Department'] = emp.get('Department') or ''
+                c_res['Designation'] = emp.get('Designation') or ''
                 payroll_rows.append(c_res)
     else:
         for emp in employees:
@@ -57,6 +67,10 @@ def generate_wages_excel(year, month, category_filter='ALL'):
             ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': 0.0, 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
             sal_dict = {'Fixed_Gross': emp.get('Fixed_Gross', 0.0), 'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
             c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=standard_days)
+            c_res['UAN_No'] = str(emp.get('UAN_No') or emp.get('UAN') or '').strip()
+            c_res['ESI_No'] = str(emp.get('ESI_No') or '').strip()
+            c_res['Department'] = emp.get('Department') or ''
+            c_res['Designation'] = emp.get('Designation') or ''
             payroll_rows.append(c_res)
 
     month_name = MONTH_NAMES.get(month, f"Month_{month}")
@@ -184,8 +198,10 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 ws.write(row_idx, 2, str(r.get('Employee_Name') or r.get('Name', '')), fmt_text)
                 ws.write(row_idx, 3, str(r.get('Department', '') or '-'), fmt_text)
                 ws.write(row_idx, 4, str(r.get('Designation', '') or '-'), fmt_text)
-                ws.write(row_idx, 5, str(r.get('UAN_No', '') or '-'), fmt_text)
-                ws.write(row_idx, 6, str(r.get('ESI_No', '') or '-'), fmt_text)
+                uan_str = str(r.get('UAN_No') or r.get('UAN') or '').strip()
+                esi_str = str(r.get('ESI_No') or '').strip()
+                ws.write(row_idx, 5, uan_str if uan_str and uan_str not in ('0', 'None', 'nan') else '-', fmt_text)
+                ws.write(row_idx, 6, esi_str if esi_str and esi_str not in ('0', 'None', 'nan') else '-', fmt_text)
                 ws.write(row_idx, 7, str(r.get('Category', '')), fmt_center)
 
                 ws.write(row_idx, 8, float(r.get('Working_Days', standard_days) or standard_days), fmt_num)
@@ -294,8 +310,10 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 ws.write(row_idx, 2, str(r.get('Employee_Name') or r.get('Name', '')), fmt_text)
                 ws.write(row_idx, 3, str(r.get('Department', '') or '-'), fmt_text)
                 ws.write(row_idx, 4, str(r.get('Designation', '') or '-'), fmt_text)
-                ws.write(row_idx, 5, str(r.get('UAN_No', '') or '-'), fmt_text)
-                ws.write(row_idx, 6, str(r.get('ESI_No', '') or '-'), fmt_text)
+                uan_str = str(r.get('UAN_No') or r.get('UAN') or '').strip()
+                esi_str = str(r.get('ESI_No') or '').strip()
+                ws.write(row_idx, 5, uan_str if uan_str and uan_str not in ('0', 'None', 'nan') else '-', fmt_text)
+                ws.write(row_idx, 6, esi_str if esi_str and esi_str not in ('0', 'None', 'nan') else '-', fmt_text)
                 ws.write(row_idx, 7, str(r.get('Category', '')), fmt_center)
 
                 ws.write(row_idx, 8, float(r.get('Working_Days', standard_days) or standard_days), fmt_num)
