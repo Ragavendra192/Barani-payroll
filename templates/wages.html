@@ -152,7 +152,7 @@
                         {% if rows %}
                             {% for r in rows %}
                             <tr>
-                                <td class="fw-bold text-primary ps-3 sticky-col-1">#{{ r.Emp_No }}</td>
+                                <td class="fw-bold text-primary ps-3 sticky-col-1">{{ r.Emp_No }}</td>
                                 <td class="fw-bold sticky-col-2">{{ r.Employee_Name or r.Name }}</td>
                                 <td class="sticky-col-3">
                                     {% if 'STAFF' in r.Category %}

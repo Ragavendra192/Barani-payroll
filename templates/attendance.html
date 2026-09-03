@@ -100,7 +100,7 @@
                             {% for r in rows %}
                             <tr>
                                 <td class="ps-2 text-center text-muted small sticky-col-1">{{ loop.index }}</td>
-                                <td class="text-center fw-bold text-primary sticky-col-2">#{{ r.Emp_No }}</td>
+                                <td class="text-center fw-bold text-primary sticky-col-2">{{ r.Emp_No }}</td>
                                 <td class="fw-bold ps-2 sticky-col-3 text-truncate" style="max-width: 160px;" title="{{ r.Employee_Name }}">{{ r.Employee_Name }}</td>
                                 <td class="text-center">
                                     {% if r.Employee_Type == 'STAFF' %}

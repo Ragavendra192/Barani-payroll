@@ -120,7 +120,7 @@
                         {% for emp in employees %}
                         <tr>
                             <td class="ps-3 text-center fw-bold text-secondary">{{ loop.index }}</td>
-                            <td class="fw-bold text-primary">#{{ emp.Emp_No }}</td>
+                            <td class="fw-bold text-primary">{{ emp.Emp_No }}</td>
                             <td class="fw-bold text-dark">{{ emp.Employee_Name }}</td>
                             <td><span class="fw-semibold text-secondary">{{ emp.Department or '-' }}</span></td>
                             <td><span class="text-muted">{{ emp.Designation or '-' }}</span></td>

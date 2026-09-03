@@ -116,7 +116,7 @@
                         {% for r in records %}
                         <tr>
                             <td class="ps-3 text-muted small">{{ loop.index }}</td>
-                            <td class="fw-bold text-primary">#{{ r.Emp_No }}</td>
+                            <td class="fw-bold text-primary">{{ r.Emp_No }}</td>
                             <td class="fw-bold">{{ r.Employee_Name or r.Name }}</td>
                             <td>
                                 {% if 'STAFF' in r.Category %}
