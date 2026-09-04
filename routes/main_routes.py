@@ -214,6 +214,8 @@ def attendance():
     search = search.strip()
 
     action = request.form.get('action') or request.args.get('action')
+    form_worker_days = request.form.get('worker_working_days') or request.args.get('worker_working_days')
+    form_staff_days = request.form.get('staff_working_days') or request.args.get('staff_working_days')
     form_std_days = request.form.get('standard_days') or request.args.get('standard_days')
 
     # Get period info with calendar calculation
@@ -222,22 +224,19 @@ def attendance():
     sunday_count = period_info['sunday_count']
     default_working_days = period_info['default_working_days']
 
-    if action == 'apply_std_days' and form_std_days:
+    worker_working_days = float(form_worker_days) if form_worker_days and float(form_worker_days) > 0 else (float(form_std_days) if form_std_days and float(form_std_days) > 0 else period_info['worker_working_days'])
+    staff_working_days = float(form_staff_days) if form_staff_days and float(form_staff_days) > 0 else period_info['staff_working_days']
+    standard_days = worker_working_days
+
+    if action == 'apply_std_days':
         try:
-            val = float(form_std_days)
-            if val <= 0:
+            if worker_working_days <= 0 or staff_working_days <= 0:
                 raise ValueError("Working days must be > 0")
-            save_period_settings(year, month, val)
-            standard_days = val
-            flash(f"Working Days saved as {standard_days} for {month}/{year}!", "success")
+            save_period_settings(year, month, worker_days=worker_working_days, staff_days=staff_working_days)
+            flash(f"Working Days saved! Workers: {worker_working_days} days, Staff: {staff_working_days} days for {month}/{year}.", "success")
             return redirect(url_for('main.attendance', year=year, month=month, category=category, employee_type=emp_type, department=dept, search=search))
         except Exception as e:
             flash(f"Invalid Working Days: {str(e)}", "danger")
-
-    if form_std_days and float(form_std_days) > 0:
-        standard_days = float(form_std_days)
-    else:
-        standard_days = period_info['standard_working_days']
 
     # Fetch active employees
     employees = get_all_employees(status='Active')
@@ -259,6 +258,9 @@ def attendance():
         calculated_rows = []
         for emp in employees:
             emp_id = emp['Employee_ID']
+            emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
+            emp_std_days = staff_working_days if emp_is_staff else worker_working_days
+
             prefix = f"emp_{emp_id}_"
             present_days = float(request.form.get(f"{prefix}present_days", 0.0) or 0.0)
             nh_days = float(request.form.get(f"{prefix}nh", 0.0) or 0.0)
@@ -284,12 +286,13 @@ def attendance():
                 'other': float(existing_t.get('Other_Deduction', 0.0) or 0.0)
             }
 
-            calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=standard_days)
+            calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
+            calc_res['Working_Days'] = emp_std_days
             calculated_rows.append(calc_res)
 
         try:
-            save_period_settings(year, month, standard_days)
-            save_payroll_batch(year, month, calculated_rows, standard_days=standard_days)
+            save_period_settings(year, month, worker_days=worker_working_days, staff_days=staff_working_days)
+            save_payroll_batch(year, month, calculated_rows, standard_days=worker_working_days)
             flash(f"Attendance for {month}/{year} saved successfully!", "success")
             return redirect(url_for('main.attendance', year=year, month=month, category=category, employee_type=emp_type, department=dept, search=search))
         except Exception as e:
@@ -324,10 +327,13 @@ def attendance():
             for emp in employees:
                 emp_id = emp['Employee_ID']
                 emp_no = int(emp['Emp_No'])
+                emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
+                emp_std_days = staff_working_days if emp_is_staff else worker_working_days
+
                 r_data = import_data.get(emp_no, {})
                 existing_t = trans_map.get(emp_id) or {}
                 
-                present_days = float(r_data.get('Present', standard_days)) if pd.notna(r_data.get('Present')) else float(existing_t.get('Present_Days', standard_days))
+                present_days = float(r_data.get('Present', emp_std_days)) if pd.notna(r_data.get('Present')) else float(existing_t.get('Present_Days', emp_std_days))
                 nh_days = float(r_data.get('N/H', 0.0)) if pd.notna(r_data.get('N/H')) else float(existing_t.get('NH', 0.0))
                 el_days = float(r_data.get('EL', 0.0)) if pd.notna(r_data.get('EL')) else float(existing_t.get('EL', 0.0))
                 cl_days = float(r_data.get('CL', 0.0)) if pd.notna(r_data.get('CL')) else float(existing_t.get('CL', 0.0))
@@ -367,18 +373,19 @@ def attendance():
                     'other': _get_float_val(r_data, ['Other', 'Other_Deduction'], float(existing_t.get('Other_Deduction', 0.0) or 0.0))
                 }
 
-                calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=standard_days)
+                calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
+                calc_res['Working_Days'] = emp_std_days
                 calculated_rows.append(calc_res)
 
-            save_period_settings(year, month, standard_days)
-            save_payroll_batch(year, month, calculated_rows, standard_days=standard_days)
+            save_period_settings(year, month, worker_days=worker_working_days, staff_days=staff_working_days)
+            save_payroll_batch(year, month, calculated_rows, standard_days=worker_working_days)
             flash(f"Monthly data imported and saved successfully for {len(calculated_rows)} employees!", "success")
         except Exception as e:
             flash(f"Error importing excel: {str(e)}", "danger")
         return redirect(url_for('main.attendance', year=year, month=month, category=category, employee_type=emp_type, department=dept, search=search))
 
     elif action == 'download_template':
-        output = generate_attendance_template_excel(year, month, employees, standard_days, trans_map=trans_map)
+        output = generate_attendance_template_excel(year, month, employees, worker_working_days=worker_working_days, staff_working_days=staff_working_days, trans_map=trans_map)
         return send_file(output, download_name=f"Attendance_Template_{month}_{year}.xlsx", as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
     # Read month-specific attendance records from PayrollAttendance
@@ -388,6 +395,9 @@ def attendance():
     attendance_rows = []
     for emp in employees:
         emp_id = emp['Employee_ID']
+        emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
+        emp_std_days = staff_working_days if emp_is_staff else worker_working_days
+
         if emp_id in att_map:
             r = att_map[emp_id]
             pres = float(r.get('Present_Days') if r.get('Present_Days') is not None else 0.0)
@@ -397,7 +407,7 @@ def attendance():
             sl = float(r.get('SL') or 0.0)
             act_ot = float(r.get('Act_OT_Hrs') or 0.0)
             tot_days = pres + nh + el + cl + sl
-            lop = max(0.0, standard_days - tot_days)
+            lop = max(0.0, emp_std_days - tot_days)
             row = {
                 'Employee_ID': emp_id,
                 'Emp_No': emp['Emp_No'],
@@ -405,7 +415,7 @@ def attendance():
                 'Employee_Type': emp['Employee_Type'],
                 'Category': emp.get('Category') or f"{emp.get('Employee_Type')}_{emp.get('Payroll_Category')}",
                 'Department': emp.get('Department', ''),
-                'Working_Days': standard_days,
+                'Working_Days': emp_std_days,
                 'Present_Days': pres,
                 'NH': nh,
                 'EL': el,
@@ -423,13 +433,13 @@ def attendance():
                 'Employee_Type': emp['Employee_Type'],
                 'Category': emp.get('Category') or f"{emp.get('Employee_Type')}_{emp.get('Payroll_Category')}",
                 'Department': emp.get('Department', ''),
-                'Working_Days': standard_days,
+                'Working_Days': emp_std_days,
                 'Present_Days': 0.0,
                 'NH': 0.0,
                 'EL': 0.0,
                 'CL': 0.0,
                 'SL': 0.0,
-                'LOP_Days': standard_days,
+                'LOP_Days': emp_std_days,
                 'Act_OT_Hrs': 0.0
             }
         attendance_rows.append(row)
@@ -447,7 +457,9 @@ def attendance():
         calendar_days=calendar_days,
         sunday_count=sunday_count,
         default_working_days=default_working_days,
-        standard_days=standard_days,
+        worker_working_days=worker_working_days,
+        staff_working_days=staff_working_days,
+        standard_days=worker_working_days,
         rows=attendance_rows,
         categories=CATEGORIES,
         departments=all_depts,
@@ -478,10 +490,14 @@ def wages():
         search = request.args.get('search', '').strip()
 
     action = request.form.get('action')
+    form_worker_days = request.form.get('worker_working_days') or request.args.get('worker_working_days')
+    form_staff_days = request.form.get('staff_working_days') or request.args.get('staff_working_days')
     form_std_days = request.form.get('standard_days') or request.args.get('standard_days')
 
     period_info = get_period_settings_info(year, month)
-    standard_days = float(form_std_days) if form_std_days and float(form_std_days) > 0 else period_info['standard_working_days']
+    worker_working_days = float(form_worker_days) if form_worker_days and float(form_worker_days) > 0 else (float(form_std_days) if form_std_days and float(form_std_days) > 0 else period_info['worker_working_days'])
+    staff_working_days = float(form_staff_days) if form_staff_days and float(form_staff_days) > 0 else period_info['staff_working_days']
+    standard_days = worker_working_days
 
     # Fetch active employees (ORDERED BY STAFF FIRST, THEN WORKER)
     employees = get_all_employees(status='Active')
@@ -528,6 +544,8 @@ def wages():
     if request.method == 'POST' and action in ('calculate', 'save'):
         for emp in employees:
             emp_id = emp['Employee_ID']
+            emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
+            emp_std_days = staff_working_days if emp_is_staff else worker_working_days
             prefix = f"emp_{emp_id}_"
 
             existing_t = trans_map.get(emp_id) or {}
@@ -550,14 +568,15 @@ def wages():
                 'other': get_f(f"{prefix}other", existing_t.get('Other_Deduction', 0.0))
             }
 
-            calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=standard_days)
+            calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
+            calc_res['Working_Days'] = emp_std_days
             calc_res['Opening_Advance'] = adv_balances.get(str(emp['Emp_No']), 0.0)
             calculated_rows.append(calc_res)
 
         if action == 'save':
             try:
-                save_period_settings(year, month, standard_days)
-                save_payroll_batch(year, month, calculated_rows, standard_days=standard_days)
+                save_period_settings(year, month, worker_days=worker_working_days, staff_days=staff_working_days)
+                save_payroll_batch(year, month, calculated_rows, standard_days=worker_working_days)
                 flash(f"Wages Payroll for {month}/{year} saved successfully!", 'success')
                 return redirect(url_for('main.wages', year=year, month=month, category=category, department=dept, search=search))
             except Exception as e:
@@ -567,6 +586,9 @@ def wages():
         if action == 'refresh_attendance':
             flash(f"Attendance & Payroll data refreshed from SQL Server database for {month}/{year}!", 'success')
         for emp in employees:
+            emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
+            emp_std_days = staff_working_days if emp_is_staff else worker_working_days
+
             t = trans_map.get(emp['Employee_ID']) or {}
             present_days = float(t.get('Present_Days') if t.get('Present_Days') is not None else 0.0)
             nh_days = float(t.get('NH') or t.get('PH') or 0.0)
@@ -587,7 +609,8 @@ def wages():
                 'other': float(t.get('Other_Deduction', 0.0) or 0.0)
             }
 
-            c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=standard_days)
+            c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
+            c_res['Working_Days'] = emp_std_days
             c_res['Opening_Advance'] = adv_balances.get(str(emp['Emp_No']), 0.0)
             calculated_rows.append(c_res)
     else:
@@ -610,7 +633,9 @@ def wages():
         category=category,
         dept=dept,
         search=search,
-        standard_days=standard_days,
+        worker_working_days=worker_working_days,
+        staff_working_days=staff_working_days,
+        standard_days=worker_working_days,
         rows=calculated_rows,
         tot_emp=tot_emp,
         tot_gross=tot_gross,
@@ -625,22 +650,30 @@ def wages():
     )
 
 @main_bp.route('/wages/download_excel/<int:year>/<int:month>')
-def download_wages_excel(year, month):
+@main_bp.route('/wages/download_excel/<int:year>/<int:month>/<path:filename>')
+def download_wages_excel(year, month, filename=None):
     from flask import send_file
     from services.wages_excel_exporter import generate_wages_excel
 
     category = request.args.get('category', 'ALL')
-    excel_io, filename = generate_wages_excel(year, month, category_filter=category)
+    excel_io, generated_filename = generate_wages_excel(year, month, category_filter=category)
     if not excel_io:
         flash("No payroll data available to export for this month.", 'warning')
         return redirect(url_for('main.wages', year=year, month=month, category=category))
 
-    return send_file(
+    out_name = filename or generated_filename
+    if not out_name.endswith('.xlsx'):
+        out_name += '.xlsx'
+
+    response = send_file(
         excel_io,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name=filename
+        download_name=out_name
     )
+    response.headers["Content-Disposition"] = f'attachment; filename="{out_name}"; filename*="UTF-8\'\'{out_name}"'
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 # ============================================================
 # 4. PAYSLIP PAGE (/payslip)

@@ -132,13 +132,12 @@ def process_single_employee_whatsapp_send(year, month, emp_no, category=None, re
 
     # 4. Send via WhatsApp Cloud API with Retry Logic (Up to 3 attempts total)
     max_attempts = 3
-    success = False
-    last_msg = ""
+    send_res = None
     attempt_count = 0
 
     for attempt in range(1, max_attempts + 1):
         attempt_count = attempt
-        success, last_msg = send_payslip_whatsapp(
+        send_res = send_payslip_whatsapp(
             phone_number=norm_phone,
             employee_name=emp_name,
             employee_id=emp_no,
@@ -146,12 +145,20 @@ def process_single_employee_whatsapp_send(year, month, emp_no, category=None, re
             pdf_bytes=pdf_bytes,
             filename=filename
         )
-        if success:
+        if send_res.success:
+            break
+        # Do not retry if configuration or unrecoverable client error
+        if getattr(send_res, 'stage', None) in ('API_CONFIGURATION', 'PHONE_VALIDATION'):
             break
         time.sleep(1)  # Brief pause between retry attempts
 
     # 5. Log Result
+    success = send_res.success if send_res else False
     status_str = 'SENT' if success else 'FAILED'
+    stage_str = getattr(send_res, 'stage', None)
+    msg_id = getattr(send_res, 'message_id', None)
+    last_msg = send_res.message if send_res else 'Send failed'
+
     log_payslip_send(
         employee_id=emp_id,
         payroll_month=payroll_month_label,
@@ -159,6 +166,8 @@ def process_single_employee_whatsapp_send(year, month, emp_no, category=None, re
         email_id=email_id,
         payslip_file_name=filename,
         whatsapp_status=status_str,
+        stage=stage_str,
+        message_id=msg_id,
         sent_by='Admin',
         error_message=None if success else last_msg,
         payroll_year=year,
@@ -167,6 +176,7 @@ def process_single_employee_whatsapp_send(year, month, emp_no, category=None, re
 
     return {
         'status': status_str,
+        'stage': stage_str,
         'message': last_msg,
         'masked_phone': masked_phone,
         'emp_name': emp_name,

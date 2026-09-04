@@ -1,6 +1,6 @@
 import unittest
 from services.payroll_formula_validator import validate_formula_syntax, detect_dependency_cycles, evaluate_formula
-from services.payroll_formula_engine import test_category_formulas
+from services.payroll_formula_engine import test_category_formulas as run_category_formulas
 from config import PAYROLL_FORMULA_ADMIN_PASSWORD
 
 class TestPayrollFormulaEngine(unittest.TestCase):
@@ -69,7 +69,7 @@ class TestPayrollFormulaEngine(unittest.TestCase):
             'OT_Hours': 10.0,
             'LIC': 250.0
         }
-        res = test_category_formulas('WORKER_PF_ESI', sample)
+        res = run_category_formulas('WORKER_PF_ESI', sample)
         self.assertEqual(res['worked_days'], 26.0)
         self.assertEqual(res['earned_gross'], 24525.0) # (900*26 = 23400) + OT (10 * 112.5 = 1125)
         self.assertEqual(res['pf_gross'], 15000.0)

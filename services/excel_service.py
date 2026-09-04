@@ -32,7 +32,7 @@ def generate_monthly_salary_statement_excel(year, month):
                 df = pd.DataFrame(columns=[
                     "Emp No", "ERP Emp No", "Name", "Department", "Designation",
                     "Working Days", "OT Hours", "Per Day Wage",
-                    "Basic + DA (Earned)", "HRA (Earned)", "Conveyance (Earned)", "Washing (Earned)", "Other (Earned)",
+                    "Basic + DA", "HRA", "Conveyance", "Washing", "Other",
                     "Special Allowance", "OT Wages", "Gross Wages",
                     "PF", "ESI", "NAPS", "LIC", "Opening Advance", "New Advance", "Advance", "Closing Advance", "Accommodation", "Other Dedn", "Total Dedn", "Net Salary"
                 ])
@@ -52,11 +52,11 @@ def generate_monthly_salary_statement_excel(year, month):
                         "Working Days": r.get('Working_Days', 0.0),
                         "OT Hours": r.get('OT_Hours', 0.0),
                         "Per Day Wage": r.get('Per_Day_Wage', 0.0),
-                        "Basic + DA (Earned)": r.get('Basic_DA_Earned', 0.0),
-                        "HRA (Earned)": r.get('HRA_Earned', 0.0),
-                        "Conveyance (Earned)": r.get('Conveyance_Earned', 0.0),
-                        "Washing (Earned)": r.get('Washing_Allowance_Earned', 0.0),
-                        "Other (Earned)": r.get('Other_Allowance_Earned', 0.0),
+                        "Basic + DA": r.get('Basic_DA_Earned', 0.0),
+                        "HRA": r.get('HRA_Earned', 0.0),
+                        "Conveyance": r.get('Conveyance_Earned', 0.0),
+                        "Washing": r.get('Washing_Allowance_Earned', 0.0),
+                        "Other": r.get('Other_Allowance_Earned', 0.0),
                         "Special Allowance": r.get('Special_Allowance_Earned', 0.0),
                         "OT Wages": r.get('OT_Wages', 0.0),
                         "Gross Wages": r.get('Gross_Wages', 0.0),
@@ -247,10 +247,11 @@ def generate_employee_master_excel(employees=None, include_sample=False):
     return output
 
 
-def generate_attendance_template_excel(year, month, employees, standard_days, trans_map=None):
+def generate_attendance_template_excel(year, month, employees, standard_days=26.0, worker_working_days=None, staff_working_days=None, trans_map=None):
     """
     Generate professional Attendance & Monthly Input Excel workbook pre-filled with live data,
     including Opening Advance, New Advance, Advance Deduction, and Closing Advance.
+    Sets separate Company Working Days for Workers vs Staff.
     """
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -338,6 +339,12 @@ def generate_attendance_template_excel(year, month, employees, standard_days, tr
         existing_t = trans_map.get(emp_id) or {}
         adv_info = adv_map.get(emp_no) or {}
 
+        emp_type_str = str(emp.get('Employee_Type', '')).upper()
+        if 'STAFF' in emp_type_str:
+            emp_working_days = staff_working_days if staff_working_days is not None else standard_days
+        else:
+            emp_working_days = worker_working_days if worker_working_days is not None else standard_days
+
         # Determine Opening Advance
         if 'Opening_Advance' in existing_t and float(existing_t['Opening_Advance'] or 0.0) > 0:
             open_adv = float(existing_t['Opening_Advance'])
@@ -363,8 +370,8 @@ def generate_attendance_template_excel(year, month, employees, standard_days, tr
             'Employee_Name': emp.get('Employee_Name'),
             'Type': emp.get('Employee_Type', ''),
             'Category': emp.get('Category', ''),
-            'Company_Working_Days': standard_days,
-            'Present': float(existing_t.get('Present_Days', standard_days)),
+            'Company_Working_Days': emp_working_days,
+            'Present': float(existing_t.get('Present_Days', emp_working_days)),
             'NH': float(existing_t.get('NH', 0.0)),
             'EL': float(existing_t.get('EL', 0.0)),
             'CL': float(existing_t.get('CL', 0.0)),

@@ -6,79 +6,8 @@ from db import get_db_connection
 # UPSERT EMPLOYEE MASTER (BULK)
 # -------------------------------------------------
 def upsert_employee_master(df):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    for _, r in df.iterrows():
-        cursor.execute("""
-        MERGE EmployeeMaster AS t
-        USING (SELECT ? AS Emp_No) s
-        ON t.Emp_No = s.Emp_No
-        WHEN MATCHED THEN
-          UPDATE SET
-            Emp_Name = ?,
-            Department = ?,
-            Category = ?,
-            DOJ = ?,
-            Basic = ?,
-            DA = ?,
-            HRA = ?,
-            Washing_Allowance = ?,
-            Conveyance = ?,
-            Special_Allowance = ?,
-            PF_Eligible = ?,
-            ESI_Eligible = ?,
-            UAN = ?,
-            ESI_No = ?
-        WHEN NOT MATCHED THEN
-          INSERT (
-            Emp_No, Emp_Name, Department, Category, DOJ,
-            Basic, DA, HRA,
-            Washing_Allowance, Conveyance, Special_Allowance,
-            PF_Eligible, ESI_Eligible,
-            UAN, ESI_No
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """, (
-            # match
-            int(r.Emp_No),
-
-            # update
-            r.Emp_Name,
-            r.Department,
-            r.Category,
-            r.get("DOJ"),
-            float(r.Basic),
-            float(r.DA),
-            float(r.HRA),
-            float(r.Washing_Allowance),
-            float(r.Conveyance),
-            float(r.Special_Allowance),
-            int(r.PF_Eligible),
-            int(r.ESI_Eligible),
-            r.get("UAN"),
-            r.get("ESI_No"),
-
-            # insert
-            int(r.Emp_No),
-            r.Emp_Name,
-            r.Department,
-            r.Category,
-            r.get("DOJ"),
-            float(r.Basic),
-            float(r.DA),
-            float(r.HRA),
-            float(r.Washing_Allowance),
-            float(r.Conveyance),
-            float(r.Special_Allowance),
-            int(r.PF_Eligible),
-            int(r.ESI_Eligible),
-            r.get("UAN"),
-            r.get("ESI_No"),
-        ))
-
-    conn.commit()
-    conn.close()
+    from models.employee import bulk_import_employees
+    return bulk_import_employees(df)
 
 
 # -------------------------------------------------

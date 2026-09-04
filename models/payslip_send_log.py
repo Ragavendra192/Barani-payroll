@@ -28,6 +28,7 @@ def init_payslip_send_log_table():
                     email_status VARCHAR(50) NOT NULL DEFAULT 'NOT_SENT',
                     message_id VARCHAR(255) NULL,
                     attempt_count INT NOT NULL DEFAULT 1,
+                    stage VARCHAR(100) NULL,
                     sent_at DATETIME NOT NULL DEFAULT GETDATE(),
                     sent_by VARCHAR(100) NOT NULL DEFAULT 'Admin',
                     error_message VARCHAR(500) NULL
@@ -46,6 +47,9 @@ def init_payslip_send_log_table():
 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PayslipSendLog') AND name = 'attempt_count')
                     ALTER TABLE PayslipSendLog ADD attempt_count INT NOT NULL DEFAULT 1;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PayslipSendLog') AND name = 'stage')
+                    ALTER TABLE PayslipSendLog ADD stage VARCHAR(100) NULL;
             END
         """)
         conn.commit()
@@ -58,7 +62,7 @@ def init_payslip_send_log_table():
 # Auto-initialize table schema on import
 init_payslip_send_log_table()
 
-def log_payslip_send(employee_id, payroll_month, phone_number, email_id, payslip_file_name, whatsapp_status='NOT_SENT', email_status='NOT_SENT', sent_by='Admin', error_message=None, payroll_year=None, channel='WhatsApp', message_id=None, attempt_count=1):
+def log_payslip_send(employee_id, payroll_month, phone_number, email_id, payslip_file_name, whatsapp_status='NOT_SENT', email_status='NOT_SENT', sent_by='Admin', error_message=None, payroll_year=None, channel='WhatsApp', message_id=None, attempt_count=1, stage=None):
     """Inserts a new record into PayslipSendLog table."""
     masked_phone = mask_phone_number(phone_number) if phone_number else '-'
     conn = get_db_connection()
@@ -67,11 +71,11 @@ def log_payslip_send(employee_id, payroll_month, phone_number, email_id, payslip
         cur.execute("""
             INSERT INTO PayslipSendLog (
                 employee_id, payroll_year, payroll_month, channel, phone_number_masked, email_id,
-                payslip_file_name, whatsapp_status, email_status, message_id, attempt_count, sent_at, sent_by, error_message
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?)
+                payslip_file_name, whatsapp_status, email_status, message_id, attempt_count, stage, sent_at, sent_by, error_message
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?)
         """, (
             employee_id, payroll_year, payroll_month, channel, masked_phone, email_id,
-            payslip_file_name, whatsapp_status, email_status, message_id, attempt_count, sent_by, error_message
+            payslip_file_name, whatsapp_status, email_status, message_id, attempt_count, stage, sent_by, error_message
         ))
         conn.commit()
     except Exception as e:

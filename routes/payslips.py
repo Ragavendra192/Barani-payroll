@@ -94,70 +94,152 @@ def download_zip(year, month):
     )
 
 @payslips_bp.route('/send_whatsapp/<int:year>/<int:month>/<emp_no>', methods=['POST'])
-def send_whatsapp(year, month, emp_no):
+@payslips_bp.route('/send-whatsapp', methods=['POST'])
+def send_whatsapp(year=None, month=None, emp_no=None):
     from flask import jsonify
     from models.employee import get_employee_by_emp_no
-    from models.payslip_send_log import log_payslip_send
+    from models.payslip_send_log import log_payslip_send, is_payslip_already_sent
     from services.whatsapp_service import send_payslip_whatsapp
 
-    category = request.args.get('category')
+    # Parse parameters from URL, JSON body, or Form data
+    data = request.get_json(silent=True) or {}
+    if year is None:
+        year = int(data.get('year') or request.form.get('year') or 2026)
+    if month is None:
+        month = int(data.get('month') or request.form.get('month') or 7)
+    if emp_no is None:
+        emp_no = str(data.get('employee_id') or data.get('emp_no') or request.form.get('emp_no') or '').strip()
+
+    category = request.args.get('category') or data.get('category')
+    resend = str(request.args.get('resend') or data.get('resend') or '').lower() in ('true', '1', 'yes')
+    is_xhr = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+
+    # Stage 1: Employee Master Lookup
     emp = get_employee_by_emp_no(emp_no)
     if not emp:
-        msg = "Employee record not found!"
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-            return jsonify({'success': False, 'message': msg}), 404
+        msg = f"Employee record #{emp_no} not found in Employee Master."
+        if is_xhr:
+            return jsonify({
+                'success': False,
+                'status': 'FAILED',
+                'stage': 'EMPLOYEE_LOOKUP',
+                'message': msg
+            }), 404
         flash(msg, 'danger')
         return redirect(url_for('payslips.index', year=year, month=month, category=category))
 
+    emp_id = emp.get('Employee_ID') or emp_no
+    emp_name = emp.get('Employee_Name')
     phone_number = emp.get('Phone_Number')
-    if not phone_number:
+    email_id = emp.get('Email_ID')
+    month_name = MONTH_NAMES[month]
+    payroll_month_label = f"{month_name} {year}"
+
+    # Stage 2: Phone Number Availability in Master
+    if not phone_number or str(phone_number).strip() in ('', '-', 'None'):
         msg = "Phone number is not available for this employee. Please update Employee Master."
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-            return jsonify({'success': False, 'message': msg})
-        flash(msg, 'danger')
+        log_payslip_send(
+            employee_id=emp_id,
+            payroll_year=year,
+            payroll_month=payroll_month_label,
+            phone_number=None,
+            email_id=email_id,
+            payslip_file_name=f"Payslip_{emp_no}.pdf",
+            whatsapp_status='SKIPPED',
+            stage='PHONE_VALIDATION',
+            sent_by='Admin',
+            error_message=msg
+        )
+        if is_xhr:
+            return jsonify({
+                'success': False,
+                'status': 'SKIPPED',
+                'stage': 'PHONE_VALIDATION',
+                'message': msg
+            })
+        flash(msg, 'warning')
         return redirect(url_for('payslips.index', year=year, month=month, category=category))
 
-    # Generate PDF
+    # Stage 3: Duplicate Protection
+    if not resend and is_payslip_already_sent(emp_id, year, month_name):
+        msg = "This payslip has already been sent to WhatsApp."
+        if is_xhr:
+            return jsonify({
+                'success': False,
+                'status': 'ALREADY_SENT',
+                'stage': 'DUPLICATE_CHECK',
+                'already_sent': True,
+                'message': msg
+            })
+        flash(msg, 'info')
+        return redirect(url_for('payslips.index', year=year, month=month, category=category))
+
+    # Stage 4: Generate Payslip PDF
     pdf_io, filename = generate_payslip_pdf(year, month, emp_no, category=category)
     if not pdf_io:
         msg = "Payslip PDF could not be generated."
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-            return jsonify({'success': False, 'message': msg})
+        log_payslip_send(
+            employee_id=emp_id,
+            payroll_year=year,
+            payroll_month=payroll_month_label,
+            phone_number=phone_number,
+            email_id=email_id,
+            payslip_file_name=f"Payslip_{emp_no}.pdf",
+            whatsapp_status='FAILED',
+            stage='PDF_GENERATION',
+            sent_by='Admin',
+            error_message=msg
+        )
+        if is_xhr:
+            return jsonify({
+                'success': False,
+                'status': 'FAILED',
+                'stage': 'PDF_GENERATION',
+                'message': msg
+            })
         flash(msg, 'danger')
         return redirect(url_for('payslips.index', year=year, month=month, category=category))
 
     pdf_bytes = pdf_io.getvalue()
-    month_name = MONTH_NAMES[month]
-    payroll_month_label = f"{month_name} {year}"
 
-    # Send WhatsApp
-    success, msg = send_payslip_whatsapp(
+    # Stage 5: WhatsApp Cloud API Pipeline (Media Upload & Message Send)
+    res = send_payslip_whatsapp(
         phone_number=phone_number,
-        employee_name=emp.get('Employee_Name'),
+        employee_name=emp_name,
         employee_id=emp_no,
         payroll_month=payroll_month_label,
         pdf_bytes=pdf_bytes,
         filename=filename
     )
 
-    # Log to PayslipSendLog
+    # Stage 6: Database Send Logging
     log_payslip_send(
-        employee_id=emp.get('Employee_ID'),
+        employee_id=emp_id,
+        payroll_year=year,
         payroll_month=payroll_month_label,
         phone_number=phone_number,
-        email_id=emp.get('Email_ID'),
+        email_id=email_id,
         payslip_file_name=filename,
-        whatsapp_status='SENT' if success else 'FAILED',
-        email_status='NOT_SENT',
+        whatsapp_status='SENT' if res.success else 'FAILED',
+        stage=res.stage,
+        message_id=res.message_id,
         sent_by='Admin',
-        error_message=None if success else msg
+        error_message=None if res.success else res.message
     )
 
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-        return jsonify({'success': success, 'message': msg})
+    if is_xhr:
+        return jsonify(res.to_dict())
 
-    flash(msg, 'success' if success else 'danger')
+    flash(res.message, 'success' if res.success else 'danger')
     return redirect(url_for('payslips.index', year=year, month=month, category=category))
+
+
+@payslips_bp.route('/api/test_whatsapp_config', methods=['GET', 'POST'])
+def api_test_whatsapp_config():
+    from flask import jsonify
+    from services.whatsapp_service import test_whatsapp_api_configuration
+    res = test_whatsapp_api_configuration()
+    return jsonify(res)
 
 @payslips_bp.route('/api/bulk_summary')
 def api_bulk_summary():

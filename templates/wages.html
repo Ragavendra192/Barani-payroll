@@ -74,7 +74,7 @@
                 <button type="submit" name="action" value="save" class="btn btn-success fw-bold px-3">
                     <i class="fa-solid fa-check-double me-1"></i> SAVE PAYROLL
                 </button>
-                <a href="{{ url_for('main.download_wages_excel', year=year, month=month, category=category) }}" class="btn btn-outline-success fw-bold px-3">
+                <a href="{{ url_for('main.download_wages_excel', year=year, month=month, category=category) }}" download="BHIPL_Payroll_Statement_{{ month }}_{{ year }}.xlsx" class="btn btn-outline-success fw-bold px-3">
                     <i class="fa-solid fa-file-excel me-1"></i> DOWNLOAD WAGES EXCEL
                 </a>
             </div>

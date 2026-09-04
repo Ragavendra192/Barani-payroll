@@ -11,6 +11,10 @@
         </div>
         
         <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm fw-bold shadow-sm" onclick="testWhatsAppConfig()">
+                <i class="fa-solid fa-vial-circle-check text-success me-1"></i> TEST WHATSAPP API
+            </button>
+
             <button type="button" class="btn btn-success fw-bold shadow-sm" onclick="openBulkWhatsAppModal()">
                 <i class="fa-brands fa-whatsapp me-1"></i> SEND ALL PAYSLIPS TO WHATSAPP
             </button>
@@ -114,7 +118,7 @@
                 <tbody>
                     {% if records %}
                         {% for r in records %}
-                        <tr>
+                        <tr id="emp-row-{{ r.Emp_No }}">
                             <td class="ps-3 text-muted small">{{ loop.index }}</td>
                             <td class="fw-bold text-primary">{{ r.Emp_No }}</td>
                             <td class="fw-bold">{{ r.Employee_Name or r.Name }}</td>
@@ -134,10 +138,10 @@
                             <td class="text-center">
                                 <span class="badge bg-success-subtle text-success border border-success px-2">GENERATED</span>
                             </td>
-                            <td class="text-center pe-3">
+                            <td class="text-center pe-3 wa-action-cell">
                                 <div class="btn-group btn-group-sm">
                                     <button type="button" class="btn btn-outline-primary fw-bold" 
-                                            onclick="openPayslipViewModal('{{ year }}', '{{ month }}', '{{ r.Emp_No }}', '{{ r.Category }}')">
+                                             onclick="openPayslipViewModal('{{ year }}', '{{ month }}', '{{ r.Emp_No }}', '{{ r.Category }}')">
                                         <i class="fa-solid fa-eye me-1"></i> VIEW
                                     </button>
 
@@ -146,7 +150,7 @@
                                         <i class="fa-solid fa-download me-1"></i> DOWNLOAD
                                     </a>
 
-                                    <button type="button" class="btn btn-outline-success fw-bold" 
+                                    <button type="button" class="btn btn-outline-success fw-bold btn-wa-send" 
                                             onclick="openWhatsAppModal('{{ year }}', '{{ month }}', '{{ r.Emp_No }}', '{{ r.Employee_Name or r.Name }}', '{{ r.Phone_Number_Masked or '' }}', '{{ r.Category }}')">
                                         <i class="fa-brands fa-whatsapp me-1"></i> WHATSAPP
                                     </button>
@@ -208,17 +212,55 @@
                         <span class="text-muted">Employee:</span>
                         <strong id="waModalEmpName" class="text-dark">Ravi Kumar</strong>
                     </div>
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">WhatsApp Number:</span>
                         <strong id="waModalPhone" class="text-success font-monospace">XXXXXX3210</strong>
                     </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Payroll Period:</span>
+                        <strong id="waModalPeriod" class="text-primary font-monospace">{{ month }}/{{ year }}</strong>
+                    </div>
                 </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="waIndividualResend">
+                    <label class="form-check-label small text-muted" for="waIndividualResend">
+                        Resend payslip even if already sent previously
+                    </label>
+                </div>
+
                 <div id="waStatusAlert" class="alert d-none"></div>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-outline-secondary fw-semibold px-4" data-bs-dismiss="modal">CANCEL</button>
                 <button type="button" id="waSendSubmitBtn" onclick="confirmSendWhatsApp()" class="btn btn-success fw-bold px-4">
                     <i class="fa-brands fa-whatsapp me-1"></i> SEND PAYSLIP
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WHATSAPP CONFIGURATION TEST MODAL -->
+<div class="modal fade" id="waConfigTestModal" tabindex="-1" aria-labelledby="waConfigTestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="waConfigTestModalLabel">
+                    <i class="fa-brands fa-whatsapp me-2 text-success"></i>WhatsApp Cloud API Diagnostic
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="waConfigTestBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-success mb-3" role="status"></div>
+                    <p class="text-muted mb-0">Testing WhatsApp Cloud API connectivity & credentials...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary px-4 fw-semibold" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success px-4 fw-bold" onclick="runWhatsAppConfigTest()">
+                    <i class="fa-solid fa-rotate me-1"></i> Re-test
                 </button>
             </div>
         </div>
@@ -417,10 +459,22 @@ function openPayslipViewModal(year, month, empNo, category) {
 function openWhatsAppModal(year, month, empNo, empName, phoneMasked, category) {
     currentWaTarget = { year, month, empNo, category };
     document.getElementById('waModalEmpName').textContent = empName;
-    document.getElementById('waModalPhone').textContent = phoneMasked || 'XXXXXX3210';
+    document.getElementById('waModalPhone').textContent = phoneMasked || '-';
+    if (document.getElementById('waModalPeriod')) {
+        document.getElementById('waModalPeriod').textContent = `${month}/${year}`;
+    }
+    const resendBox = document.getElementById('waIndividualResend');
+    if (resendBox) resendBox.checked = false;
     
     const alertBox = document.getElementById('waStatusAlert');
     alertBox.className = 'alert d-none';
+    alertBox.innerHTML = '';
+    
+    const submitBtn = document.getElementById('waSendSubmitBtn');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fa-brands fa-whatsapp me-1"></i> SEND PAYSLIP';
+    submitBtn.className = 'btn btn-success fw-bold px-4';
+    submitBtn.onclick = confirmSendWhatsApp;
     
     const modal = new bootstrap.Modal(document.getElementById('whatsappModal'));
     modal.show();
@@ -429,30 +483,154 @@ function openWhatsAppModal(year, month, empNo, empName, phoneMasked, category) {
 function confirmSendWhatsApp() {
     const submitBtn = document.getElementById('waSendSubmitBtn');
     const alertBox = document.getElementById('waStatusAlert');
+    const resend = document.getElementById('waIndividualResend') ? document.getElementById('waIndividualResend').checked : false;
 
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
+    
+    alertBox.className = 'alert alert-info d-flex align-items-center mb-0';
+    alertBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Generating PDF & contacting WhatsApp Cloud API...';
+    alertBox.classList.remove('d-none');
 
-    fetch(`/payslips/send_whatsapp/${currentWaTarget.year}/${currentWaTarget.month}/${currentWaTarget.empNo}?category=${currentWaTarget.category}`, {
+    fetch(`/payslips/send_whatsapp/${currentWaTarget.year}/${currentWaTarget.month}/${currentWaTarget.empNo}?category=${encodeURIComponent(currentWaTarget.category || '')}&resend=${resend}`, {
         method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { 
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            employee_id: currentWaTarget.empNo,
+            year: currentWaTarget.year,
+            month: currentWaTarget.month,
+            category: currentWaTarget.category,
+            resend: resend
+        })
     })
     .then(res => res.json())
     .then(data => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fa-brands fa-whatsapp me-1"></i> SEND PAYSLIP';
+        if (data.success) {
+            submitBtn.disabled = true;
+            submitBtn.className = 'btn btn-success fw-bold px-4';
+            submitBtn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Sent';
 
-        alertBox.className = data.success ? 'alert alert-success' : 'alert alert-danger';
-        alertBox.textContent = data.message;
-        alertBox.classList.remove('d-none');
+            alertBox.className = 'alert alert-success';
+            let msgHtml = `<strong><i class="fa-solid fa-circle-check me-1"></i> Success:</strong> ${data.message}`;
+            if (data.message_id) {
+                msgHtml += `<div class="small mt-1 text-muted">Message ID: <code>${data.message_id}</code></div>`;
+            }
+            alertBox.innerHTML = msgHtml;
+
+            // Live update the table row for this employee
+            const rowEl = document.getElementById(`emp-row-${currentWaTarget.empNo}`);
+            if (rowEl) {
+                const waBtn = rowEl.querySelector('.btn-wa-send');
+                if (waBtn) {
+                    waBtn.classList.remove('btn-outline-success');
+                    waBtn.classList.add('btn-success');
+                    waBtn.innerHTML = '<i class="fa-brands fa-whatsapp me-1"></i> SENT';
+                }
+            }
+        } else if (data.already_sent) {
+            submitBtn.disabled = false;
+            submitBtn.className = 'btn btn-warning fw-bold px-4 text-dark';
+            submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> RESEND ANYWAY';
+            submitBtn.onclick = function() {
+                if (document.getElementById('waIndividualResend')) {
+                    document.getElementById('waIndividualResend').checked = true;
+                }
+                confirmSendWhatsApp();
+            };
+
+            alertBox.className = 'alert alert-warning';
+            alertBox.innerHTML = `<strong><i class="fa-solid fa-circle-exclamation me-1"></i> Already Sent:</strong> ${data.message}<div class="small mt-1">Click <strong>Resend Anyway</strong> to dispatch again.</div>`;
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.className = 'btn btn-danger fw-bold px-4';
+            submitBtn.innerHTML = '<i class="fa-solid fa-rotate-right me-1"></i> RETRY SEND';
+            submitBtn.onclick = confirmSendWhatsApp;
+
+            alertBox.className = 'alert alert-danger';
+            let stageBadge = data.stage ? `<span class="badge bg-danger text-uppercase me-1">${data.stage}</span> ` : '';
+            let detailText = data.error_details ? `<div class="small mt-1 font-monospace">${data.error_details}</div>` : '';
+            alertBox.innerHTML = `<div><strong><i class="fa-solid fa-triangle-exclamation me-1"></i> Send Failed:</strong> ${stageBadge}${data.message}</div>${detailText}`;
+        }
     })
     .catch(err => {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fa-brands fa-whatsapp me-1"></i> SEND PAYSLIP';
+        submitBtn.className = 'btn btn-danger fw-bold px-4';
+        submitBtn.innerHTML = '<i class="fa-solid fa-rotate-right me-1"></i> RETRY SEND';
+        submitBtn.onclick = confirmSendWhatsApp;
         
         alertBox.className = 'alert alert-danger';
-        alertBox.textContent = 'Error connecting to WhatsApp service: ' + err;
-        alertBox.classList.remove('d-none');
+        alertBox.innerHTML = `<strong><i class="fa-solid fa-triangle-exclamation me-1"></i> Connection Error:</strong> Error connecting to WhatsApp service: ${err}`;
+    });
+}
+
+function testWhatsAppConfig() {
+    const modalEl = document.getElementById('waConfigTestModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    runWhatsAppConfigTest();
+}
+
+function runWhatsAppConfigTest() {
+    const body = document.getElementById('waConfigTestBody');
+    body.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-success mb-3" role="status"></div>
+            <p class="text-muted mb-0">Testing WhatsApp Cloud API connectivity & credentials...</p>
+        </div>
+    `;
+
+    fetch('/payslips/api/test_whatsapp_config', { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+        if (data.valid) {
+            body.innerHTML = `
+                <div class="alert alert-success d-flex align-items-start">
+                    <i class="fa-solid fa-circle-check fa-2x me-3 text-success"></i>
+                    <div>
+                        <h6 class="alert-heading fw-bold mb-1">WhatsApp Cloud API is Configured & Healthy</h6>
+                        <p class="mb-2 small">${data.message}</p>
+                        <div class="bg-white p-2 rounded border small text-dark">
+                            <div><strong>Verified Sender Name:</strong> ${data.verified_name || '-'}</div>
+                            <div><strong>Display Phone Number:</strong> ${data.display_phone_number || '-'}</div>
+                            <div><strong>Quality Rating:</strong> <span class="badge bg-success">${data.quality_rating || 'GREEN'}</span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (data.status === 'UNCONFIGURED') {
+            body.innerHTML = `
+                <div class="alert alert-warning d-flex align-items-start">
+                    <i class="fa-solid fa-triangle-exclamation fa-2x me-3 text-warning"></i>
+                    <div>
+                        <h6 class="alert-heading fw-bold mb-1">WhatsApp API Credentials Missing</h6>
+                        <p class="mb-2 small">${data.message}</p>
+                        <p class="small text-muted mb-0">Please edit your <code>.env</code> file in the application directory and set your Meta WhatsApp Cloud API credentials:</p>
+                        <pre class="bg-dark text-light p-2 rounded small mt-2 mb-0">WHATSAPP_ACCESS_TOKEN=&lt;your_token&gt;&#10;WHATSAPP_PHONE_NUMBER_ID=&lt;your_phone_id&gt;</pre>
+                    </div>
+                </div>
+            `;
+        } else {
+            body.innerHTML = `
+                <div class="alert alert-danger d-flex align-items-start">
+                    <i class="fa-solid fa-circle-xmark fa-2x me-3 text-danger"></i>
+                    <div>
+                        <h6 class="alert-heading fw-bold mb-1">Meta API Authentication Failed</h6>
+                        <p class="mb-2 small">${data.message}</p>
+                        <div class="small text-muted">Check your <code>WHATSAPP_ACCESS_TOKEN</code> in <code>.env</code> to ensure it is not expired and has <code>whatsapp_business_messaging</code> permissions.</div>
+                    </div>
+                </div>
+            `;
+        }
+    })
+    .catch(err => {
+        body.innerHTML = `
+            <div class="alert alert-danger">
+                <strong>Error:</strong> Failed to reach diagnostic endpoint: ${err}
+            </div>
+        `;
     });
 }
 

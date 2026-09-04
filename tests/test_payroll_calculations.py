@@ -93,8 +93,8 @@ class TestPayrollCalculationsEngine(unittest.TestCase):
         self.assertEqual(ot_res['capped_ot_hours'], 50.0)
         self.assertEqual(ot_res['special_ot_hours'], 15.5)
         self.assertEqual(ot_res['ot_rate'], 113.25)
-        self.assertEqual(ot_res['ot_wages'], 5662.50)
-        self.assertEqual(ot_res['special_ot_amount'], 1755.38)
+        self.assertEqual(ot_res['ot_wages'], 5663.00)
+        self.assertEqual(ot_res['special_ot_amount'], 1755.00)
 
     # Test Case 10: Statutory PF Capping
     def test_10_pf_calculation_capping(self):
@@ -106,7 +106,7 @@ class TestPayrollCalculationsEngine(unittest.TestCase):
     def test_11_esi_calculation_limit(self):
         esi_g, esi_d, _ = calculate_esi(Decimal('18000.00'), Decimal('18000.00'), is_staff=True)
         self.assertEqual(esi_g, Decimal('16200.00')) # 90% of 18000
-        self.assertEqual(esi_d, Decimal('122.00')) # math.ceil(16200 * 0.0075) = ceil(121.5) = 122
+        self.assertEqual(esi_d, Decimal('122.00')) # round_half(16200 * 0.0075) = round_half(121.5) = 122
 
         # Exceeding 21000 fixed gross limit
         esi_g2, esi_d2, _ = calculate_esi(Decimal('25000.00'), Decimal('25000.00'), is_staff=True)
@@ -131,12 +131,12 @@ class TestPayrollCalculationsEngine(unittest.TestCase):
         ded = {'lic': 275.0, 'advance': 7000.0}
         res = calculate_payroll(self.worker_pf_esi_emp, sal, att, ded, standard_days=26.0)
 
-        self.assertEqual(res['Gross_Wages'], 30871.88)
+        self.assertEqual(res['Gross_Wages'], 30874.0)
         self.assertEqual(res['PF_Deduction'], 1800.0)
         self.assertEqual(res['LIC_Deduction'], 275.0)
         self.assertEqual(res['Advance_Deduction'], 7000.0)
         self.assertEqual(res['Total_Deduction'], 10875.0)
-        self.assertEqual(res['Net_Salary'], 19996.88)
+        self.assertEqual(res['Net_Salary'], 19999.0)
 
     # Test Case 18: Zero OT (Worker)
     def test_18_zero_ot(self):
@@ -147,7 +147,7 @@ class TestPayrollCalculationsEngine(unittest.TestCase):
 
         self.assertEqual(res['OT_Wages'], 0.0)
         self.assertEqual(res['Special_OT_Amount'], 0.0)
-        self.assertEqual(res['Gross_Wages'], 24462.0)
+        self.assertEqual(res['Gross_Wages'], 24461.0)
 
     # Test Case 19: Non-PF/ESI Employee
     def test_19_non_pf_esi_employee(self):

@@ -304,47 +304,122 @@ def get_employee_by_emp_no(emp_no):
         return rec
     return None
 
+import numpy as np
+
+def safe_float(val, default=0.0):
+    """Safely convert any cell value, string, or numpy NaN to float."""
+    if val is None or pd.isna(val):
+        return float(default)
+    try:
+        s = str(val).strip().replace(',', '')
+        if s == '' or s.lower() in ['nan', 'none', 'null', '-']:
+            return float(default)
+        f = float(s)
+        if pd.isna(f) or np.isnan(f):
+            return float(default)
+        return float(f)
+    except (ValueError, TypeError):
+        return float(default)
+
 def add_employee(data):
     """Add a new employee and fixed salary structure."""
     conn = get_db_connection()
     cur = conn.cursor()
 
-    emp_type = data.get('Employee_Type', 'STAFF')
-    pay_cat = data.get('Payroll_Category', 'PF_ESI')
-    category = f"{emp_type}_{pay_cat}"
+    emp_type = str(data.get('Employee_Type') or 'STAFF').strip().upper()
+    if 'WORK' in emp_type:
+        emp_type = 'WORKER'
+    else:
+        emp_type = 'STAFF'
 
+    pay_cat = str(data.get('Payroll_Category') or 'PF_ESI').strip().upper()
+    if 'NAPS' in pay_cat:
+        pay_cat = 'NAPS'
+    elif 'NON' in pay_cat:
+        pay_cat = 'NON_PF_ESI'
+    else:
+        pay_cat = 'PF_ESI'
+
+    category = f"{emp_type}_{pay_cat}"
     norm_phone = normalize_indian_phone(data.get('Phone_Number'))
 
-    fixed_gross = float(data.get('Fixed_Gross', 0.0) or 0.0)
-    b_da = float(data.get('Basic_DA', 0.0) or 0.0)
-    hra = float(data.get('HRA', 0.0) or 0.0)
-    conv = float(data.get('Conveyance_Allowance', 0.0) or 0.0)
-    wash = float(data.get('Washing_Allowance', 0.0) or 0.0)
-    other = float(data.get('Other_Allowance', 0.0) or 0.0)
-    per_day_wage = float(data.get('Per_Day_Wage', 0.0) or 0.0)
-    lic = float(data.get('LIC', 0.0) or 0.0)
+    fixed_gross = safe_float(data.get('Fixed_Gross'))
+    b_da = safe_float(data.get('Basic_DA'))
+    basic = safe_float(data.get('Basic'))
+    da = safe_float(data.get('DA'))
+    hra = safe_float(data.get('HRA'))
+    conv = safe_float(data.get('Conveyance_Allowance') if data.get('Conveyance_Allowance') is not None else data.get('Conveyance'))
+    wash = safe_float(data.get('Washing_Allowance'))
+    other = safe_float(data.get('Other_Allowance') if data.get('Other_Allowance') is not None else data.get('Special_Allowance'))
+    per_day_wage = safe_float(data.get('Per_Day_Wage') if data.get('Per_Day_Wage') is not None else data.get('Daily_Wage'))
+    lic = safe_float(data.get('LIC'))
 
-    components_sum = b_da + hra + conv + wash + other
-    # For Staff employees, auto-split Fixed_Gross if present without component breakdown
-    if 'STAFF' in emp_type.upper() and fixed_gross > 0:
-        if components_sum == 0:
+    if emp_type == 'WORKER':
+        if per_day_wage > 0:
+            fixed_gross = round(per_day_wage * 26.0, 2)
+            daily_wage = per_day_wage
+        elif fixed_gross > 0:
+            per_day_wage = round(fixed_gross / 26.0, 2)
+            daily_wage = per_day_wage
+        else:
+            daily_wage = 0.0
+
+        components_sum = b_da + hra + conv + wash + other
+        if components_sum == 0 and fixed_gross > 0:
             b_da = round(fixed_gross * 0.50, 2)
             hra = round(fixed_gross * 0.20, 2)
             conv = round(fixed_gross * 0.10, 2)
             wash = round(fixed_gross * 0.10, 2)
             other = round(fixed_gross * 0.10, 2)
-        else:
-            fixed_gross = round(components_sum, 2)
-    elif fixed_gross == 0:
-        if components_sum > 0:
-            fixed_gross = round(components_sum, 2)
-        elif per_day_wage > 0:
-            fixed_gross = round(per_day_wage * 26.0, 2)
 
-    bank_acc = (data.get('Bank_Acc_No') or '').strip()
+        if basic == 0 and da == 0 and b_da > 0:
+            basic = round(b_da * 0.50, 2)
+            da = round(b_da * 0.50, 2)
+        elif basic + da > 0 and b_da == 0:
+            b_da = round(basic + da, 2)
+
+        ot_rate = safe_float(data.get('OT_Rate'))
+        if ot_rate <= 0:
+            ot_rate = round(per_day_wage / 8.0, 2) if per_day_wage > 0 else 56.25
+
+    else:  # STAFF
+        per_day_wage = 0.0
+        daily_wage = 0.0
+
+        if basic + da > 0 and b_da == 0:
+            b_da = round(basic + da, 2)
+        elif b_da > 0 and basic + da == 0:
+            basic = round(b_da * 0.50, 2)
+            da = round(b_da * 0.50, 2)
+
+        components_sum = b_da + hra + conv + wash + other
+        if fixed_gross > 0 and components_sum == 0:
+            b_da = round(fixed_gross * 0.50, 2)
+            hra = round(fixed_gross * 0.20, 2)
+            conv = round(fixed_gross * 0.10, 2)
+            wash = round(fixed_gross * 0.10, 2)
+            other = round(fixed_gross * 0.10, 2)
+            basic = round(b_da * 0.50, 2)
+            da = round(b_da * 0.50, 2)
+        elif fixed_gross == 0 and components_sum > 0:
+            fixed_gross = round(components_sum, 2)
+
+        ot_rate = safe_float(data.get('OT_Rate'))
+
+    bank_acc = (data.get('Bank_Acc_No') or data.get('Bank_Account') or '').strip()
     father_name = (data.get('Father_Name') or '').strip()
     dob = (data.get('DOB') or '').strip() or None
     bank_ifsc = (data.get('Bank_IFSC') or '').strip()
+    status_str = data.get('Status', 'Active')
+    is_active_bit = 0 if str(status_str).strip().lower() in ['inactive', '0', 'no', 'disabled', 'false'] else 1
+
+    pf_bit = 1 if data.get('PF_Eligible') in [True, 1, '1', 'YES', 'True', 'true'] else 0
+    esi_bit = 1 if data.get('ESI_Eligible') in [True, 1, '1', 'YES', 'True', 'true'] else 0
+
+    try:
+        emp_no_val = int(str(data['Emp_No']).strip())
+    except Exception:
+        emp_no_val = data['Emp_No']
 
     cur.execute("""
         INSERT INTO EmployeeMaster (
@@ -352,25 +427,27 @@ def add_employee(data):
             Employee_Type, Payroll_Category, Category,
             Department, Designation, Grade, DOJ, Father_Name, DOB,
             Bank_Acc_No, Bank_Account, Bank_IFSC,
-            UAN_No, UAN, ESI_No, Status,
-            Phone_Number, Email_ID, Fixed_Gross, LIC
+            UAN_No, UAN, ESI_No, Status, Is_Active,
+            Phone_Number, Email_ID, Fixed_Gross, Monthly_Salary,
+            Basic, DA, HRA, Washing_Allowance, Conveyance, Special_Allowance,
+            Daily_Wage, PF_Eligible, ESI_Eligible, LIC
         ) 
         OUTPUT INSERTED.Employee_ID
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        data['Emp_No'], data.get('ERP_Emp_No'), data.get('Emp_Code'),
-        data['Employee_Name'], data['Employee_Name'],
+        emp_no_val, str(data.get('ERP_Emp_No') or data['Emp_No']).strip(), str(data.get('Emp_Code') or data['Emp_No']).strip(),
+        str(data['Employee_Name']).strip(), str(data['Employee_Name']).strip(),
         emp_type, pay_cat, category,
         data.get('Department'), data.get('Designation'), data.get('Grade'),
         data.get('DOJ'), father_name, dob,
         bank_acc, bank_acc, bank_ifsc,
         data.get('UAN_No'), data.get('UAN_No'), data.get('ESI_No'),
-        data.get('Status', 'Active'),
-        norm_phone, data.get('Email_ID'), fixed_gross, lic
+        status_str, is_active_bit,
+        norm_phone, data.get('Email_ID'), fixed_gross, fixed_gross,
+        basic, da, hra, wash, conv, other,
+        daily_wage, pf_bit, esi_bit, lic
     ))
     employee_id = cur.fetchone()[0]
-
-    ot_rate = per_day_wage / 8.0 if per_day_wage > 0 else float(data.get('OT_Rate', 56.25))
 
     cur.execute("""
         INSERT INTO EmployeeSalaryMaster (
@@ -381,8 +458,7 @@ def add_employee(data):
         employee_id,
         b_da, hra, conv, wash, other,
         per_day_wage, ot_rate,
-        1 if data.get('PF_Eligible') else 0,
-        1 if data.get('ESI_Eligible') else 0,
+        pf_bit, esi_bit,
         fixed_gross, lic
     ))
 
@@ -395,77 +471,151 @@ def update_employee(employee_id, data):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    emp_type = data.get('Employee_Type', 'STAFF')
-    pay_cat = data.get('Payroll_Category', 'PF_ESI')
-    category = f"{emp_type}_{pay_cat}"
+    emp_type = str(data.get('Employee_Type') or 'STAFF').strip().upper()
+    if 'WORK' in emp_type:
+        emp_type = 'WORKER'
+    else:
+        emp_type = 'STAFF'
 
+    pay_cat = str(data.get('Payroll_Category') or 'PF_ESI').strip().upper()
+    if 'NAPS' in pay_cat:
+        pay_cat = 'NAPS'
+    elif 'NON' in pay_cat:
+        pay_cat = 'NON_PF_ESI'
+    else:
+        pay_cat = 'PF_ESI'
+
+    category = f"{emp_type}_{pay_cat}"
     norm_phone = normalize_indian_phone(data.get('Phone_Number'))
 
-    fixed_gross = float(data.get('Fixed_Gross', 0.0) or 0.0)
-    b_da = float(data.get('Basic_DA', 0.0) or 0.0)
-    hra = float(data.get('HRA', 0.0) or 0.0)
-    conv = float(data.get('Conveyance_Allowance', 0.0) or 0.0)
-    wash = float(data.get('Washing_Allowance', 0.0) or 0.0)
-    other = float(data.get('Other_Allowance', 0.0) or 0.0)
-    per_day_wage = float(data.get('Per_Day_Wage', 0.0) or 0.0)
-    lic = float(data.get('LIC', 0.0) or 0.0)
+    fixed_gross = safe_float(data.get('Fixed_Gross'))
+    b_da = safe_float(data.get('Basic_DA'))
+    basic = safe_float(data.get('Basic'))
+    da = safe_float(data.get('DA'))
+    hra = safe_float(data.get('HRA'))
+    conv = safe_float(data.get('Conveyance_Allowance') if data.get('Conveyance_Allowance') is not None else data.get('Conveyance'))
+    wash = safe_float(data.get('Washing_Allowance'))
+    other = safe_float(data.get('Other_Allowance') if data.get('Other_Allowance') is not None else data.get('Special_Allowance'))
+    per_day_wage = safe_float(data.get('Per_Day_Wage') if data.get('Per_Day_Wage') is not None else data.get('Daily_Wage'))
+    lic = safe_float(data.get('LIC'))
 
-    components_sum = b_da + hra + conv + wash + other
-    # For Staff employees, auto-split Fixed_Gross if present without component breakdown
-    if 'STAFF' in emp_type.upper() and fixed_gross > 0:
-        if components_sum == 0:
+    if emp_type == 'WORKER':
+        if per_day_wage > 0:
+            fixed_gross = round(per_day_wage * 26.0, 2)
+            daily_wage = per_day_wage
+        elif fixed_gross > 0:
+            per_day_wage = round(fixed_gross / 26.0, 2)
+            daily_wage = per_day_wage
+        else:
+            daily_wage = 0.0
+
+        components_sum = b_da + hra + conv + wash + other
+        if components_sum == 0 and fixed_gross > 0:
             b_da = round(fixed_gross * 0.50, 2)
             hra = round(fixed_gross * 0.20, 2)
             conv = round(fixed_gross * 0.10, 2)
             wash = round(fixed_gross * 0.10, 2)
             other = round(fixed_gross * 0.10, 2)
-        else:
-            fixed_gross = round(components_sum, 2)
-    elif fixed_gross == 0:
-        if components_sum > 0:
-            fixed_gross = round(components_sum, 2)
-        elif per_day_wage > 0:
-            fixed_gross = round(per_day_wage * 26.0, 2)
 
-    bank_acc = (data.get('Bank_Acc_No') or '').strip()
+        if basic == 0 and da == 0 and b_da > 0:
+            basic = round(b_da * 0.50, 2)
+            da = round(b_da * 0.50, 2)
+        elif basic + da > 0 and b_da == 0:
+            b_da = round(basic + da, 2)
+
+        ot_rate = safe_float(data.get('OT_Rate'))
+        if ot_rate <= 0:
+            ot_rate = round(per_day_wage / 8.0, 2) if per_day_wage > 0 else 56.25
+
+    else:  # STAFF
+        per_day_wage = 0.0
+        daily_wage = 0.0
+
+        if basic + da > 0 and b_da == 0:
+            b_da = round(basic + da, 2)
+        elif b_da > 0 and basic + da == 0:
+            basic = round(b_da * 0.50, 2)
+            da = round(b_da * 0.50, 2)
+
+        components_sum = b_da + hra + conv + wash + other
+        if fixed_gross > 0 and components_sum == 0:
+            b_da = round(fixed_gross * 0.50, 2)
+            hra = round(fixed_gross * 0.20, 2)
+            conv = round(fixed_gross * 0.10, 2)
+            wash = round(fixed_gross * 0.10, 2)
+            other = round(fixed_gross * 0.10, 2)
+            basic = round(b_da * 0.50, 2)
+            da = round(b_da * 0.50, 2)
+        elif fixed_gross == 0 and components_sum > 0:
+            fixed_gross = round(components_sum, 2)
+
+        ot_rate = safe_float(data.get('OT_Rate'))
+
+    bank_acc = (data.get('Bank_Acc_No') or data.get('Bank_Account') or '').strip()
     father_name = (data.get('Father_Name') or '').strip()
     dob = (data.get('DOB') or '').strip() or None
     bank_ifsc = (data.get('Bank_IFSC') or '').strip()
+    status_str = data.get('Status', 'Active')
+    is_active_bit = 0 if str(status_str).strip().lower() in ['inactive', '0', 'no', 'disabled', 'false'] else 1
+
+    pf_bit = 1 if data.get('PF_Eligible') in [True, 1, '1', 'YES', 'True', 'true'] else 0
+    esi_bit = 1 if data.get('ESI_Eligible') in [True, 1, '1', 'YES', 'True', 'true'] else 0
 
     cur.execute("""
         UPDATE EmployeeMaster SET
             Emp_Name = ?, Employee_Name = ?, Employee_Type = ?, Payroll_Category = ?, Category = ?,
             ERP_Emp_No = ?, Emp_Code = ?, Department = ?, Designation = ?, Grade = ?,
             DOJ = ?, Father_Name = ?, DOB = ?, Bank_Acc_No = ?, Bank_Account = ?, Bank_IFSC = ?,
-            UAN_No = ?, UAN = ?, ESI_No = ?, Status = ?,
-            Phone_Number = ISNULL(?, Phone_Number), Email_ID = ?, Fixed_Gross = ?, LIC = ?, Updated_At = GETDATE()
+            UAN_No = ?, UAN = ?, ESI_No = ?, Status = ?, Is_Active = ?,
+            Phone_Number = ISNULL(?, Phone_Number), Email_ID = ?,
+            Fixed_Gross = ?, Monthly_Salary = ?,
+            Basic = ?, DA = ?, HRA = ?, Washing_Allowance = ?, Conveyance = ?, Special_Allowance = ?,
+            Daily_Wage = ?, PF_Eligible = ?, ESI_Eligible = ?, LIC = ?,
+            Updated_At = GETDATE()
         WHERE Employee_ID = ?
     """, (
-        data['Employee_Name'], data['Employee_Name'], emp_type, pay_cat, category,
-        data.get('ERP_Emp_No'), data.get('Emp_Code'), data.get('Department'),
-        data.get('Designation'), data.get('Grade'), data.get('DOJ'),
-        father_name, dob, bank_acc, bank_acc, bank_ifsc,
+        str(data['Employee_Name']).strip(), str(data['Employee_Name']).strip(), emp_type, pay_cat, category,
+        str(data.get('ERP_Emp_No') or data['Emp_No']).strip(), str(data.get('Emp_Code') or data['Emp_No']).strip(),
+        data.get('Department'), data.get('Designation'), data.get('Grade'),
+        data.get('DOJ'), father_name, dob,
+        bank_acc, bank_acc, bank_ifsc,
         data.get('UAN_No'), data.get('UAN_No'), data.get('ESI_No'),
-        data.get('Status', 'Active'),
-        norm_phone, data.get('Email_ID'), fixed_gross, lic,
+        status_str, is_active_bit,
+        norm_phone, data.get('Email_ID'),
+        fixed_gross, fixed_gross,
+        basic, da, hra, wash, conv, other,
+        daily_wage, pf_bit, esi_bit, lic,
         employee_id
     ))
 
-    ot_rate = per_day_wage / 8.0 if per_day_wage > 0 else float(data.get('OT_Rate', 56.25))
-
-    cur.execute("""
-        UPDATE EmployeeSalaryMaster SET
-            Basic_DA = ?, HRA = ?, Conveyance_Allowance = ?, Washing_Allowance = ?,
-            Other_Allowance = ?, Per_Day_Wage = ?, OT_Rate = ?, PF_Eligible = ?, ESI_Eligible = ?, Fixed_Gross = ?, LIC = ?
-        WHERE Employee_ID = ? AND Active = 1
-    """, (
-        b_da, hra, conv, wash, other,
-        per_day_wage, ot_rate,
-        1 if data.get('PF_Eligible') else 0,
-        1 if data.get('ESI_Eligible') else 0,
-        fixed_gross, lic,
-        employee_id
-    ))
+    cur.execute("SELECT 1 FROM EmployeeSalaryMaster WHERE Employee_ID = ? AND Active = 1", (employee_id,))
+    if cur.fetchone():
+        cur.execute("""
+            UPDATE EmployeeSalaryMaster SET
+                Basic_DA = ?, HRA = ?, Conveyance_Allowance = ?, Washing_Allowance = ?,
+                Other_Allowance = ?, Per_Day_Wage = ?, OT_Rate = ?, PF_Eligible = ?, ESI_Eligible = ?,
+                Fixed_Gross = ?, LIC = ?
+            WHERE Employee_ID = ? AND Active = 1
+        """, (
+            b_da, hra, conv, wash, other,
+            per_day_wage, ot_rate,
+            pf_bit, esi_bit,
+            fixed_gross, lic,
+            employee_id
+        ))
+    else:
+        cur.execute("""
+            INSERT INTO EmployeeSalaryMaster (
+                Employee_ID, Basic_DA, HRA, Conveyance_Allowance, Washing_Allowance,
+                Other_Allowance, Per_Day_Wage, OT_Rate, PF_Eligible, ESI_Eligible, Fixed_Gross, LIC, Active
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        """, (
+            employee_id,
+            b_da, hra, conv, wash, other,
+            per_day_wage, ot_rate,
+            pf_bit, esi_bit,
+            fixed_gross, lic
+        ))
 
     conn.commit()
     conn.close()
@@ -477,6 +627,7 @@ def toggle_employee_status(employee_id):
     cur.execute("""
         UPDATE EmployeeMaster 
         SET Status = CASE WHEN Status = 'Active' THEN 'Inactive' ELSE 'Active' END,
+            Is_Active = CASE WHEN Status = 'Active' THEN 0 ELSE 1 END,
             Updated_At = GETDATE()
         WHERE Employee_ID = ?
     """, (employee_id,))
@@ -512,49 +663,52 @@ def parse_bool_flag(val, default_true=True):
 def bulk_import_employees(df):
     """
     Import or bulk upsert employees from DataFrame into EmployeeMaster & EmployeeSalaryMaster.
-    Supports flexible column aliases and auto-salary component splits for Staff.
+    Supports flexible column aliases, Workers Daily/Per-Day wages, and Staff salary structures.
     Returns summary dictionary with inserted, updated, total, and error list.
     """
     if df is None or df.empty:
         return {"total": 0, "inserted": 0, "updated": 0, "errors": ["Uploaded file contains no data."]}
 
-    # Normalize DataFrame column names
+    # Normalize DataFrame column names: strip and uppercase
     col_dict = {c: str(c).strip().upper().replace("_", " ") for c in df.columns}
 
-    # Column alias dictionary
+    # Comprehensive column alias dictionary
     alias_map = {
-        "EMP_NO": ["EMP_NO", "EMP NO", "EMPNO", "EMP CODE", "EMP_CODE", "EMPLOYEE CODE", "EMP_ID", "EMPLOYEE_ID"],
-        "EMPLOYEE_NAME": ["EMPLOYEE_NAME", "EMPLOYEE NAME", "EMP_NAME", "EMP NAME", "NAME"],
-        "EMPLOYEE_TYPE": ["EMPLOYEE_TYPE", "EMPLOYEE TYPE", "TYPE", "EMP_TYPE"],
-        "PAYROLL_CATEGORY": ["PAYROLL_CATEGORY", "PAYROLL CATEGORY", "CATEGORY", "PAYROLL CAT"],
-        "STATUS": ["STATUS", "EMP_STATUS", "EMPLOYEE_STATUS", "ACTIVE", "IS_ACTIVE"],
-        "DEPARTMENT": ["DEPARTMENT", "DEPT"],
-        "DESIGNATION": ["DESIGNATION", "ROLE", "TITLE"],
-        "GRADE": ["GRADE"],
-        "DOJ": ["DOJ", "DATE OF JOINING", "JOINING DATE"],
-        "DOB": ["DOB", "DATE OF BIRTH", "BIRTH DATE"],
-        "FATHER_NAME": ["FATHER_NAME", "FATHER NAME", "FATHER/HUSBAND NAME", "FATHER HUSBAND NAME"],
-        "BANK_ACC_NO": ["BANK_ACC_NO", "BANK ACC NO", "BANK ACCOUNT", "ACCOUNT NO", "BANK_ACCOUNT", "ACC NO"],
-        "BANK_IFSC": ["BANK_IFSC", "BANK IFSC", "IFSC", "IFSC CODE"],
-        "UAN_NO": ["UAN_NO", "UAN NO", "UAN"],
-        "ESI_NO": ["ESI_NO", "ESI NO", "ESI"],
-        "PHONE_NUMBER": ["PHONE_NUMBER", "PHONE NUMBER", "PHONE", "MOBILE", "MOBILE NO"],
-        "EMAIL_ID": ["EMAIL_ID", "EMAIL ID", "EMAIL"],
-        "FIXED_GROSS": ["FIXED_GROSS", "FIXED GROSS", "GROSS", "GROSS SALARY"],
-        "BASIC_DA": ["BASIC_DA", "BASIC DA", "BASIC", "BASIC SALARY"],
-        "HRA": ["HRA", "HOUSE RENT ALLOWANCE"],
-        "CONVEYANCE_ALLOWANCE": ["CONVEYANCE_ALLOWANCE", "CONVEYANCE", "CONVEYANCE ALLOWANCE", "CONV ALLOWANCE"],
-        "WASHING_ALLOWANCE": ["WASHING_ALLOWANCE", "WASHING", "WASHING ALLOWANCE", "WASH ALLOWANCE"],
-        "OTHER_ALLOWANCE": ["OTHER_ALLOWANCE", "OTHER ALLOWANCE", "SPECIAL ALLOWANCE", "SPECIAL_ALLOWANCE"],
-        "PER_DAY_WAGE": ["PER_DAY_WAGE", "PER DAY WAGE", "DAILY WAGE", "DAY WAGE"],
-        "OT_RATE": ["OT_RATE", "OT RATE", "OVERTIME RATE"],
-        "PF_ELIGIBLE": ["PF_ELIGIBLE", "PF ELIGIBLE", "PF"],
-        "ESI_ELIGIBLE": ["ESI_ELIGIBLE", "ESI ELIGIBLE", "ESI"],
-        "LIC": ["LIC", "LIC AMOUNT", "LIC DEDUCTION"]
+        "EMP_NO": ["EMP_NO", "EMP NO", "EMPNO", "EMP CODE", "EMP_CODE", "EMPLOYEE CODE", "EMP_ID", "EMPLOYEE_ID", "EMP ID", "ID", "CARD NO", "CARD_NO"],
+        "EMPLOYEE_NAME": ["EMPLOYEE_NAME", "EMPLOYEE NAME", "EMP_NAME", "EMP NAME", "NAME", "EMPLOYEE"],
+        "EMPLOYEE_TYPE": ["EMPLOYEE_TYPE", "EMPLOYEE TYPE", "TYPE", "EMP_TYPE", "EMP TYPE"],
+        "PAYROLL_CATEGORY": ["PAYROLL_CATEGORY", "PAYROLL CATEGORY", "PAYROLL CAT", "PAYROLL_CAT", "CAT"],
+        "CATEGORY": ["CATEGORY", "EMP_CATEGORY", "EMPLOYEE CATEGORY"],
+        "STATUS": ["STATUS", "EMP_STATUS", "EMPLOYEE_STATUS", "ACTIVE", "IS_ACTIVE", "STATE"],
+        "DEPARTMENT": ["DEPARTMENT", "DEPT", "DEP"],
+        "DESIGNATION": ["DESIGNATION", "DESIG", "ROLE", "TITLE", "POSITION"],
+        "GRADE": ["GRADE", "LEVEL"],
+        "DOJ": ["DOJ", "DATE OF JOINING", "JOINING DATE", "DATE_OF_JOINING", "JOIN_DATE"],
+        "DOB": ["DOB", "DATE OF BIRTH", "BIRTH DATE", "DATE_OF_BIRTH"],
+        "FATHER_NAME": ["FATHER_NAME", "FATHER NAME", "FATHER/HUSBAND NAME", "FATHER HUSBAND NAME", "FATHER", "HUSBAND NAME"],
+        "BANK_ACC_NO": ["BANK_ACC_NO", "BANK ACC NO", "BANK ACCOUNT", "ACCOUNT NO", "BANK_ACCOUNT", "ACC NO", "A/C NO", "ACCOUNT NUMBER", "BANK ACCOUNT NO"],
+        "BANK_IFSC": ["BANK_IFSC", "BANK IFSC", "IFSC", "IFSC CODE", "IFSC_CODE"],
+        "UAN_NO": ["UAN_NO", "UAN NO", "UAN", "UAN NUMBER", "PF NO", "PF NUMBER"],
+        "ESI_NO": ["ESI_NO", "ESI NO", "ESI", "ESI NUMBER", "ESIC", "ESIC NO"],
+        "PHONE_NUMBER": ["PHONE_NUMBER", "PHONE NUMBER", "PHONE", "MOBILE", "MOBILE NO", "MOBILE NUMBER", "CONTACT"],
+        "EMAIL_ID": ["EMAIL_ID", "EMAIL ID", "EMAIL", "MAIL", "MAIL ID", "E-MAIL"],
+        "FIXED_GROSS": ["FIXED_GROSS", "FIXED GROSS", "GROSS", "GROSS SALARY", "FIXED_SALARY", "SALARY", "MONTHLY SALARY", "GROSS WAGES"],
+        "BASIC_DA": ["BASIC_DA", "BASIC DA", "BASIC + DA", "BASIC+DA", "BASIC & DA"],
+        "BASIC": ["BASIC", "BASIC SALARY", "BASIC_SALARY", "BASIC PAY"],
+        "DA": ["DA", "DEARNESS ALLOWANCE", "D.A", "D.A."],
+        "HRA": ["HRA", "HOUSE RENT ALLOWANCE", "H.R.A", "H.R.A."],
+        "CONVEYANCE_ALLOWANCE": ["CONVEYANCE_ALLOWANCE", "CONVEYANCE", "CONVEYANCE ALLOWANCE", "CONV ALLOWANCE", "CONV"],
+        "WASHING_ALLOWANCE": ["WASHING_ALLOWANCE", "WASHING", "WASHING ALLOWANCE", "WASH ALLOWANCE", "WASH"],
+        "OTHER_ALLOWANCE": ["OTHER_ALLOWANCE", "OTHER ALLOWANCE", "SPECIAL ALLOWANCE", "SPECIAL_ALLOWANCE", "OTHER", "SPL ALLOWANCE", "SPL_ALLOWANCE"],
+        "PER_DAY_WAGE": ["PER_DAY_WAGE", "PER DAY WAGE", "DAILY WAGE", "DAY WAGE", "DAILY_WAGE", "PER_DAY", "PER DAY", "RATE/DAY", "WAGE PER DAY", "RATE PER DAY"],
+        "OT_RATE": ["OT_RATE", "OT RATE", "OVERTIME RATE", "OT RATE/HR"],
+        "PF_ELIGIBLE": ["PF_ELIGIBLE", "PF ELIGIBLE", "PF", "PF YES/NO"],
+        "ESI_ELIGIBLE": ["ESI_ELIGIBLE", "ESI ELIGIBLE", "ESI", "ESI YES/NO"],
+        "LIC": ["LIC", "LIC AMOUNT", "LIC DEDUCTION", "LIC_DEDUCTION"]
     }
 
     def get_row_val(row, target_key):
-        aliases = alias_map[target_key]
+        aliases = alias_map.get(target_key, [])
         for orig_col, norm_col in col_dict.items():
             if norm_col in [a.replace("_", " ") for a in aliases]:
                 val = row[orig_col]
@@ -577,7 +731,7 @@ def bulk_import_employees(df):
             continue  # Skip blank rows
 
         emp_no = str(emp_no_raw).strip()
-        if emp_no.endswith(".0"):
+        if emp_no.endswith(".0") and emp_no[:-2].isdigit():
             emp_no = emp_no[:-2]
 
         emp_name_raw = get_row_val(row, "EMPLOYEE_NAME")
@@ -591,19 +745,60 @@ def bulk_import_employees(df):
         emp_name = str(emp_name_raw).strip()
         total += 1
 
-        emp_type = str(get_row_val(row, "EMPLOYEE_TYPE") or "STAFF").strip().upper()
-        if "WORK" in emp_type:
+        # Extract wage & numeric fields early using safe_float
+        per_day_wage = safe_float(get_row_val(row, "PER_DAY_WAGE"))
+        fixed_gross = safe_float(get_row_val(row, "FIXED_GROSS"))
+        basic_da = safe_float(get_row_val(row, "BASIC_DA"))
+        basic_val = safe_float(get_row_val(row, "BASIC"))
+        da_val = safe_float(get_row_val(row, "DA"))
+        hra = safe_float(get_row_val(row, "HRA"))
+        conv = safe_float(get_row_val(row, "CONVEYANCE_ALLOWANCE"))
+        wash = safe_float(get_row_val(row, "WASHING_ALLOWANCE"))
+        other = safe_float(get_row_val(row, "OTHER_ALLOWANCE"))
+        ot_rate_val = safe_float(get_row_val(row, "OT_RATE"))
+        lic_val = safe_float(get_row_val(row, "LIC"))
+
+        # Smart Category and Employee_Type parsing
+        raw_emp_type = str(get_row_val(row, "EMPLOYEE_TYPE") or "").strip().upper()
+        raw_pay_cat = str(get_row_val(row, "PAYROLL_CATEGORY") or "").strip().upper()
+        raw_cat = str(get_row_val(row, "CATEGORY") or "").strip().upper()
+
+        emp_type = ""
+        pay_cat = ""
+
+        if "WORKER" in raw_cat:
             emp_type = "WORKER"
-        else:
+        elif "STAFF" in raw_cat:
             emp_type = "STAFF"
 
-        pay_cat = str(get_row_val(row, "PAYROLL_CATEGORY") or "PF_ESI").strip().upper()
-        if "NAPS" in pay_cat:
+        if "NAPS" in raw_cat:
             pay_cat = "NAPS"
-        elif "NON" in pay_cat:
+        elif "NON" in raw_cat:
             pay_cat = "NON_PF_ESI"
-        else:
+        elif "PF" in raw_cat or "ESI" in raw_cat:
             pay_cat = "PF_ESI"
+
+        if not emp_type:
+            if "WORK" in raw_emp_type:
+                emp_type = "WORKER"
+            elif "STAFF" in raw_emp_type:
+                emp_type = "STAFF"
+            elif "WORK" in raw_pay_cat:
+                emp_type = "WORKER"
+            elif "STAFF" in raw_pay_cat:
+                emp_type = "STAFF"
+            elif per_day_wage > 0:
+                emp_type = "WORKER"
+            else:
+                emp_type = "STAFF"
+
+        if not pay_cat:
+            if "NAPS" in raw_pay_cat:
+                pay_cat = "NAPS"
+            elif "NON" in raw_pay_cat:
+                pay_cat = "NON_PF_ESI"
+            else:
+                pay_cat = "PF_ESI"
 
         dept = str(get_row_val(row, "DEPARTMENT") or "General").strip()
         desig = str(get_row_val(row, "DESIGNATION") or "Employee").strip()
@@ -639,18 +834,12 @@ def bulk_import_employees(df):
         phone = clean_import_str(get_row_val(row, "PHONE_NUMBER"))
         email = clean_import_str(get_row_val(row, "EMAIL_ID"))
 
-        fixed_gross = float(pd.to_numeric(get_row_val(row, "FIXED_GROSS"), errors="coerce") or 0.0)
-        basic_da = float(pd.to_numeric(get_row_val(row, "BASIC_DA"), errors="coerce") or 0.0)
-        hra = float(pd.to_numeric(get_row_val(row, "HRA"), errors="coerce") or 0.0)
-        conv = float(pd.to_numeric(get_row_val(row, "CONVEYANCE_ALLOWANCE"), errors="coerce") or 0.0)
-        wash = float(pd.to_numeric(get_row_val(row, "WASHING_ALLOWANCE"), errors="coerce") or 0.0)
-        other = float(pd.to_numeric(get_row_val(row, "OTHER_ALLOWANCE"), errors="coerce") or 0.0)
-        per_day_wage = float(pd.to_numeric(get_row_val(row, "PER_DAY_WAGE"), errors="coerce") or 0.0)
-        ot_rate_val = float(pd.to_numeric(get_row_val(row, "OT_RATE"), errors="coerce") or 0.0)
-        lic_val = float(pd.to_numeric(get_row_val(row, "LIC"), errors="coerce") or 0.0)
-
         is_pf = parse_bool_flag(get_row_val(row, "PF_ELIGIBLE"), default_true=(pay_cat == "PF_ESI"))
         is_esi = parse_bool_flag(get_row_val(row, "ESI_ELIGIBLE"), default_true=(pay_cat == "PF_ESI"))
+
+        # Consolidate Basic + DA
+        if basic_val + da_val > 0 and basic_da == 0:
+            basic_da = basic_val + da_val
 
         emp_data = {
             'Emp_No': emp_no,
@@ -674,12 +863,14 @@ def bulk_import_employees(df):
             'Email_ID': email,
             'Fixed_Gross': fixed_gross,
             'Basic_DA': basic_da,
+            'Basic': basic_val,
+            'DA': da_val,
             'HRA': hra,
             'Conveyance_Allowance': conv,
             'Washing_Allowance': wash,
             'Other_Allowance': other,
             'Per_Day_Wage': per_day_wage,
-            'OT_Rate': ot_rate_val if ot_rate_val > 0 else 56.25,
+            'OT_Rate': ot_rate_val,
             'PF_Eligible': is_pf,
             'ESI_Eligible': is_esi,
             'LIC': lic_val

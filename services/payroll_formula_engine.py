@@ -7,7 +7,7 @@ and safely evaluates them to calculate employee wages, statutory deductions, and
 from decimal import Decimal, ROUND_HALF_UP
 from models.payroll_formula_rules import get_active_formula_rules
 from services.payroll_formula_validator import evaluate_formula, validate_formula_syntax
-from utils.payroll_calculation_engine import calculate_payroll, money
+from utils.payroll_calculation_engine import calculate_payroll, money, round_half
 
 def evaluate_rule_safely(formula_str, context_vars, fallback_val=0.0):
     """Evaluates a formula string safely against context variables with fallback."""
@@ -79,8 +79,8 @@ def test_category_formulas(category, sample_inputs, custom_rules=None):
 
     # Step 3: Earned Components
     ctx['EARNED_BASIC_DA'] = evaluate_rule_safely(rules.get('EARNED_BASIC_DA', 'Fixed_Basic / Working_Days * Worked_Days'), ctx)
-    ctx['EARNED_BASIC'] = round(ctx['EARNED_BASIC_DA'] * 0.40, 2)
-    ctx['EARNED_DA'] = round(ctx['EARNED_BASIC_DA'] * 0.60, 2)
+    ctx['EARNED_BASIC'] = float(round_half(ctx['EARNED_BASIC_DA'] * 0.40))
+    ctx['EARNED_DA'] = float(round_half(ctx['EARNED_BASIC_DA'] * 0.60))
     ctx['EARNED_HRA'] = evaluate_rule_safely(rules.get('HRA_EARNED', 'Fixed_HRA / Working_Days * Worked_Days'), ctx)
     ctx['EARNED_CONVEYANCE'] = evaluate_rule_safely(rules.get('CONVEYANCE_EARNED', 'Fixed_Conveyance / Working_Days * Worked_Days'), ctx)
     ctx['EARNED_WASHING'] = evaluate_rule_safely(rules.get('WASHING_EARNED', 'Fixed_Washing / Working_Days * Worked_Days'), ctx)
@@ -150,6 +150,8 @@ def test_category_formulas(category, sample_inputs, custom_rules=None):
         'net_salary': ctx['NET_SALARY'],
         'eval_context': ctx
     }
+
+test_category_formulas.__test__ = False
 
 def calculate_payroll_with_formulas(emp, salary, attendance, deductions, category=None, standard_days=None):
     """
