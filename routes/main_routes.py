@@ -274,10 +274,13 @@ def attendance():
             
             # Preserve existing deductions and advance tracking if present
             existing_t = trans_map.get(emp_id) or {}
+            lic_val = float(existing_t.get('LIC_Deduction', 0.0) or 0.0)
+            if lic_val == 0.0:
+                lic_val = float(emp.get('LIC', 0.0) or 0.0)
             ded_dict = {
                 'arrears': float(existing_t.get('Arrears', 0.0) or 0.0),
                 'naps': float(existing_t.get('NAPS_Deduction', 0.0) or 0.0),
-                'lic': float(existing_t.get('LIC_Deduction', 0.0) or 0.0),
+                'lic': lic_val,
                 'advance': float(existing_t.get('Advance_Deduction', 0.0) or 0.0),
                 'opening_adv': float(existing_t.get('Opening_Advance', 0.0) or 0.0),
                 'new_adv': float(existing_t.get('New_Advance', 0.0) or 0.0),
@@ -361,10 +364,17 @@ def attendance():
                 else:
                     closing_adv = max(0.0, opening_adv + new_adv - advance_ded)
 
+                lic_default = float(existing_t.get('LIC_Deduction', 0.0) or emp.get('LIC', 0.0) or 0.0)
+                lic_from_file = _get_float_val(r_data, ['LIC', 'LIC_Deduction'], None)
+                if lic_from_file is not None:
+                    lic_val = lic_from_file
+                else:
+                    lic_val = lic_default
+
                 ded_dict = {
                     'arrears': _get_float_val(r_data, ['Arrears'], float(existing_t.get('Arrears', 0.0) or 0.0)),
                     'naps': _get_float_val(r_data, ['NAPS', 'NAPS_Deduction'], float(existing_t.get('NAPS_Deduction', 0.0) or 0.0)),
-                    'lic': _get_float_val(r_data, ['LIC', 'LIC_Deduction'], float(existing_t.get('LIC_Deduction', 0.0) or 0.0)),
+                    'lic': lic_val,
                     'advance': advance_ded,
                     'opening_adv': opening_adv,
                     'new_adv': new_adv,

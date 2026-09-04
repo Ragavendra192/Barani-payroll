@@ -95,10 +95,17 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     t['Earned_Washing'] = float(t.get('Earned_Washing', t.get('Washing_Allowance_Earned', 0.0)) or 0.0)
                     t['Earned_Other'] = float(t.get('Earned_Other', t.get('Other_Allowance_Earned', 0.0)) or 0.0)
 
+                lic_saved = float(t.get('LIC_Deduction', 0.0) or 0.0)
+                emp_lic = float(emp.get('LIC', 0.0) or 0.0)
+                if lic_saved == 0.0 and emp_lic > 0.0:
+                    t['LIC_Deduction'] = emp_lic
+                    t['Total_Deduction'] = float(t.get('Total_Deduction', 0.0) or 0.0) + emp_lic
+                    t['Net_Salary'] = float(t.get('Net_Salary', 0.0) or 0.0) - emp_lic
+
                 payroll_rows.append(t)
             else:
                 att_dict = {'present_days': emp_std_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': emp_std_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
-                ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': 0.0, 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
+                ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': float(emp.get('LIC', 0.0) or 0.0), 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
                 sal_dict = {'Fixed_Gross': emp.get('Fixed_Gross', 0.0), 'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
                 c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
                 c_res['Working_Days'] = emp_std_days
@@ -112,7 +119,7 @@ def generate_wages_excel(year, month, category_filter='ALL'):
             emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
             emp_std_days = staff_working_days if emp_is_staff else worker_working_days
             att_dict = {'present_days': emp_std_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': emp_std_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
-            ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': 0.0, 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
+            ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': float(emp.get('LIC', 0.0) or 0.0), 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
             sal_dict = {'Fixed_Gross': emp.get('Fixed_Gross', 0.0), 'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
             c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
             c_res['Working_Days'] = emp_std_days

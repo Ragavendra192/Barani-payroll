@@ -374,6 +374,10 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
 
         close_adv = max(0.0, open_adv + new_adv - adv_ded)
 
+        lic_val = _safe_float(existing_t.get('LIC_Deduction'))
+        if lic_val == 0.0:
+            lic_val = _safe_float(emp.get('LIC', 0.0))
+
         row_data = {
             'Emp_ID': emp.get('Emp_No'),
             'Employee_Name': emp.get('Employee_Name'),
@@ -392,7 +396,7 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
             'Closing_Advance': close_adv,
             'Arrears': _safe_float(existing_t.get('Arrears'), 0.0),
             'NAPS': _safe_float(existing_t.get('NAPS_Deduction'), 0.0),
-            'LIC': _safe_float(existing_t.get('LIC_Deduction'), 0.0),
+            'LIC': lic_val,
             'Accommodation': _safe_float(existing_t.get('Accommodation_Deduction'), 0.0),
             'Other': _safe_float(existing_t.get('Other_Deduction'), 0.0)
         }
