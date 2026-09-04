@@ -112,6 +112,7 @@ def edit(employee_id):
                 pass
 
         data = {
+            'Emp_No': request.form.get('Emp_No', '').strip(),
             'Employee_Name': request.form['Employee_Name'].strip(),
             'Father_Name': request.form.get('Father_Name', '').strip(),
             'DOB': request.form.get('DOB', '').strip() or None,

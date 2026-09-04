@@ -383,7 +383,7 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 ws.write(row_idx, 22, float(r.get('Conveyance_Allowance', 0.0) or fg * 0.10), fmt_currency)
                 ws.write(row_idx, 23, float(r.get('Washing_Allowance', 0.0) or fg * 0.10), fmt_currency)
                 ws.write(row_idx, 24, float(r.get('Other_Allowance', 0.0) or fg * 0.10), fmt_currency)
-                ws.write(row_idx, 25, pdw / 8.0 if pdw else (fg / (standard_days * 8.0) if standard_days else 0.0), fmt_currency)
+                ws.write(row_idx, 25, pdw / 8.0 if pdw else (fg / (default_emp_days * 8.0) if default_emp_days else 0.0), fmt_currency)
                 ws.write(row_idx, 26, fg, fmt_currency_bold)
 
                 ws.write(row_idx, 27, float(r.get('Earned_Basic_DA', r.get('Basic_DA_Earned', 0.0)) or 0.0), fmt_currency)

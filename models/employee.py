@@ -563,6 +563,7 @@ def update_employee(employee_id, data):
 
     cur.execute("""
         UPDATE EmployeeMaster SET
+            Emp_No = ISNULL(NULLIF(?, ''), Emp_No),
             Emp_Name = ?, Employee_Name = ?, Employee_Type = ?, Payroll_Category = ?, Category = ?,
             ERP_Emp_No = ?, Emp_Code = ?, Department = ?, Designation = ?, Grade = ?,
             DOJ = ?, Father_Name = ?, DOB = ?, Bank_Acc_No = ?, Bank_Account = ?, Bank_IFSC = ?,
@@ -574,8 +575,9 @@ def update_employee(employee_id, data):
             Updated_At = GETDATE()
         WHERE Employee_ID = ?
     """, (
+        str(data.get('Emp_No') or '').strip(),
         str(data['Employee_Name']).strip(), str(data['Employee_Name']).strip(), emp_type, pay_cat, category,
-        str(data.get('ERP_Emp_No') or data['Emp_No']).strip(), str(data.get('Emp_Code') or data['Emp_No']).strip(),
+        str(data.get('ERP_Emp_No') or data.get('Emp_No') or '').strip(), str(data.get('Emp_Code') or data.get('Emp_No') or '').strip(),
         data.get('Department'), data.get('Designation'), data.get('Grade'),
         data.get('DOJ'), father_name, dob,
         bank_acc, bank_acc, bank_ifsc,
