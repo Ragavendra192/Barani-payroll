@@ -247,6 +247,15 @@ def generate_employee_master_excel(employees=None, include_sample=False):
     return output
 
 
+def _safe_float(val, default=0.0):
+    if val is None or val == '':
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
 def generate_attendance_template_excel(year, month, employees, standard_days=26.0, worker_working_days=None, staff_working_days=None, trans_map=None):
     """
     Generate professional Attendance & Monthly Input Excel workbook pre-filled with live data,
@@ -275,8 +284,8 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
         for row in cur.fetchall():
             emp_no_val = str(row[0]).strip()
             adv_map[emp_no_val] = {
-                'remaining': float(row[1] or 0.0),
-                'monthly': float(row[2] or 0.0)
+                'remaining': _safe_float(row[1]),
+                'monthly': _safe_float(row[2])
             }
         conn.close()
     except Exception as e:
@@ -346,20 +355,20 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
             emp_working_days = worker_working_days if worker_working_days is not None else standard_days
 
         # Determine Opening Advance
-        if 'Opening_Advance' in existing_t and float(existing_t['Opening_Advance'] or 0.0) > 0:
-            open_adv = float(existing_t['Opening_Advance'])
+        if 'Opening_Advance' in existing_t and _safe_float(existing_t.get('Opening_Advance')) > 0:
+            open_adv = _safe_float(existing_t.get('Opening_Advance'))
         elif adv_info.get('remaining', 0.0) > 0:
-            open_adv = adv_info['remaining']
+            open_adv = _safe_float(adv_info.get('remaining'))
         else:
             open_adv = 0.0
 
-        new_adv = float(existing_t.get('New_Advance', 0.0) or 0.0)
+        new_adv = _safe_float(existing_t.get('New_Advance'), 0.0)
 
         # Determine Advance Deduction
-        if 'Advance_Deduction' in existing_t and float(existing_t['Advance_Deduction'] or 0.0) > 0:
-            adv_ded = float(existing_t['Advance_Deduction'])
+        if 'Advance_Deduction' in existing_t and _safe_float(existing_t.get('Advance_Deduction')) > 0:
+            adv_ded = _safe_float(existing_t.get('Advance_Deduction'))
         elif adv_info.get('monthly', 0.0) > 0:
-            adv_ded = min(open_adv + new_adv, adv_info['monthly'])
+            adv_ded = min(open_adv + new_adv, _safe_float(adv_info.get('monthly')))
         else:
             adv_ded = 0.0
 
@@ -371,21 +380,21 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
             'Type': emp.get('Employee_Type', ''),
             'Category': emp.get('Category', ''),
             'Company_Working_Days': emp_working_days,
-            'Present': float(existing_t.get('Present_Days', emp_working_days)),
-            'NH': float(existing_t.get('NH', 0.0)),
-            'EL': float(existing_t.get('EL', 0.0)),
-            'CL': float(existing_t.get('CL', 0.0)),
-            'SL': float(existing_t.get('SL', 0.0)),
-            'OT_Hours': float(existing_t.get('Act_OT_Hrs', 0.0)),
+            'Present': _safe_float(existing_t.get('Present_Days'), default=emp_working_days),
+            'NH': _safe_float(existing_t.get('NH'), 0.0),
+            'EL': _safe_float(existing_t.get('EL'), 0.0),
+            'CL': _safe_float(existing_t.get('CL'), 0.0),
+            'SL': _safe_float(existing_t.get('SL'), 0.0),
+            'OT_Hours': _safe_float(existing_t.get('Act_OT_Hrs'), 0.0),
             'Opening_Advance': open_adv,
             'New_Advance': new_adv,
             'Advance_Deduction': adv_ded,
             'Closing_Advance': close_adv,
-            'Arrears': float(existing_t.get('Arrears', 0.0)),
-            'NAPS': float(existing_t.get('NAPS_Deduction', 0.0)),
-            'LIC': float(existing_t.get('LIC_Deduction', 0.0)),
-            'Accommodation': float(existing_t.get('Accommodation_Deduction', 0.0)),
-            'Other': float(existing_t.get('Other_Deduction', 0.0))
+            'Arrears': _safe_float(existing_t.get('Arrears'), 0.0),
+            'NAPS': _safe_float(existing_t.get('NAPS_Deduction'), 0.0),
+            'LIC': _safe_float(existing_t.get('LIC_Deduction'), 0.0),
+            'Accommodation': _safe_float(existing_t.get('Accommodation_Deduction'), 0.0),
+            'Other': _safe_float(existing_t.get('Other_Deduction'), 0.0)
         }
 
         is_even = (r_idx % 2 == 0)
