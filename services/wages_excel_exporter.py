@@ -290,8 +290,10 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 ws.write(row_idx, 29, float(r.get('Gross_Wages', 0.0) or 0.0), fmt_currency_bold)
 
                 # Statutory Gross
-                ws.write(row_idx, 30, float(r.get('PF_Eligible_Gross', 0.0) or 0.0), fmt_currency)
-                ws.write(row_idx, 31, float(r.get('ESI_Eligible_Gross', 0.0) or 0.0), fmt_currency)
+                pf_gross_val = float(r.get('PF_Gross', r.get('PF_Eligible_Gross', 0.0)) or 0.0)
+                esi_gross_val = float(r.get('ESI_Gross', r.get('ESI_Eligible_Gross', 0.0)) or 0.0)
+                ws.write(row_idx, 30, pf_gross_val, fmt_currency)
+                ws.write(row_idx, 31, esi_gross_val, fmt_currency)
 
                 # Deductions
                 ws.write(row_idx, 32, float(r.get('PF_Deduction', 0.0) or 0.0), fmt_currency)
@@ -403,15 +405,15 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 
                 earned_gross = float(r.get('Gross_Wages', 0.0) or 0.0)
                 ot_wages = float(r.get('OT_Wages', 0.0) or 0.0)
-                spl_ot_wages = float(r.get('Special_OT_Amount', 0.0) or 0.0)
+                spl_ot_wages = float(r.get('Special_OT_Amount', r.get('Special_Allowance_Earned', 0.0)) or 0.0)
                 gross_minus_ot = earned_gross - ot_wages - spl_ot_wages
                 
                 ws.write(row_idx, 34, earned_gross, fmt_currency_bold)
                 ws.write(row_idx, 35, gross_minus_ot, fmt_currency)
-                ws.write(row_idx, 36, float(r.get('PF_Eligible_Gross', 0.0) or 0.0), fmt_currency)
-                
-                esi_gross = float(r.get('ESI_Eligible_Gross', 0.0) or 0.0)
-                ws.write(row_idx, 37, esi_gross, fmt_currency)
+                pf_gross_val = float(r.get('PF_Gross', r.get('PF_Eligible_Gross', 0.0)) or 0.0)
+                esi_gross_val = float(r.get('ESI_Gross', r.get('ESI_Eligible_Gross', 0.0)) or 0.0)
+                ws.write(row_idx, 36, pf_gross_val, fmt_currency)
+                ws.write(row_idx, 37, esi_gross_val, fmt_currency)
                 ws.write(row_idx, 38, float(r.get('Arrears', 0.0) or 0.0), fmt_currency)
 
                 pf_dedn = float(r.get('PF_Deduction', 0.0) or 0.0)
