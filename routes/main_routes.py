@@ -431,6 +431,7 @@ def attendance():
                 'EL': el,
                 'CL': cl,
                 'SL': sl,
+                'Total_Days': tot_days,
                 'LOP_Days': lop,
                 'Act_OT_Hrs': act_ot
             }
@@ -449,6 +450,7 @@ def attendance():
                 'EL': 0.0,
                 'CL': 0.0,
                 'SL': 0.0,
+                'Total_Days': 0.0,
                 'LOP_Days': emp_std_days,
                 'Act_OT_Hrs': 0.0
             }

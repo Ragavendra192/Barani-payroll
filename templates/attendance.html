@@ -92,6 +92,7 @@
                             <th class="text-center" style="width: 55px;" title="Earned Leave">EL</th>
                             <th class="text-center" style="width: 55px;" title="Casual Leave">CL</th>
                             <th class="text-center" style="width: 55px;" title="Sick Leave">SL</th>
+                            <th class="text-center th-total-days" style="width: 75px;" title="Total Days (Present + N/H + EL + CL + SL)">Total Days</th>
                             <th class="text-center th-lop" style="width: 65px;" title="Loss of Pay Days">LOP</th>
                             {% if emp_type != 'STAFF' %}
                             <th class="text-center th-ot" style="width: 65px;" title="Actual Overtime Hours">OT Hrs</th>
@@ -152,6 +153,11 @@
                                            class="form-control form-control-sm text-center" 
                                            value="{{ r.SL or 0.0 }}" oninput="recalcRowLOP('{{ r.Employee_ID }}', '{{ r.Working_Days }}', '{{ 1 if r.Employee_Type == 'WORKER' else 0 }}')">
                                 </td>
+                                <td class="p-1 text-center bg-primary bg-opacity-10">
+                                    <input type="number" step="0.5" min="0" name="emp_{{ r.Employee_ID }}_total_days" id="emp_{{ r.Employee_ID }}_total_days" 
+                                           class="form-control form-control-sm text-center fw-bold border-primary text-primary bg-white" 
+                                           value="{{ r.Total_Days if r.Total_Days is defined else (r.Present_Days + (r.NH or 0.0) + (r.EL or 0.0) + (r.CL or 0.0) + (r.SL or 0.0)) }}" readonly title="Total Days (Present + N/H + EL + CL + SL)">
+                                </td>
                                 <td class="p-1 text-center bg-danger bg-opacity-10">
                                     <input type="number" step="0.5" min="0" name="emp_{{ r.Employee_ID }}_lop" id="emp_{{ r.Employee_ID }}_lop" 
                                            class="form-control form-control-sm text-center fw-bold border-danger text-danger bg-white" 
@@ -173,7 +179,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="{{ 12 if emp_type == 'STAFF' else 14 }}" class="text-center py-5 text-muted">
+                                <td colspan="{{ 13 if emp_type == 'STAFF' else 15 }}" class="text-center py-5 text-muted">
                                     <i class="fa-solid fa-folder-open fa-2xl mb-3 text-secondary d-block"></i>
                                     No attendance records found matching filters.
                                 </td>
@@ -196,10 +202,28 @@ function navigateAttendancePeriod() {
 }
 
 function recalcRowLOP(empId, stdDays, isWorker) {
-    // LOP is not deducted for all staff and workers
+    const pInp = document.getElementById('emp_' + empId + '_present_days');
+    const nhInp = document.getElementById('emp_' + empId + '_nh');
+    const elInp = document.getElementById('emp_' + empId + '_el');
+    const clInp = document.getElementById('emp_' + empId + '_cl');
+    const slInp = document.getElementById('emp_' + empId + '_sl');
+    const totInp = document.getElementById('emp_' + empId + '_total_days');
     const lopInp = document.getElementById('emp_' + empId + '_lop');
+
+    const pres = parseFloat(pInp ? pInp.value : 0) || 0;
+    const nh = parseFloat(nhInp ? nhInp.value : 0) || 0;
+    const el = parseFloat(elInp ? elInp.value : 0) || 0;
+    const cl = parseFloat(clInp ? clInp.value : 0) || 0;
+    const sl = parseFloat(slInp ? slInp.value : 0) || 0;
+    const totalDays = pres + nh + el + cl + sl;
+
+    if (totInp) {
+        totInp.value = totalDays.toFixed(1);
+    }
     if (lopInp) {
-        lopInp.value = "0.0";
+        const std = parseFloat(stdDays) || 0;
+        const lop = Math.max(0, std - totalDays);
+        lopInp.value = lop.toFixed(1);
     }
 }
 

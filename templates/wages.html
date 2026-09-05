@@ -127,9 +127,11 @@
                             <th class="sticky-col-3">Category</th>
                             <th class="text-center">Days</th>
                             <th class="text-center">Present</th>
+                            <th class="text-center">N/H</th>
                             <th class="text-center">EL</th>
                             <th class="text-center">CL</th>
                             <th class="text-center">SL</th>
+                            <th class="text-center text-primary bg-primary bg-opacity-10">Total Days</th>
                             <th class="text-center text-danger bg-danger bg-opacity-10">LOP Days</th>
                             <th class="text-center">OT Hrs</th>
                             <th class="text-end text-info bg-info bg-opacity-10">Spl OT Amt</th>
@@ -164,9 +166,11 @@
                                 </td>
                                 <td class="text-center text-muted fw-bold">{{ r.Working_Days or standard_days }}</td>
                                 <td class="text-center fw-bold">{{ r.Present_Days }}</td>
+                                <td class="text-center">{{ r.NH or 0.0 }}</td>
                                 <td class="text-center">{{ r.EL or 0.0 }}</td>
                                 <td class="text-center">{{ r.CL or 0.0 }}</td>
                                 <td class="text-center">{{ r.SL or 0.0 }}</td>
+                                <td class="text-center bg-primary bg-opacity-10"><span class="badge bg-primary-subtle text-primary border border-primary fw-bold px-2">{{ r.Total_Days or (r.Present_Days + (r.NH or 0.0) + (r.EL or 0.0) + (r.CL or 0.0) + (r.SL or 0.0)) }}</span></td>
                                 <td class="text-center bg-danger bg-opacity-10"><span class="badge bg-danger-subtle text-danger border border-danger fw-bold px-2">{{ r.LOP_Days or 0.0 }}</span></td>
                                 <td class="text-center fw-bold text-dark">{{ r.Act_OT_Hrs or r.OT_Hours or 0.0 }}</td>
                                 <td class="text-end text-info bg-info bg-opacity-10 font-monospace">₹{{ "{:,.2f}".format(r.Special_OT_Amount or 0.0) }}</td>
@@ -224,7 +228,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="24" class="text-center py-5 text-muted">
+                                <td colspan="26" class="text-center py-5 text-muted">
                                     <i class="fa-solid fa-folder-open fa-2xl mb-3 text-secondary d-block"></i>
                                     No wages records found. Click <strong>CALCULATE</strong> to generate payroll.
                                 </td>
