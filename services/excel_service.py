@@ -33,7 +33,7 @@ def generate_monthly_salary_statement_excel(year, month):
                     "Emp No", "ERP Emp No", "Name", "Department", "Designation",
                     "Working Days", "OT Hours", "Per Day Wage",
                     "Basic + DA", "HRA", "Conveyance", "Washing", "Other",
-                    "Special Allowance", "OT Wages", "Gross Wages",
+                    "Special Allowance", "SPL Amount", "OT Wages", "Gross Wages",
                     "PF", "ESI", "NAPS", "LIC", "Opening Advance", "New Advance", "Advance", "Closing Advance", "Accommodation", "Other Dedn", "Total Dedn", "Net Salary"
                 ])
             else:
@@ -58,6 +58,7 @@ def generate_monthly_salary_statement_excel(year, month):
                         "Washing": r.get('Washing_Allowance_Earned', 0.0),
                         "Other": r.get('Other_Allowance_Earned', 0.0),
                         "Special Allowance": r.get('Special_Allowance_Earned', 0.0),
+                        "SPL Amount": r.get('Special_OT_Amount', 0.0),
                         "OT Wages": r.get('OT_Wages', 0.0),
                         "Gross Wages": r.get('Gross_Wages', 0.0),
                         "PF": r.get('PF_Deduction', 0.0),
