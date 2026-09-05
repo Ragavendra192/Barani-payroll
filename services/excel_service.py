@@ -23,6 +23,12 @@ def generate_monthly_salary_statement_excel(year, month):
         ("Non-pf ESi worker", "WORKER_NON_PF_ESI")
     ]
 
+    from services.payroll_engine import calculate_payroll
+    from models.payroll_period_settings import get_period_settings_info
+    period_info = get_period_settings_info(year, month)
+    worker_working_days = period_info.get('worker_working_days', 26.0)
+    staff_working_days = period_info.get('staff_working_days', 26.0)
+
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         for sheet_title, cat in category_sheets:
             records = get_payroll_transactions(year, month, category=cat)
@@ -39,6 +45,42 @@ def generate_monthly_salary_statement_excel(year, month):
             else:
                 formatted_rows = []
                 for r in records:
+                    emp_is_staff = ('STAFF' in str(r.get('Category') or r.get('Employee_Type')).upper())
+                    emp_std_days = staff_working_days if emp_is_staff else worker_working_days
+                    pres_days = float(r.get('Present_Days') if r.get('Present_Days') is not None else emp_std_days)
+                    nh_days = float(r.get('NH') or r.get('PH') or 0.0)
+                    cl_days = float(r.get('CL') or 0.0)
+                    sl_days = float(r.get('SL') or 0.0)
+                    el_days = float(r.get('EL') or r.get('PL') or 0.0)
+                    act_ot = float(r.get('Act_OT_Hrs') or r.get('Actual_OT_Hours') or r.get('OT_Hours') or 0.0)
+
+                    att_dict = {'present_days': pres_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
+                    pdw = float(r.get('Per_Day_Wage') or 0.0)
+                    sal_dict = {
+                        'Fixed_Gross': float(r.get('Fixed_Gross') or 0.0),
+                        'Basic_DA': float(r.get('Basic_DA') or 0.0),
+                        'HRA': float(r.get('HRA') or 0.0),
+                        'Conveyance_Allowance': float(r.get('Conveyance_Allowance') or 0.0),
+                        'Washing_Allowance': float(r.get('Washing_Allowance') or 0.0),
+                        'Other_Allowance': float(r.get('Other_Allowance') or 0.0),
+                        'Per_Day_Wage': pdw,
+                        'OT_Rate': float(r.get('OT_Rate', 56.25) or 56.25),
+                        'PF_Eligible': 'PF' in str(r.get('Category', '')),
+                        'ESI_Eligible': 'ESI' in str(r.get('Category', ''))
+                    }
+                    ded_dict = {
+                        'arrears': float(r.get('Arrears', 0.0) or 0.0),
+                        'naps': float(r.get('NAPS_Deduction', 0.0) or 0.0),
+                        'lic': float(r.get('LIC_Deduction', 0.0) or 0.0),
+                        'advance': float(r.get('Advance_Deduction', 0.0) or 0.0),
+                        'opening_adv': float(r.get('Opening_Advance', 0.0) or 0.0),
+                        'new_adv': float(r.get('New_Advance', 0.0) or 0.0),
+                        'closing_adv': float(r.get('Closing_Advance', 0.0) or 0.0),
+                        'accommodation': float(r.get('Accommodation_Deduction', 0.0) or 0.0),
+                        'other': float(r.get('Other_Deduction', 0.0) or 0.0)
+                    }
+                    c_res = calculate_payroll(r, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
+
                     formatted_rows.append({
                         "Emp No": r.get('Emp_No'),
                         "ERP Emp No": r.get('ERP_Emp_No') or r.get('Emp_No'),
@@ -47,32 +89,32 @@ def generate_monthly_salary_statement_excel(year, month):
                         "Department": r.get('Department'),
                         "Designation": r.get('Designation'),
                         "Grade": r.get('Grade'),
-                        "Present Days": r.get('Present_Days', 0.0),
-                        "Total Days": r.get('Total_Days', 0.0),
-                        "Working Days": r.get('Working_Days', 0.0),
-                        "OT Hours": r.get('OT_Hours', 0.0),
-                        "Per Day Wage": r.get('Per_Day_Wage', 0.0),
-                        "Basic + DA": r.get('Basic_DA_Earned', 0.0),
-                        "HRA": r.get('HRA_Earned', 0.0),
-                        "Conveyance": r.get('Conveyance_Earned', 0.0),
-                        "Washing": r.get('Washing_Allowance_Earned', 0.0),
-                        "Other": r.get('Other_Allowance_Earned', 0.0),
-                        "Special Allowance": r.get('Special_Allowance_Earned', 0.0),
-                        "SPL Amount": r.get('Special_OT_Amount', 0.0),
-                        "OT Wages": r.get('OT_Wages', 0.0),
-                        "Gross Wages": r.get('Gross_Wages', 0.0),
-                        "PF": r.get('PF_Deduction', 0.0),
-                        "ESI": r.get('ESI_Deduction', 0.0),
-                        "NAPS": r.get('NAPS_Deduction', 0.0),
-                        "LIC": r.get('LIC_Deduction', 0.0),
-                        "Opening Advance": r.get('Opening_Advance', 0.0),
-                        "New Advance": r.get('New_Advance', 0.0),
-                        "Advance": r.get('Advance_Deduction', 0.0),
-                        "Closing Advance": r.get('Closing_Advance', 0.0),
-                        "Accommodation": r.get('Accommodation_Deduction', 0.0),
-                        "Arrears": r.get('Arrears', 0.0),
-                        "Total Dedn": r.get('Total_Deduction', 0.0),
-                        "Net Salary": r.get('Net_Salary', 0.0)
+                        "Present Days": c_res.get('Present_Days', 0.0),
+                        "Total Days": c_res.get('Total_Days', 0.0),
+                        "Working Days": emp_std_days,
+                        "OT Hours": c_res.get('OT_Hours', 0.0),
+                        "Per Day Wage": c_res.get('Per_Day_Wage', 0.0),
+                        "Basic + DA": c_res.get('Earned_Basic_DA', 0.0),
+                        "HRA": c_res.get('Earned_HRA', 0.0),
+                        "Conveyance": c_res.get('Earned_Conveyance', 0.0),
+                        "Washing": c_res.get('Earned_Washing', 0.0),
+                        "Other": c_res.get('Earned_Other', 0.0),
+                        "Special Allowance": c_res.get('Earned_Special', 0.0),
+                        "SPL Amount": c_res.get('Special_OT_Amount', 0.0),
+                        "OT Wages": c_res.get('OT_Wages', 0.0),
+                        "Gross Wages": c_res.get('Gross_Wages', 0.0),
+                        "PF": c_res.get('PF_Deduction', 0.0),
+                        "ESI": c_res.get('ESI_Deduction', 0.0),
+                        "NAPS": c_res.get('NAPS_Deduction', 0.0),
+                        "LIC": c_res.get('LIC_Deduction', 0.0),
+                        "Opening Advance": c_res.get('Opening_Advance', 0.0),
+                        "New Advance": c_res.get('New_Advance', 0.0),
+                        "Advance": c_res.get('Advance_Deduction', 0.0),
+                        "Closing Advance": c_res.get('Closing_Advance', 0.0),
+                        "Accommodation": c_res.get('Accommodation_Deduction', 0.0),
+                        "Arrears": c_res.get('Arrears', 0.0),
+                        "Total Dedn": c_res.get('Total_Deduction', 0.0),
+                        "Net Salary": c_res.get('Net_Salary', 0.0)
                     })
                 df = pd.DataFrame(formatted_rows)
             

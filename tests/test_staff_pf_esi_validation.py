@@ -38,11 +38,11 @@ class TestStaffPfEsiValidation(unittest.TestCase):
         # ESI: Fixed Gross > 21001 -> ESI = 0.0
         self.assertEqual(res['ESI_Deduction'], 0.0)
         
-        # Total Deduction = 1800 (PF) + 1800 (Acc PF) + 344 (LIC) = 3944
-        self.assertEqual(res['Total_Deduction'], 3944.0)
+        # Total Deduction = 1800 (PF) + 344 (LIC) = 2144
+        self.assertEqual(res['Total_Deduction'], 2144.0)
         
-        # Net Salary = 63600 - 3944 = 59656
-        self.assertEqual(res['Net_Salary'], 59656.0)
+        # Net Salary = 63600 - 2144 = 61456
+        self.assertEqual(res['Net_Salary'], 61456.0)
 
     def test_staff_pf_esi_partial_attendance(self):
         att = {'present_days': 27.0, 'nh': 0.0, 'el': 0.0, 'cl': 0.0, 'sl': 0.0}
@@ -61,7 +61,7 @@ class TestStaffPfEsiValidation(unittest.TestCase):
         ded = {'lic': 344.0}
         trace = get_staff_pf_esi_calculation_trace(self.sample_emp, self.sample_salary, att, ded, standard_days=27.0)
         self.assertIn('earnings', trace)
-        self.assertEqual(trace['final']['net_salary'], 59656.0)
+        self.assertEqual(trace['final']['net_salary'], 61456.0)
 
 if __name__ == '__main__':
     unittest.main()

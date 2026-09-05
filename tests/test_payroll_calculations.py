@@ -58,8 +58,8 @@ class TestPayrollCalculationsEngine(unittest.TestCase):
         self.assertEqual(res['Gross_Wages'], 63600.0)
         self.assertEqual(res['PF_Deduction'], 1800.0)
         self.assertEqual(res['ESI_Deduction'], 0.0)
-        self.assertEqual(res['Total_Deduction'], 3944.0)
-        self.assertEqual(res['Net_Salary'], 59656.0)
+        self.assertEqual(res['Total_Deduction'], 2144.0)
+        self.assertEqual(res['Net_Salary'], 61456.0)
 
     # Test Case 2: Partial Attendance (Staff PF/ESI - No LOP Deducted)
     def test_02_partial_attendance(self):
@@ -135,8 +135,8 @@ class TestPayrollCalculationsEngine(unittest.TestCase):
         self.assertEqual(res['PF_Deduction'], 1800.0)
         self.assertEqual(res['LIC_Deduction'], 275.0)
         self.assertEqual(res['Advance_Deduction'], 7000.0)
-        self.assertEqual(res['Total_Deduction'], 10875.0)
-        self.assertEqual(res['Net_Salary'], 19999.0)
+        self.assertEqual(res['Total_Deduction'], 9075.0)
+        self.assertEqual(res['Net_Salary'], 21799.0)
 
     # Test Case 18: Zero OT (Worker)
     def test_18_zero_ot(self):
@@ -183,8 +183,83 @@ class TestPayrollCalculationsEngine(unittest.TestCase):
         res = calculate_payroll(emp_with_lic, sal, att, ded, standard_days=27.0)
 
         self.assertEqual(res['LIC_Deduction'], 500.0)
-        self.assertEqual(res['Total_Deduction'], 4100.0) # PF 1800 + Acc PF 1800 + LIC 500
-        self.assertEqual(res['Net_Salary'], 25900.0)
+        self.assertEqual(res['Total_Deduction'], 2300.0) # PF 1800 + LIC 500
+        self.assertEqual(res['Net_Salary'], 27700.0)
+
+    # Test Case 22: Worker Wages Excel Exporter SPL Amount & Spl Allowance Columns
+    def test_22_worker_wages_excel_spl_amount_column(self):
+        import openpyxl
+        from services.wages_excel_exporter import generate_wages_excel
+        
+        excel_io, fname = generate_wages_excel(2026, 7, category_filter='WORKER_PF_ESI')
+        self.assertIsNotNone(excel_io)
+        
+        wb = openpyxl.load_workbook(excel_io)
+        self.assertIn('Worker_PF_ESI', wb.sheetnames)
+        ws = wb['Worker_PF_ESI']
+        
+        # Check header row (row 4, 1-indexed)
+        header_vals = [ws.cell(row=4, column=c).value for c in range(1, ws.max_column + 1)]
+        
+        self.assertIn('Spl Allowance', header_vals)
+        self.assertIn('SPL Amount', header_vals)
+        self.assertIn('OT Wages', header_vals)
+        
+        spl_allow_idx = header_vals.index('Spl Allowance')
+        spl_amt_idx = header_vals.index('SPL Amount')
+        ot_wages_idx = header_vals.index('OT Wages')
+        
+        # Verify strict order: Spl Allowance < SPL Amount < OT Wages
+        self.assertEqual(spl_amt_idx, spl_allow_idx + 1)
+        self.assertEqual(ot_wages_idx, spl_amt_idx + 1)
+
+    # Test Case 23: Staff Wages Excel Advance Tracking Columns
+    def test_23_staff_wages_excel_advance_tracking_columns(self):
+        import openpyxl
+        from services.wages_excel_exporter import generate_wages_excel
+        
+        excel_io, fname = generate_wages_excel(2026, 7, category_filter='STAFF_PF_ESI')
+        self.assertIsNotNone(excel_io)
+        
+        wb = openpyxl.load_workbook(excel_io)
+        self.assertIn('Staff_PF_ESI', wb.sheetnames)
+        ws = wb['Staff_PF_ESI']
+        
+        # Check header row (row 4, 1-indexed)
+        header_vals = [ws.cell(row=4, column=c).value for c in range(1, ws.max_column + 1)]
+        
+        self.assertIn('New Advance', header_vals)
+        self.assertIn('Installment', header_vals)
+        self.assertIn('Opening Advance', header_vals)
+        self.assertIn('Closing Advance', header_vals)
+        
+        new_adv_idx = header_vals.index('New Advance')
+        inst_idx = header_vals.index('Installment')
+        open_adv_idx = header_vals.index('Opening Advance')
+        close_adv_idx = header_vals.index('Closing Advance')
+        
+        # Verify strict order: New Advance -> Installment -> Opening Advance -> Closing Advance
+        self.assertEqual(inst_idx, new_adv_idx + 1)
+        self.assertEqual(open_adv_idx, inst_idx + 1)
+        self.assertEqual(close_adv_idx, open_adv_idx + 1)
+
+    # Test Case 24: Employee Details with DOJ and Year of Experience
+    def test_24_employee_details_doj_experience_columns(self):
+        import openpyxl
+        from services.wages_excel_exporter import generate_wages_excel
+        
+        excel_io, fname = generate_wages_excel(2026, 7, category_filter='ALL')
+        self.assertIsNotNone(excel_io)
+        
+        wb = openpyxl.load_workbook(excel_io)
+        for sheetname in wb.sheetnames:
+            ws = wb[sheetname]
+            first_10_headers = [ws.cell(row=4, column=c).value for c in range(1, 11)]
+            expected_10 = [
+                'S.No', 'Emp ID', 'UAN No', 'ESI No', 'Employee Name',
+                'Department', 'Date of Joining', 'Year of Experience', 'Designation', 'Category'
+            ]
+            self.assertEqual(first_10_headers, expected_10, f"Mismatch in headers for sheet {sheetname}")
 
     # Test Case 22: Worker Wages Excel Exporter SPL Amount & Spl Allowance Columns
     def test_22_worker_wages_excel_spl_amount_column(self):

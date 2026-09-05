@@ -311,52 +311,100 @@ def attendance():
             df = pd.read_excel(import_file)
             import_data = {}
             for _, r in df.iterrows():
+                r_dict = r.to_dict()
                 try:
-                    eid = int(r.get('Emp ID', 0))
-                    import_data[eid] = r
-                except:
+                    eid_val = None
+                    for id_col in ['Emp ID', 'Emp_ID', 'Emp No', 'Emp_No', 'Employee ID', 'Employee_ID', 'Employee_No']:
+                        if id_col in r_dict and r_dict[id_col] is not None and not pd.isna(r_dict[id_col]):
+                            eid_val = r_dict[id_col]
+                            break
+                    if eid_val is not None:
+                        try:
+                            eid = int(eid_val)
+                            import_data[eid] = r_dict
+                        except Exception:
+                            import_data[str(eid_val).strip()] = r_dict
+                except Exception:
                     pass
 
+            def _safe_float(val, default=0.0):
+                if val is None:
+                    return float(default) if default is not None else 0.0
+                if isinstance(val, (int, float)):
+                    return float(default) if pd.isna(val) else float(val)
+                try:
+                    s = str(val).strip()
+                    if not s or s.lower() in ('nan', 'none', 'null', ''):
+                        return float(default) if default is not None else 0.0
+                    return float(s)
+                except (ValueError, TypeError):
+                    return float(default) if default is not None else 0.0
+
             def _get_float_val(data_dict, keys, default=0.0):
+                if not isinstance(data_dict, dict):
+                    if hasattr(data_dict, 'to_dict'):
+                        data_dict = data_dict.to_dict()
+                    else:
+                        return default if default is None else float(default)
                 for k in keys:
-                    if k in data_dict and pd.notna(data_dict[k]):
-                        try:
-                            return float(data_dict[k])
-                        except Exception:
-                            pass
-                return default
+                    if k in data_dict:
+                        v = data_dict[k]
+                        if v is not None:
+                            if isinstance(v, (int, float)):
+                                if not pd.isna(v):
+                                    return float(v)
+                            else:
+                                try:
+                                    s = str(v).strip()
+                                    if s and s.lower() not in ('nan', 'none', 'null', ''):
+                                        return float(s)
+                                except (ValueError, TypeError):
+                                    pass
+                return default if default is None else float(default)
 
             calculated_rows = []
             for emp in employees:
                 emp_id = emp['Employee_ID']
-                emp_no = int(emp['Emp_No'])
+                try:
+                    emp_no = int(emp['Emp_No'])
+                except (ValueError, TypeError):
+                    emp_no = emp.get('Emp_No')
+
                 emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
                 emp_std_days = staff_working_days if emp_is_staff else worker_working_days
 
-                r_data = import_data.get(emp_no, {})
+                r_data = import_data.get(emp_no)
+                if r_data is None:
+                    r_data = import_data.get(str(emp_no))
+                if r_data is None:
+                    r_data = import_data.get(emp_id)
+                if r_data is None:
+                    r_data = {}
                 existing_t = trans_map.get(emp_id) or {}
                 
-                present_days = float(r_data.get('Present', emp_std_days)) if pd.notna(r_data.get('Present')) else float(existing_t.get('Present_Days', emp_std_days))
-                nh_days = float(r_data.get('N/H', 0.0)) if pd.notna(r_data.get('N/H')) else float(existing_t.get('NH', 0.0))
-                el_days = float(r_data.get('EL', 0.0)) if pd.notna(r_data.get('EL')) else float(existing_t.get('EL', 0.0))
-                cl_days = float(r_data.get('CL', 0.0)) if pd.notna(r_data.get('CL')) else float(existing_t.get('CL', 0.0))
-                sl_days = float(r_data.get('SL', 0.0)) if pd.notna(r_data.get('SL')) else float(existing_t.get('SL', 0.0))
-                act_ot = float(r_data.get('OT Hours', 0.0)) if pd.notna(r_data.get('OT Hours')) else float(existing_t.get('Act_OT_Hrs', 0.0))
+                present_days = _get_float_val(r_data, ['Present', 'Present Days', 'Present_Days', 'PRES'], _safe_float(existing_t.get('Present_Days'), emp_std_days))
+                nh_days = _get_float_val(r_data, ['N/H', 'NH', 'National Holiday', 'N_H'], _safe_float(existing_t.get('NH'), 0.0))
+                el_days = _get_float_val(r_data, ['EL', 'Earned Leave', 'PL', 'Pl'], _safe_float(existing_t.get('EL'), 0.0))
+                cl_days = _get_float_val(r_data, ['CL', 'Casual Leave'], _safe_float(existing_t.get('CL'), 0.0))
+                sl_days = _get_float_val(r_data, ['SL', 'Sick Leave'], _safe_float(existing_t.get('SL'), 0.0))
+                act_ot = _get_float_val(r_data, ['OT Hours', 'OT_Hours', 'OT Hrs', 'Act OT Hrs', 'Act_OT_Hrs'], _safe_float(existing_t.get('Act_OT_Hrs'), 0.0))
 
                 att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
                 sal_dict = {'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
                 
                 # Advance tracking support
-                opening_adv = _get_float_val(r_data, ['Opening Advance', 'Opening_Advance', 'Opening Adv'], float(existing_t.get('Opening_Advance', 0.0) or 0.0))
-                new_adv = _get_float_val(r_data, ['New Advance', 'New_Advance', 'New Adv'], float(existing_t.get('New_Advance', 0.0) or 0.0))
-                advance_ded = _get_float_val(r_data, ['Advance Deduction', 'Advance_Deduction', 'Advance', 'Adv Dedn'], float(existing_t.get('Advance_Deduction', 0.0) or 0.0))
+                opening_adv = _get_float_val(r_data, ['Opening Advance', 'Opening_Advance', 'Opening Adv', 'Op Adv'], _safe_float(existing_t.get('Opening_Advance'), 0.0))
+                new_adv = _get_float_val(r_data, ['New Advance', 'New_Advance', 'New Adv'], _safe_float(existing_t.get('New_Advance'), 0.0))
+                advance_ded = _get_float_val(r_data, ['Advance Deduction', 'Advance_Deduction', 'Advance', 'Adv Dedn', 'Adv Deduction'], _safe_float(existing_t.get('Advance_Deduction'), 0.0))
 
                 closing_adv_input = None
-                for k in ['Closing Advance', 'Closing_Advance', 'Closing Adv']:
-                    if k in r_data and pd.notna(r_data[k]):
+                for k in ['Closing Advance', 'Closing_Advance', 'Closing Adv', 'Cl Adv']:
+                    if k in r_data and r_data[k] is not None and not pd.isna(r_data[k]):
                         try:
-                            closing_adv_input = float(r_data[k])
-                            break
+                            s = str(r_data[k]).strip()
+                            if s and s.lower() not in ('nan', 'none', 'null', ''):
+                                closing_adv_input = float(s)
+                                break
                         except Exception:
                             pass
                 if closing_adv_input is not None:
@@ -364,23 +412,23 @@ def attendance():
                 else:
                     closing_adv = max(0.0, opening_adv + new_adv - advance_ded)
 
-                lic_default = float(existing_t.get('LIC_Deduction', 0.0) or emp.get('LIC', 0.0) or 0.0)
-                lic_from_file = _get_float_val(r_data, ['LIC', 'LIC_Deduction'], None)
+                lic_default = _safe_float(existing_t.get('LIC_Deduction')) or _safe_float(emp.get('LIC')) or 0.0
+                lic_from_file = _get_float_val(r_data, ['LIC', 'LIC_Deduction', 'LIC Deduction'], None)
                 if lic_from_file is not None:
                     lic_val = lic_from_file
                 else:
                     lic_val = lic_default
 
                 ded_dict = {
-                    'arrears': _get_float_val(r_data, ['Arrears'], float(existing_t.get('Arrears', 0.0) or 0.0)),
-                    'naps': _get_float_val(r_data, ['NAPS', 'NAPS_Deduction'], float(existing_t.get('NAPS_Deduction', 0.0) or 0.0)),
+                    'arrears': _get_float_val(r_data, ['Arrears'], _safe_float(existing_t.get('Arrears'), 0.0)),
+                    'naps': _get_float_val(r_data, ['NAPS', 'NAPS_Deduction', 'NAPS Deduction'], _safe_float(existing_t.get('NAPS_Deduction'), 0.0)),
                     'lic': lic_val,
                     'advance': advance_ded,
                     'opening_adv': opening_adv,
                     'new_adv': new_adv,
                     'closing_adv': closing_adv,
-                    'accommodation': _get_float_val(r_data, ['Accommodation', 'Accommodation_Deduction'], float(existing_t.get('Accommodation_Deduction', 0.0) or 0.0)),
-                    'other': _get_float_val(r_data, ['Other', 'Other_Deduction'], float(existing_t.get('Other_Deduction', 0.0) or 0.0))
+                    'accommodation': _get_float_val(r_data, ['Accommodation', 'Accommodation_Deduction', 'Acc Deduction'], _safe_float(existing_t.get('Accommodation_Deduction'), 0.0)),
+                    'other': _get_float_val(r_data, ['Other', 'Other_Deduction', 'Other Deduction'], _safe_float(existing_t.get('Other_Deduction'), 0.0))
                 }
 
                 calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)

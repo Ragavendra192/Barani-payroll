@@ -57,89 +57,70 @@ def generate_wages_excel(year, month, category_filter='ALL'):
 
     # Calculate or retrieve payroll rows for all active employees
     payroll_rows = []
-    if trans_map:
-        for emp in employees:
-            t = trans_map.get(emp['Employee_ID'])
-            emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
-            emp_std_days = staff_working_days if emp_is_staff else worker_working_days
+    for emp in employees:
+        emp_id = emp['Employee_ID']
+        emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
+        emp_std_days = staff_working_days if emp_is_staff else worker_working_days
+        t = trans_map.get(emp_id) if trans_map else None
 
-            if t and float(t.get('Gross_Wages', 0.0) or 0.0) > 0.0:
-                t['Working_Days'] = emp_std_days
-                uan = str(t.get('UAN_No') or t.get('UAN') or emp.get('UAN_No') or emp.get('UAN') or '').strip()
-                esi = str(t.get('ESI_No') or emp.get('ESI_No') or '').strip()
-                t['UAN_No'] = uan
-                t['ESI_No'] = esi
-                t['Department'] = t.get('Department') or emp.get('Department') or ''
-                t['Designation'] = t.get('Designation') or emp.get('Designation') or ''
-                t['DOJ'] = t.get('DOJ') or emp.get('DOJ')
-                t['Experience_Formatted'] = calculate_experience_str(t['DOJ'])
+        if t and (t.get('Present_Days') is not None or float(t.get('Gross_Wages', 0.0) or 0.0) > 0.0):
+            pres_days = float(t.get('Present_Days') if t.get('Present_Days') is not None else emp_std_days)
+            nh_days = float(t.get('NH') or t.get('PH') or 0.0)
+            cl_days = float(t.get('CL') or 0.0)
+            sl_days = float(t.get('SL') or 0.0)
+            el_days = float(t.get('EL') or t.get('PL') or 0.0)
+            act_ot = float(t.get('Act_OT_Hrs') or t.get('Actual_OT_Hours') or t.get('OT_Hours') or 0.0)
 
-                # Ensure Fixed_Gross and components
-                fg = float(t.get('Fixed_Gross') or emp.get('Fixed_Gross', 0.0) or 0.0)
-                pdw = float(t.get('Per_Day_Wage') or emp.get('Per_Day_Wage', 0.0) or 0.0)
-                if fg == 0.0 and pdw > 0.0:
-                    fg = round(pdw * emp_std_days, 2)
-                t['Fixed_Gross'] = fg
-                t['Per_Day_Wage'] = pdw
+            att_dict = {
+                'present_days': pres_days,
+                'nh': nh_days,
+                'cl': cl_days,
+                'sl': sl_days,
+                'el': el_days,
+                'actual_ot_hours': act_ot
+            }
 
-                tot_days = float(t.get('Total_Days', emp_std_days) or emp_std_days)
-                std_days = float(t.get('Working_Days', emp_std_days) or emp_std_days) or 26.0
+            pdw = float(t.get('Per_Day_Wage') or emp.get('Per_Day_Wage') or 0.0)
+            sal_dict = {
+                'Fixed_Gross': float(t.get('Fixed_Gross') or emp.get('Fixed_Gross') or 0.0),
+                'Basic_DA': float(t.get('Basic_DA') or emp.get('Basic_DA') or 0.0),
+                'HRA': float(t.get('HRA') or emp.get('HRA') or 0.0),
+                'Conveyance_Allowance': float(t.get('Conveyance_Allowance') or emp.get('Conveyance_Allowance') or 0.0),
+                'Washing_Allowance': float(t.get('Washing_Allowance') or emp.get('Washing_Allowance') or 0.0),
+                'Other_Allowance': float(t.get('Other_Allowance') or emp.get('Other_Allowance') or 0.0),
+                'Per_Day_Wage': pdw,
+                'OT_Rate': float(t.get('OT_Rate') or emp.get('OT_Rate', 56.25) or 56.25),
+                'PF_Eligible': emp.get('PF_Eligible', True),
+                'ESI_Eligible': emp.get('ESI_Eligible', True)
+            }
 
-                f_bda = float(t.get('Basic_DA') or emp.get('Basic_DA', 0.0) or (fg * 0.50))
-                f_hra = float(t.get('HRA') or emp.get('HRA', 0.0) or (fg * 0.20))
-                f_conv = float(t.get('Conveyance_Allowance') or emp.get('Conveyance_Allowance', 0.0) or (fg * 0.10))
-                f_wash = float(t.get('Washing_Allowance') or emp.get('Washing_Allowance', 0.0) or (fg * 0.10))
-                f_other = float(t.get('Other_Allowance') or emp.get('Other_Allowance', 0.0) or (fg * 0.10))
+            lic_val = float(t.get('LIC_Deduction', 0.0) or emp.get('LIC', 0.0) or 0.0)
+            adv_val = float(t.get('Advance_Deduction', 0.0) or 0.0)
+            ded_dict = {
+                'arrears': float(t.get('Arrears', 0.0) or 0.0),
+                'naps': float(t.get('NAPS_Deduction', 0.0) or 0.0),
+                'lic': lic_val,
+                'advance': adv_val,
+                'opening_adv': float(t.get('Opening_Advance', 0.0) or 0.0),
+                'new_adv': float(t.get('New_Advance', 0.0) or 0.0),
+                'closing_adv': float(t.get('Closing_Advance', 0.0) or 0.0),
+                'accommodation': float(t.get('Accommodation_Deduction', 0.0) or 0.0),
+                'other': float(t.get('Other_Deduction', 0.0) or 0.0)
+            }
 
-                t['Basic_DA'] = f_bda
-                t['HRA'] = f_hra
-                t['Conveyance_Allowance'] = f_conv
-                t['Washing_Allowance'] = f_wash
-                t['Other_Allowance'] = f_other
-
-                # Check if earned slabs are 0 (e.g. older saved transactions)
-                e_hra = float(t.get('Earned_HRA', t.get('HRA_Earned', 0.0)) or 0.0)
-                if e_hra == 0.0 and fg > 0.0 and std_days > 0.0:
-                    t['Earned_Basic_DA'] = round((f_bda / std_days) * tot_days, 2)
-                    t['Earned_HRA'] = round((f_hra / std_days) * tot_days, 2)
-                    t['Earned_Conveyance'] = round((f_conv / std_days) * tot_days, 2)
-                    t['Earned_Washing'] = round((f_wash / std_days) * tot_days, 2)
-                    t['Earned_Other'] = round((f_other / std_days) * tot_days, 2)
-                else:
-                    t['Earned_Basic_DA'] = float(t.get('Earned_Basic_DA', t.get('Basic_DA_Earned', 0.0)) or 0.0)
-                    t['Earned_HRA'] = e_hra
-                    t['Earned_Conveyance'] = float(t.get('Earned_Conveyance', t.get('Conveyance_Earned', 0.0)) or 0.0)
-                    t['Earned_Washing'] = float(t.get('Earned_Washing', t.get('Washing_Allowance_Earned', 0.0)) or 0.0)
-                    t['Earned_Other'] = float(t.get('Earned_Other', t.get('Other_Allowance_Earned', 0.0)) or 0.0)
-
-                lic_saved = float(t.get('LIC_Deduction', 0.0) or 0.0)
-                emp_lic = float(emp.get('LIC', 0.0) or 0.0)
-                if lic_saved == 0.0 and emp_lic > 0.0:
-                    t['LIC_Deduction'] = emp_lic
-                    t['Total_Deduction'] = float(t.get('Total_Deduction', 0.0) or 0.0) + emp_lic
-                    t['Net_Salary'] = float(t.get('Net_Salary', 0.0) or 0.0) - emp_lic
-
-                payroll_rows.append(t)
-            else:
-                att_dict = {'present_days': emp_std_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': emp_std_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
-                ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': float(emp.get('LIC', 0.0) or 0.0), 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
-                sal_dict = {'Fixed_Gross': emp.get('Fixed_Gross', 0.0), 'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
-                c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
-                c_res['Working_Days'] = emp_std_days
-                c_res['UAN_No'] = str(emp.get('UAN_No') or emp.get('UAN') or '').strip()
-                c_res['ESI_No'] = str(emp.get('ESI_No') or '').strip()
-                c_res['Department'] = emp.get('Department') or ''
-                c_res['Designation'] = emp.get('Designation') or ''
-                c_res['DOJ'] = emp.get('DOJ')
-                c_res['Experience_Formatted'] = calculate_experience_str(emp.get('DOJ'))
-                payroll_rows.append(c_res)
-    else:
-        for emp in employees:
-            emp_is_staff = (emp.get('Employee_Type') == 'STAFF')
-            emp_std_days = staff_working_days if emp_is_staff else worker_working_days
+            c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
+            c_res['Working_Days'] = emp_std_days
+            c_res['UAN_No'] = str(t.get('UAN_No') or t.get('UAN') or emp.get('UAN_No') or emp.get('UAN') or '').strip()
+            c_res['ESI_No'] = str(t.get('ESI_No') or emp.get('ESI_No') or '').strip()
+            c_res['Department'] = t.get('Department') or emp.get('Department') or ''
+            c_res['Designation'] = t.get('Designation') or emp.get('Designation') or ''
+            c_res['DOJ'] = t.get('DOJ') or emp.get('DOJ')
+            c_res['Experience_Formatted'] = calculate_experience_str(c_res['DOJ'])
+            payroll_rows.append(c_res)
+        else:
             att_dict = {'present_days': emp_std_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': emp_std_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
             ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': float(emp.get('LIC', 0.0) or 0.0), 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
-            sal_dict = {'Fixed_Gross': emp.get('Fixed_Gross', 0.0), 'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
+            sal_dict = {'Fixed_Gross': float(emp.get('Fixed_Gross', 0.0) or 0.0), 'Basic_DA': float(emp.get('Basic_DA', 0.0) or 0.0), 'HRA': float(emp.get('HRA', 0.0) or 0.0), 'Conveyance_Allowance': float(emp.get('Conveyance_Allowance', 0.0) or 0.0), 'Washing_Allowance': float(emp.get('Washing_Allowance', 0.0) or 0.0), 'Other_Allowance': float(emp.get('Other_Allowance', 0.0) or 0.0), 'Per_Day_Wage': float(emp.get('Per_Day_Wage', 0.0) or 0.0), 'OT_Rate': float(emp.get('OT_Rate', 56.25) or 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
             c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
             c_res['Working_Days'] = emp_std_days
             c_res['UAN_No'] = str(emp.get('UAN_No') or emp.get('UAN') or '').strip()

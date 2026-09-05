@@ -243,7 +243,7 @@ def calculate_staff_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_esi
     accom = money(ded_dict.get('accommodation') or ded_dict.get('Accommodation'))
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
-    total_ded = round_half(pf_ded + acc_pf + esi_ded + acc_esi + pt + mess + lic + tds + naps + advance + accom + other)
+    total_ded = round_half(pf_ded + esi_ded + pt + mess + lic + tds + naps + advance + accom + other)
     op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
@@ -291,14 +291,54 @@ def calculate_worker_pf_esi_earned_gross(salary, att_info, attendance, standard_
     per_day_wage = money(salary.get('Per_Day_Wage') or salary.get('per_day_wage'))
     if per_day_wage > Decimal('0.00'):
         fixed_gross = money(per_day_wage * standard_days_dec)
+        
+        b_da = money(salary.get('Basic_DA'))
+        if b_da > Decimal('0.00') and b_da <= per_day_wage:
+            fixed_basic_da = money(b_da * standard_days_dec)
+        elif b_da > per_day_wage:
+            fixed_basic_da = b_da
+        else:
+            fixed_basic_da = money(fixed_gross * Decimal('0.50'))
+
+        hra_val = money(salary.get('HRA'))
+        if hra_val > Decimal('0.00') and hra_val <= per_day_wage:
+            fixed_hra = money(hra_val * standard_days_dec)
+        elif hra_val > per_day_wage:
+            fixed_hra = hra_val
+        else:
+            fixed_hra = money(fixed_gross * Decimal('0.20'))
+
+        conv_val = money(salary.get('Conveyance_Allowance'))
+        if conv_val > Decimal('0.00') and conv_val <= per_day_wage:
+            fixed_conv = money(conv_val * standard_days_dec)
+        elif conv_val > per_day_wage:
+            fixed_conv = conv_val
+        else:
+            fixed_conv = money(fixed_gross * Decimal('0.10'))
+
+        wash_val = money(salary.get('Washing_Allowance'))
+        if wash_val > Decimal('0.00') and wash_val <= per_day_wage:
+            fixed_wash = money(wash_val * standard_days_dec)
+        elif wash_val > per_day_wage:
+            fixed_wash = wash_val
+        else:
+            fixed_wash = money(fixed_gross * Decimal('0.10'))
+
+        other_val = money(salary.get('Other_Allowance'))
+        if other_val > Decimal('0.00') and other_val <= per_day_wage:
+            fixed_other = money(other_val * standard_days_dec)
+        elif other_val > per_day_wage:
+            fixed_other = other_val
+        else:
+            fixed_other = money(fixed_gross * Decimal('0.10'))
     else:
         fixed_gross = money(salary.get('Gross_Wages') or salary.get('Base_Gross') or salary.get('Fixed_Gross'))
+        fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
+        fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
+        fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
+        fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
+        fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
 
-    fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
-    fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
-    fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
-    fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
-    fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
     fixed_spl = Decimal('0.00')
 
     worked_days_dec = att_info['total_days_dec']
@@ -358,7 +398,7 @@ def calculate_worker_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_es
     advance = money(ded_dict.get('advance') or ded_dict.get('Advance'))
     accom = money(ded_dict.get('accommodation') or ded_dict.get('Accommodation'))
     
-    total_ded = round_half(pf_ded + acc_pf + esi_ded + acc_esi + lic + advance + naps + accom)
+    total_ded = round_half(pf_ded + esi_ded + lic + advance + naps + accom)
     op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
@@ -487,14 +527,54 @@ def calculate_worker_naps_earned_gross(salary, att_info, attendance, standard_da
     per_day_wage = money(salary.get('Per_Day_Wage') or salary.get('per_day_wage'))
     if per_day_wage > Decimal('0.00'):
         fixed_gross = money(per_day_wage * standard_days_dec)
+        
+        b_da = money(salary.get('Basic_DA'))
+        if b_da > Decimal('0.00') and b_da <= per_day_wage:
+            fixed_basic_da = money(b_da * standard_days_dec)
+        elif b_da > per_day_wage:
+            fixed_basic_da = b_da
+        else:
+            fixed_basic_da = money(fixed_gross * Decimal('0.50'))
+
+        hra_val = money(salary.get('HRA'))
+        if hra_val > Decimal('0.00') and hra_val <= per_day_wage:
+            fixed_hra = money(hra_val * standard_days_dec)
+        elif hra_val > per_day_wage:
+            fixed_hra = hra_val
+        else:
+            fixed_hra = money(fixed_gross * Decimal('0.20'))
+
+        conv_val = money(salary.get('Conveyance_Allowance'))
+        if conv_val > Decimal('0.00') and conv_val <= per_day_wage:
+            fixed_conv = money(conv_val * standard_days_dec)
+        elif conv_val > per_day_wage:
+            fixed_conv = conv_val
+        else:
+            fixed_conv = money(fixed_gross * Decimal('0.10'))
+
+        wash_val = money(salary.get('Washing_Allowance'))
+        if wash_val > Decimal('0.00') and wash_val <= per_day_wage:
+            fixed_wash = money(wash_val * standard_days_dec)
+        elif wash_val > per_day_wage:
+            fixed_wash = wash_val
+        else:
+            fixed_wash = money(fixed_gross * Decimal('0.10'))
+
+        other_val = money(salary.get('Other_Allowance'))
+        if other_val > Decimal('0.00') and other_val <= per_day_wage:
+            fixed_other = money(other_val * standard_days_dec)
+        elif other_val > per_day_wage:
+            fixed_other = other_val
+        else:
+            fixed_other = money(fixed_gross * Decimal('0.10'))
     else:
         fixed_gross = money(salary.get('Gross_Wages') or salary.get('Base_Gross') or salary.get('Fixed_Gross'))
+        fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
+        fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
+        fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
+        fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
+        fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
 
-    fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
-    fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
-    fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
-    fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
-    fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
     fixed_spl = Decimal('0.00')
 
     worked_days_dec = att_info['total_days_dec']
@@ -659,14 +739,54 @@ def calculate_worker_non_pf_esi_earned_gross(salary, att_info, attendance, stand
     per_day_wage = money(salary.get('Per_Day_Wage') or salary.get('per_day_wage'))
     if per_day_wage > Decimal('0.00'):
         fixed_gross = money(per_day_wage * standard_days_dec)
+        
+        b_da = money(salary.get('Basic_DA'))
+        if b_da > Decimal('0.00') and b_da <= per_day_wage:
+            fixed_basic_da = money(b_da * standard_days_dec)
+        elif b_da > per_day_wage:
+            fixed_basic_da = b_da
+        else:
+            fixed_basic_da = money(fixed_gross * Decimal('0.50'))
+
+        hra_val = money(salary.get('HRA'))
+        if hra_val > Decimal('0.00') and hra_val <= per_day_wage:
+            fixed_hra = money(hra_val * standard_days_dec)
+        elif hra_val > per_day_wage:
+            fixed_hra = hra_val
+        else:
+            fixed_hra = money(fixed_gross * Decimal('0.20'))
+
+        conv_val = money(salary.get('Conveyance_Allowance'))
+        if conv_val > Decimal('0.00') and conv_val <= per_day_wage:
+            fixed_conv = money(conv_val * standard_days_dec)
+        elif conv_val > per_day_wage:
+            fixed_conv = conv_val
+        else:
+            fixed_conv = money(fixed_gross * Decimal('0.10'))
+
+        wash_val = money(salary.get('Washing_Allowance'))
+        if wash_val > Decimal('0.00') and wash_val <= per_day_wage:
+            fixed_wash = money(wash_val * standard_days_dec)
+        elif wash_val > per_day_wage:
+            fixed_wash = wash_val
+        else:
+            fixed_wash = money(fixed_gross * Decimal('0.10'))
+
+        other_val = money(salary.get('Other_Allowance'))
+        if other_val > Decimal('0.00') and other_val <= per_day_wage:
+            fixed_other = money(other_val * standard_days_dec)
+        elif other_val > per_day_wage:
+            fixed_other = other_val
+        else:
+            fixed_other = money(fixed_gross * Decimal('0.10'))
     else:
         fixed_gross = money(salary.get('Gross_Wages') or salary.get('Base_Gross') or salary.get('Fixed_Gross'))
+        fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
+        fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
+        fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
+        fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
+        fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
 
-    fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
-    fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
-    fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
-    fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
-    fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
     fixed_spl = Decimal('0.00')
 
     worked_days_dec = att_info['total_days_dec']
@@ -1016,12 +1136,17 @@ def build_result(emp, category, emp_type, pay_cat, att_info,
 
         # Earned Salary
         'Earned_Basic_DA': float(e_basic),
+        'Basic_DA_Earned': float(e_basic),
         'Earned_Basic': float(earned_basic_split),
         'Earned_DA': float(earned_da_split),
         'Earned_HRA': float(e_hra),
+        'HRA_Earned': float(e_hra),
         'Earned_Conveyance': float(e_conv),
+        'Conveyance_Earned': float(e_conv),
         'Earned_Washing': float(e_wash),
+        'Washing_Allowance_Earned': float(e_wash),
         'Earned_Other': float(e_other),
+        'Other_Allowance_Earned': float(e_other),
         'Earned_Special': float(e_spl),
         'Special_Allowance_Earned': float(e_spl),
         'Gross_Wages': float(e_gross),
