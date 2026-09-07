@@ -510,7 +510,16 @@ def update_employee(employee_id, data):
             daily_wage = 0.0
 
         components_sum = b_da + hra + conv + wash + other
-        if components_sum == 0 and fixed_gross > 0:
+        if per_day_wage > 0:
+            if components_sum == 0 or abs(components_sum - per_day_wage) > 0.5:
+                b_da = round(per_day_wage * 0.50, 2)
+                hra = round(per_day_wage * 0.20, 2)
+                conv = round(per_day_wage * 0.10, 2)
+                wash = round(per_day_wage * 0.10, 2)
+                other = round(per_day_wage * 0.10, 2)
+                basic = round(b_da * 0.50, 2)
+                da = round(b_da * 0.50, 2)
+        elif components_sum == 0 and fixed_gross > 0:
             b_da = round(fixed_gross * 0.50, 2)
             hra = round(fixed_gross * 0.20, 2)
             conv = round(fixed_gross * 0.10, 2)

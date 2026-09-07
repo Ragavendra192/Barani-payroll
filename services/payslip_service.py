@@ -90,6 +90,8 @@ def get_worker_deductions_list(row):
         deductions.append(('ESI DEDUCTION', float(row.get('ESI_Deduction', 0.0))))
     if float(row.get('LIC_Deduction', 0.0) or 0.0) > 0:
         deductions.append(('LIC DEDUCTION', float(row.get('LIC_Deduction', 0.0))))
+    if float(row.get('TDS_Deduction', 0.0) or 0.0) > 0:
+        deductions.append(('TDS DEDUCTION', float(row.get('TDS_Deduction', 0.0))))
     if float(row.get('NAPS_Deduction', 0.0) or 0.0) > 0:
         deductions.append(('NAPS DEDUCTION', float(row.get('NAPS_Deduction', 0.0))))
     if float(row.get('Accommodation_Deduction', 0.0) or 0.0) > 0:

@@ -359,6 +359,7 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
         ('Arrears', 'Arrears', 'currency', 14, False),
         ('NAPS', 'NAPS', 'currency', 14, False),
         ('LIC', 'LIC', 'currency', 14, False),
+        ('TDS', 'TDS', 'currency', 14, False),
         ('Accommodation', 'Accommodation', 'currency', 16, False),
         ('Other', 'Other', 'currency', 14, False)
     ]
@@ -440,6 +441,7 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
             'Arrears': _safe_float(existing_t.get('Arrears'), 0.0),
             'NAPS': _safe_float(existing_t.get('NAPS_Deduction'), 0.0),
             'LIC': lic_val,
+            'TDS': _safe_float(existing_t.get('TDS_Deduction'), 0.0),
             'Accommodation': _safe_float(existing_t.get('Accommodation_Deduction'), 0.0),
             'Other': _safe_float(existing_t.get('Other_Deduction'), 0.0)
         }

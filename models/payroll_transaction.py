@@ -34,6 +34,10 @@ def ensure_attendance_columns():
             BEGIN
                 ALTER TABLE PayrollTransaction ADD Opening_Advance DECIMAL(18,2) DEFAULT 0.0, New_Advance DECIMAL(18,2) DEFAULT 0.0, Closing_Advance DECIMAL(18,2) DEFAULT 0.0;
             END
+            IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'PayrollTransaction' AND COLUMN_NAME = 'TDS_Deduction')
+            BEGIN
+                ALTER TABLE PayrollTransaction ADD TDS_Deduction DECIMAL(18,2) DEFAULT 0.0;
+            END
         """)
         conn.commit()
         conn.close()
@@ -63,7 +67,7 @@ def get_payroll_transactions(year, month, category=None, emp_type=None, search=N
             t.Basic_DA_Earned, t.HRA_Earned, t.Conveyance_Earned, t.Washing_Allowance_Earned, t.Other_Allowance_Earned,
             t.Special_Allowance_Earned, t.OT_Wages, t.Gross_Wages,
             t.PF_Gross, t.ESI_Gross, t.PF_Deduction, t.Accounts_PF_Deduction, t.ESI_Deduction, t.Accounts_ESI_Deduction,
-            t.Arrears, t.NAPS_Deduction, t.LIC_Deduction, t.Advance_Deduction, t.Accommodation_Deduction, t.Other_Deduction,
+            t.Arrears, t.NAPS_Deduction, t.LIC_Deduction, ISNULL(t.TDS_Deduction, 0.0) AS TDS_Deduction, t.Advance_Deduction, t.Accommodation_Deduction, t.Other_Deduction,
             ISNULL(t.Opening_Advance, 0.0) AS Opening_Advance,
             ISNULL(t.New_Advance, 0.0) AS New_Advance,
             ISNULL(t.Closing_Advance, 0.0) AS Closing_Advance,
@@ -220,7 +224,7 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                     r.get('Gross_Wages', 0.0), r.get('PF_Gross', 0.0), r.get('ESI_Gross', 0.0),
                     r.get('PF_Deduction', 0.0), r.get('Accounts_PF_Deduction', 0.0),
                     r.get('ESI_Deduction', 0.0), r.get('Accounts_ESI_Deduction', 0.0),
-                    r.get('Arrears', 0.0), r.get('NAPS_Deduction', 0.0), r.get('LIC_Deduction', 0.0),
+                    r.get('Arrears', 0.0), r.get('NAPS_Deduction', 0.0), r.get('LIC_Deduction', 0.0), r.get('TDS_Deduction', r.get('TDS', 0.0)),
                     r.get('Advance_Deduction', 0.0), r.get('Accommodation_Deduction', 0.0), r.get('Other_Deduction', 0.0),
                     float(r.get('Opening_Advance', 0.0) or 0.0), float(r.get('New_Advance', 0.0) or 0.0), float(r.get('Closing_Advance', 0.0) or 0.0),
                     lop_ded, r.get('Total_Deduction', 0.0), r.get('Net_Salary', 0.0),
@@ -235,7 +239,7 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                     r.get('Gross_Wages', 0.0), r.get('PF_Gross', 0.0), r.get('ESI_Gross', 0.0),
                     r.get('PF_Deduction', 0.0), r.get('Accounts_PF_Deduction', 0.0),
                     r.get('ESI_Deduction', 0.0), r.get('Accounts_ESI_Deduction', 0.0),
-                    r.get('Arrears', 0.0), r.get('NAPS_Deduction', 0.0), r.get('LIC_Deduction', 0.0),
+                    r.get('Arrears', 0.0), r.get('NAPS_Deduction', 0.0), r.get('LIC_Deduction', 0.0), r.get('TDS_Deduction', r.get('TDS', 0.0)),
                     r.get('Advance_Deduction', 0.0), r.get('Accommodation_Deduction', 0.0), r.get('Other_Deduction', 0.0),
                     float(r.get('Opening_Advance', 0.0) or 0.0), float(r.get('New_Advance', 0.0) or 0.0), float(r.get('Closing_Advance', 0.0) or 0.0),
                     lop_ded, r.get('Total_Deduction', 0.0), r.get('Net_Salary', 0.0)
@@ -267,7 +271,7 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                             Per_Day_Wage=?, OT_Hours=?, OT_Rate=?, OT_Wages=?,
                             Basic_DA_Earned=?, HRA_Earned=?, Conveyance_Earned=?, Washing_Allowance_Earned=?, Other_Allowance_Earned=?, Special_Allowance_Earned=?,
                             Gross_Wages=?, PF_Gross=?, ESI_Gross=?, PF_Deduction=?, Accounts_PF_Deduction=?, ESI_Deduction=?, Accounts_ESI_Deduction=?,
-                            Arrears=?, NAPS_Deduction=?, LIC_Deduction=?, Advance_Deduction=?, Accommodation_Deduction=?, Other_Deduction=?,
+                            Arrears=?, NAPS_Deduction=?, LIC_Deduction=?, TDS_Deduction=?, Advance_Deduction=?, Accommodation_Deduction=?, Other_Deduction=?,
                             Opening_Advance=?, New_Advance=?, Closing_Advance=?,
                             LOP_Deduction=?, Total_Deduction=?, Net_Salary=?, Updated_At=GETDATE()
                     WHEN NOT MATCHED THEN
@@ -277,7 +281,7 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                             Per_Day_Wage, OT_Hours, OT_Rate, OT_Wages,
                             Basic_DA_Earned, HRA_Earned, Conveyance_Earned, Washing_Allowance_Earned, Other_Allowance_Earned, Special_Allowance_Earned,
                             Gross_Wages, PF_Gross, ESI_Gross, PF_Deduction, Accounts_PF_Deduction, ESI_Deduction, Accounts_ESI_Deduction,
-                            Arrears, NAPS_Deduction, LIC_Deduction, Advance_Deduction, Accommodation_Deduction, Other_Deduction,
+                            Arrears, NAPS_Deduction, LIC_Deduction, TDS_Deduction, Advance_Deduction, Accommodation_Deduction, Other_Deduction,
                             Opening_Advance, New_Advance, Closing_Advance,
                             LOP_Deduction, Total_Deduction, Net_Salary, Created_At, Updated_At
                         ) VALUES (
@@ -286,7 +290,7 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                             ?, ?, ?, ?,
                             ?, ?, ?, ?, ?, ?,
                             ?, ?, ?, ?, ?, ?, ?,
-                            ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?, ?, ?,
                             ?, ?, ?,
                             ?, ?, ?, GETDATE(), GETDATE()
                         );

@@ -108,9 +108,9 @@
             <thead>
                 <tr class="section-header">
                     <th style="width: 35%;">EARNINGS</th>
-                    <th style="width: 15%;">AMOUNT (₹)</th>
+                    <th style="width: 15%;">AMOUNT (Rs.)</th>
                     <th style="width: 35%;">DEDUCTIONS</th>
-                    <th style="width: 15%;">AMOUNT (₹)</th>
+                    <th style="width: 15%;">AMOUNT (Rs.)</th>
                 </tr>
             </thead>
             <tbody>
@@ -134,9 +134,9 @@
                 </tr>
                 <tr class="bold" style="background-color: #fffbeb;">
                     <td>GROSS STIPEND</td>
-                    <td class="text-right">₹{{ "%.2f"|format(row.Gross_Amount) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(row.Gross_Amount) }}</td>
                     <td>TOTAL DEDUCTIONS</td>
-                    <td class="text-right">₹{{ "%.2f"|format(row.Total_Deduction) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(row.Total_Deduction) }}</td>
                 </tr>
             </tbody>
         </table>
@@ -145,7 +145,7 @@
         <table style="margin-bottom: 30px;">
             <tr style="background-color: #fef3c7;">
                 <td class="bold fs-6" style="padding: 10px;">NET STIPEND PAYABLE:</td>
-                <td class="bold text-right fs-6" style="padding: 10px;">₹{{ "%.2f"|format(row.Net_Amount) }}</td>
+                <td class="bold text-right fs-6" style="padding: 10px;">Rs. {{ "%.2f"|format(row.Net_Amount) }}</td>
             </tr>
         </table>
 

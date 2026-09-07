@@ -95,11 +95,13 @@ def generate_wages_excel(year, month, category_filter='ALL'):
             }
 
             lic_val = float(t.get('LIC_Deduction', 0.0) or emp.get('LIC', 0.0) or 0.0)
+            tds_val = float(t.get('TDS_Deduction', 0.0) or 0.0)
             adv_val = float(t.get('Advance_Deduction', 0.0) or 0.0)
             ded_dict = {
                 'arrears': float(t.get('Arrears', 0.0) or 0.0),
                 'naps': float(t.get('NAPS_Deduction', 0.0) or 0.0),
                 'lic': lic_val,
+                'tds': tds_val,
                 'advance': adv_val,
                 'opening_adv': float(t.get('Opening_Advance', 0.0) or 0.0),
                 'new_adv': float(t.get('New_Advance', 0.0) or 0.0),
@@ -119,7 +121,7 @@ def generate_wages_excel(year, month, category_filter='ALL'):
             payroll_rows.append(c_res)
         else:
             att_dict = {'present_days': emp_std_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': emp_std_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
-            ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': float(emp.get('LIC', 0.0) or 0.0), 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
+            ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': float(emp.get('LIC', 0.0) or 0.0), 'tds': 0.0, 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
             sal_dict = {'Fixed_Gross': float(emp.get('Fixed_Gross', 0.0) or 0.0), 'Basic_DA': float(emp.get('Basic_DA', 0.0) or 0.0), 'HRA': float(emp.get('HRA', 0.0) or 0.0), 'Conveyance_Allowance': float(emp.get('Conveyance_Allowance', 0.0) or 0.0), 'Washing_Allowance': float(emp.get('Washing_Allowance', 0.0) or 0.0), 'Other_Allowance': float(emp.get('Other_Allowance', 0.0) or 0.0), 'Per_Day_Wage': float(emp.get('Per_Day_Wage', 0.0) or 0.0), 'OT_Rate': float(emp.get('OT_Rate', 56.25) or 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
             c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
             c_res['Working_Days'] = emp_std_days
@@ -224,130 +226,257 @@ def generate_wages_excel(year, month, category_filter='ALL'):
         ws.freeze_panes(4, 4)
 
         is_staff = 'STAFF' in cat_code.upper()
+        is_staff_pf_esi = (cat_code == 'STAFF_PF_ESI')
 
         if is_staff:
-            # STAFF COLUMNS (45 Cols: A to AS)
-            ws.merge_range('A1:AS1', 'BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1', fmt_title)
-            ws.merge_range('A2:AS2', f"{grp['title']} SALARY STATEMENT FOR THE MONTH OF {month_label}", fmt_subtitle)
+            if is_staff_pf_esi:
+                # STAFF PF ESI COLUMNS (46 Cols: A to AT with TDS Dedn)
+                ws.merge_range('A1:AT1', 'BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1', fmt_title)
+                ws.merge_range('A2:AT2', f"{grp['title']} SALARY STATEMENT FOR THE MONTH OF {month_label}", fmt_subtitle)
 
-            # Group headers
-            ws.merge_range('A3:J3', 'EMPLOYEE DETAILS', fmt_group_header)
-            ws.merge_range('K3:R3', 'WORKED DAYS', fmt_group_header)
-            ws.merge_range('S3:Y3', 'FIXED SALARY STRUCTURE', fmt_group_header)
-            ws.merge_range('Z3:AF3', 'EARNINGS', fmt_group_header)
-            ws.merge_range('AG3:AH3', 'STATUTORY GROSS', fmt_group_header)
-            ws.merge_range('AI3:AN3', 'DEDUCTIONS', fmt_group_header)
-            ws.write('AO3', 'NET SALARY', fmt_group_header)
-            ws.merge_range('AP3:AS3', 'ADVANCE TRACKING', fmt_group_header)
+                # Group headers
+                ws.merge_range('A3:J3', 'EMPLOYEE DETAILS', fmt_group_header)
+                ws.merge_range('K3:R3', 'WORKED DAYS', fmt_group_header)
+                ws.merge_range('S3:Y3', 'FIXED SALARY STRUCTURE', fmt_group_header)
+                ws.merge_range('Z3:AF3', 'EARNINGS', fmt_group_header)
+                ws.merge_range('AG3:AH3', 'STATUTORY GROSS', fmt_group_header)
+                ws.merge_range('AI3:AO3', 'DEDUCTIONS', fmt_group_header)
+                ws.write('AP3', 'NET SALARY', fmt_group_header)
+                ws.merge_range('AQ3:AT3', 'ADVANCE TRACKING', fmt_group_header)
 
-            headers = [
-                'S.No', 'Emp ID', 'UAN No', 'ESI No', 'Employee Name', 'Department', 'Date of Joining', 'Year of Experience', 'Designation', 'Category',
-                'Working Days', 'Present', 'N/H', 'EL', 'CL', 'SL', 'Payable Days', 'OT Hours',
-                'Gross', 'Basic+DA', 'HRA', 'Conv', 'Washing Allow', 'Other Allow', 'Gross Wages',
-                'Basic+DA', 'HRA', 'Conv', 'Wash Allow', 'Other Allow', 'OT Wages', 'Gross Wages',
-                'PF Gross', 'ESI Gross',
-                'PF Dedn', 'ESI Dedn', 'LIC Dedn', 'Advance Dedn', 'Other Dedn', 'Total Dedn',
-                'Net Salary',
-                'New Advance', 'Installment', 'Opening Advance', 'Closing Advance'
-            ]
-            for col_idx, h in enumerate(headers):
-                ws.write(3, col_idx, h, fmt_col_header)
+                headers = [
+                    'S.No', 'Emp ID', 'UAN No', 'ESI No', 'Employee Name', 'Department', 'Date of Joining', 'Year of Experience', 'Designation', 'Category',
+                    'Working Days', 'Present', 'N/H', 'EL', 'CL', 'SL', 'Payable Days', 'OT Hours',
+                    'Gross', 'Basic+DA', 'HRA', 'Conv', 'Washing Allow', 'Other Allow', 'Gross Wages',
+                    'Basic+DA', 'HRA', 'Conv', 'Wash Allow', 'Other Allow', 'OT Wages', 'Gross Wages',
+                    'PF Gross', 'ESI Gross',
+                    'PF Dedn', 'ESI Dedn', 'LIC Dedn', 'TDS Dedn', 'Advance Dedn', 'Other Dedn', 'Total Dedn',
+                    'Net Salary',
+                    'New Advance', 'Installment', 'Opening Advance', 'Closing Advance'
+                ]
+                for col_idx, h in enumerate(headers):
+                    ws.write(3, col_idx, h, fmt_col_header)
 
-            row_idx = 4
-            default_emp_days = staff_working_days if 'STAFF' in cat_code else worker_working_days
-            for idx, r in enumerate(rows, start=1):
-                ws.write(row_idx, 0, idx, fmt_center)
-                ws.write(row_idx, 1, str(r.get('Emp_No', '')), fmt_text_bold)
-                uan_str = str(r.get('UAN_No') or r.get('UAN') or '').strip()
-                esi_str = str(r.get('ESI_No') or '').strip()
-                ws.write(row_idx, 2, uan_str if uan_str and uan_str not in ('0', 'None', 'nan') else '-', fmt_text)
-                ws.write(row_idx, 3, esi_str if esi_str and esi_str not in ('0', 'None', 'nan') else '-', fmt_text)
-                ws.write(row_idx, 4, str(r.get('Employee_Name') or r.get('Name', '')), fmt_text)
-                ws.write(row_idx, 5, str(r.get('Department', '') or '-'), fmt_text)
-                ws.write(row_idx, 6, format_doj_display(r.get('DOJ')), fmt_center)
-                exp_str = r.get('Experience_Formatted') or calculate_experience_str(r.get('DOJ'))
-                ws.write(row_idx, 7, exp_str, fmt_center)
-                ws.write(row_idx, 8, str(r.get('Designation', '') or '-'), fmt_text)
-                ws.write(row_idx, 9, str(r.get('Category', '')), fmt_center)
+                row_idx = 4
+                default_emp_days = staff_working_days
+                for idx, r in enumerate(rows, start=1):
+                    ws.write(row_idx, 0, idx, fmt_center)
+                    ws.write(row_idx, 1, str(r.get('Emp_No', '')), fmt_text_bold)
+                    uan_str = str(r.get('UAN_No') or r.get('UAN') or '').strip()
+                    esi_str = str(r.get('ESI_No') or '').strip()
+                    ws.write(row_idx, 2, uan_str if uan_str and uan_str not in ('0', 'None', 'nan') else '-', fmt_text)
+                    ws.write(row_idx, 3, esi_str if esi_str and esi_str not in ('0', 'None', 'nan') else '-', fmt_text)
+                    ws.write(row_idx, 4, str(r.get('Employee_Name') or r.get('Name', '')), fmt_text)
+                    ws.write(row_idx, 5, str(r.get('Department', '') or '-'), fmt_text)
+                    ws.write(row_idx, 6, format_doj_display(r.get('DOJ')), fmt_center)
+                    exp_str = r.get('Experience_Formatted') or calculate_experience_str(r.get('DOJ'))
+                    ws.write(row_idx, 7, exp_str, fmt_center)
+                    ws.write(row_idx, 8, str(r.get('Designation', '') or '-'), fmt_text)
+                    ws.write(row_idx, 9, str(r.get('Category', '')), fmt_center)
 
-                ws.write(row_idx, 10, float(r.get('Working_Days', default_emp_days) or default_emp_days), fmt_num)
-                ws.write(row_idx, 11, float(r.get('Present_Days', default_emp_days) or default_emp_days), fmt_num)
-                ws.write(row_idx, 12, float(r.get('NH', 0.0) or 0.0), fmt_num)
-                ws.write(row_idx, 13, float(r.get('EL', 0.0) or 0.0), fmt_num)
-                ws.write(row_idx, 14, float(r.get('CL', 0.0) or 0.0), fmt_num)
-                ws.write(row_idx, 15, float(r.get('SL', 0.0) or 0.0), fmt_num)
-                ws.write(row_idx, 16, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_num)
-                ws.write(row_idx, 17, float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0), fmt_num)
+                    ws.write(row_idx, 10, float(r.get('Working_Days', default_emp_days) or default_emp_days), fmt_num)
+                    ws.write(row_idx, 11, float(r.get('Present_Days', default_emp_days) or default_emp_days), fmt_num)
+                    ws.write(row_idx, 12, float(r.get('NH', 0.0) or 0.0), fmt_num)
+                    ws.write(row_idx, 13, float(r.get('EL', 0.0) or 0.0), fmt_num)
+                    ws.write(row_idx, 14, float(r.get('CL', 0.0) or 0.0), fmt_num)
+                    ws.write(row_idx, 15, float(r.get('SL', 0.0) or 0.0), fmt_num)
+                    ws.write(row_idx, 16, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_num)
+                    ws.write(row_idx, 17, float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0), fmt_num)
 
-                fg = float(r.get('Fixed_Gross', 0.0) or 0.0)
-                ws.write(row_idx, 18, fg, fmt_currency)
-                ws.write(row_idx, 19, float(r.get('Basic_DA', 0.0) or fg * 0.50), fmt_currency)
-                ws.write(row_idx, 20, float(r.get('HRA', 0.0) or fg * 0.20), fmt_currency)
-                ws.write(row_idx, 21, float(r.get('Conveyance_Allowance', 0.0) or fg * 0.10), fmt_currency)
-                ws.write(row_idx, 22, float(r.get('Washing_Allowance', 0.0) or fg * 0.10), fmt_currency)
-                ws.write(row_idx, 23, float(r.get('Other_Allowance', 0.0) or fg * 0.10), fmt_currency)
-                ws.write(row_idx, 24, fg, fmt_currency_bold)
+                    fg = float(r.get('Fixed_Gross', 0.0) or 0.0)
+                    ws.write(row_idx, 18, fg, fmt_currency)
+                    ws.write(row_idx, 19, float(r.get('Basic_DA', 0.0) or fg * 0.50), fmt_currency)
+                    ws.write(row_idx, 20, float(r.get('HRA', 0.0) or fg * 0.20), fmt_currency)
+                    ws.write(row_idx, 21, float(r.get('Conveyance_Allowance', 0.0) or fg * 0.10), fmt_currency)
+                    ws.write(row_idx, 22, float(r.get('Washing_Allowance', 0.0) or fg * 0.10), fmt_currency)
+                    ws.write(row_idx, 23, float(r.get('Other_Allowance', 0.0) or fg * 0.10), fmt_currency)
+                    ws.write(row_idx, 24, fg, fmt_currency_bold)
 
-                ws.write(row_idx, 25, float(r.get('Earned_Basic_DA', r.get('Basic_DA_Earned', 0.0)) or 0.0), fmt_currency)
-                ws.write(row_idx, 26, float(r.get('Earned_HRA', r.get('HRA_Earned', 0.0)) or 0.0), fmt_currency)
-                ws.write(row_idx, 27, float(r.get('Earned_Conveyance', r.get('Conveyance_Earned', 0.0)) or 0.0), fmt_currency)
-                ws.write(row_idx, 28, float(r.get('Earned_Washing', r.get('Washing_Allowance_Earned', 0.0)) or 0.0), fmt_currency)
-                ws.write(row_idx, 29, float(r.get('Earned_Other', r.get('Other_Allowance_Earned', 0.0)) or 0.0), fmt_currency)
-                ws.write(row_idx, 30, float(r.get('OT_Wages', 0.0) or 0.0), fmt_currency)
-                ws.write(row_idx, 31, float(r.get('Gross_Wages', 0.0) or 0.0), fmt_currency_bold)
+                    ws.write(row_idx, 25, float(r.get('Earned_Basic_DA', r.get('Basic_DA_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 26, float(r.get('Earned_HRA', r.get('HRA_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 27, float(r.get('Earned_Conveyance', r.get('Conveyance_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 28, float(r.get('Earned_Washing', r.get('Washing_Allowance_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 29, float(r.get('Earned_Other', r.get('Other_Allowance_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 30, float(r.get('OT_Wages', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 31, float(r.get('Gross_Wages', 0.0) or 0.0), fmt_currency_bold)
 
-                # Statutory Gross
-                pf_gross_val = float(r.get('PF_Gross', r.get('PF_Eligible_Gross', 0.0)) or 0.0)
-                esi_gross_val = float(r.get('ESI_Gross', r.get('ESI_Eligible_Gross', 0.0)) or 0.0)
-                ws.write(row_idx, 32, pf_gross_val, fmt_currency)
-                ws.write(row_idx, 33, esi_gross_val, fmt_currency)
+                    # Statutory Gross
+                    pf_gross_val = float(r.get('PF_Gross', r.get('PF_Eligible_Gross', 0.0)) or 0.0)
+                    esi_gross_val = float(r.get('ESI_Gross', r.get('ESI_Eligible_Gross', 0.0)) or 0.0)
+                    ws.write(row_idx, 32, pf_gross_val, fmt_currency)
+                    ws.write(row_idx, 33, esi_gross_val, fmt_currency)
 
-                # Deductions
-                adv_dedn = float(r.get('Advance_Deduction', 0.0) or 0.0)
-                ws.write(row_idx, 34, float(r.get('PF_Deduction', 0.0) or 0.0), fmt_currency)
-                ws.write(row_idx, 35, float(r.get('ESI_Deduction', 0.0) or 0.0), fmt_currency)
-                ws.write(row_idx, 36, float(r.get('LIC_Deduction', 0.0) or 0.0), fmt_currency)
-                ws.write(row_idx, 37, adv_dedn, fmt_currency)
-                ws.write(row_idx, 38, float(r.get('Other_Deduction', 0.0) or 0.0), fmt_currency)
-                ws.write(row_idx, 39, float(r.get('Total_Deduction', 0.0) or 0.0), fmt_currency_bold)
+                    # Deductions (with TDS)
+                    adv_dedn = float(r.get('Advance_Deduction', 0.0) or 0.0)
+                    ws.write(row_idx, 34, float(r.get('PF_Deduction', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 35, float(r.get('ESI_Deduction', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 36, float(r.get('LIC_Deduction', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 37, float(r.get('TDS_Deduction', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 38, adv_dedn, fmt_currency)
+                    ws.write(row_idx, 39, float(r.get('Other_Deduction', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 40, float(r.get('Total_Deduction', 0.0) or 0.0), fmt_currency_bold)
 
-                ws.write(row_idx, 40, float(r.get('Net_Salary', 0.0) or 0.0), fmt_net_salary)
-                
-                # Advance Tracking
-                open_adv = float(r.get('Opening_Advance', 0.0) or 0.0)
-                new_adv = float(r.get('New_Advance', 0.0) or 0.0)
-                raw_closing = r.get('Closing_Advance')
-                if raw_closing is not None and str(raw_closing).strip() != '' and float(raw_closing) >= 0:
-                    closing_adv = float(raw_closing)
-                else:
-                    closing_adv = max(0.0, open_adv + new_adv - adv_dedn)
-                
-                ws.write(row_idx, 41, new_adv, fmt_currency) # New Advance
-                ws.write(row_idx, 42, adv_dedn, fmt_currency) # Installment
-                ws.write(row_idx, 43, open_adv, fmt_currency) # Opening Advance
-                ws.write(row_idx, 44, closing_adv, fmt_currency) # Closing Advance
-                row_idx += 1
+                    ws.write(row_idx, 41, float(r.get('Net_Salary', 0.0) or 0.0), fmt_net_salary)
+                    
+                    # Advance Tracking
+                    open_adv = float(r.get('Opening_Advance', 0.0) or 0.0)
+                    new_adv = float(r.get('New_Advance', 0.0) or 0.0)
+                    raw_closing = r.get('Closing_Advance')
+                    if raw_closing is not None and str(raw_closing).strip() != '' and float(raw_closing) >= 0:
+                        closing_adv = float(raw_closing)
+                    else:
+                        closing_adv = max(0.0, open_adv + new_adv - adv_dedn)
+                    
+                    ws.write(row_idx, 42, new_adv, fmt_currency) # New Advance
+                    ws.write(row_idx, 43, adv_dedn, fmt_currency) # Installment
+                    ws.write(row_idx, 44, open_adv, fmt_currency) # Opening Advance
+                    ws.write(row_idx, 45, closing_adv, fmt_currency) # Closing Advance
+                    row_idx += 1
 
-            # Total Row
-            ws.merge_range(row_idx, 0, row_idx, 9, f"TOTAL ({len(rows)} Employees)", fmt_total_label)
-            for c_i in range(10, 18):
-                ws.write(row_idx, c_i, '', fmt_total_label)
-            for c_i in range(18, 45):
-                col_letter = xl_col_to_name(c_i)
-                ws.write_formula(row_idx, c_i, f"=SUM({col_letter}5:{col_letter}{row_idx})", fmt_total_currency)
+                # Total Row
+                ws.merge_range(row_idx, 0, row_idx, 9, f"TOTAL ({len(rows)} Employees)", fmt_total_label)
+                for c_i in range(10, 18):
+                    ws.write(row_idx, c_i, '', fmt_total_label)
+                for c_i in range(18, 46):
+                    col_letter = xl_col_to_name(c_i)
+                    ws.write_formula(row_idx, c_i, f"=SUM({col_letter}5:{col_letter}{row_idx})", fmt_total_currency)
 
-            # Auto-fit column widths
-            ws.set_column(0, 0, 6)   # S.No
-            ws.set_column(1, 1, 10)  # Emp ID
-            ws.set_column(2, 3, 16)  # UAN & ESI
-            ws.set_column(4, 4, 24)  # Name
-            ws.set_column(5, 5, 16)  # Dept
-            ws.set_column(6, 6, 14)  # Date of Joining
-            ws.set_column(7, 7, 20)  # Year of Experience
-            ws.set_column(8, 8, 16)  # Designation
-            ws.set_column(9, 9, 16)  # Category
-            ws.set_column(10, 17, 10) # Attendance
-            ws.set_column(18, 44, 14) # Currency columns
+                # Auto-fit column widths
+                ws.set_column(0, 0, 6)   # S.No
+                ws.set_column(1, 1, 10)  # Emp ID
+                ws.set_column(2, 3, 16)  # UAN & ESI
+                ws.set_column(4, 4, 24)  # Name
+                ws.set_column(5, 5, 16)  # Dept
+                ws.set_column(6, 6, 14)  # Date of Joining
+                ws.set_column(7, 7, 20)  # Year of Experience
+                ws.set_column(8, 8, 16)  # Designation
+                ws.set_column(9, 9, 16)  # Category
+                ws.set_column(10, 17, 10) # Attendance
+                ws.set_column(18, 45, 14) # Currency columns
+
+            else:
+                # OTHER STAFF COLUMNS (45 Cols: A to AS)
+                ws.merge_range('A1:AS1', 'BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1', fmt_title)
+                ws.merge_range('A2:AS2', f"{grp['title']} SALARY STATEMENT FOR THE MONTH OF {month_label}", fmt_subtitle)
+
+                # Group headers
+                ws.merge_range('A3:J3', 'EMPLOYEE DETAILS', fmt_group_header)
+                ws.merge_range('K3:R3', 'WORKED DAYS', fmt_group_header)
+                ws.merge_range('S3:Y3', 'FIXED SALARY STRUCTURE', fmt_group_header)
+                ws.merge_range('Z3:AF3', 'EARNINGS', fmt_group_header)
+                ws.merge_range('AG3:AH3', 'STATUTORY GROSS', fmt_group_header)
+                ws.merge_range('AI3:AN3', 'DEDUCTIONS', fmt_group_header)
+                ws.write('AO3', 'NET SALARY', fmt_group_header)
+                ws.merge_range('AP3:AS3', 'ADVANCE TRACKING', fmt_group_header)
+
+                headers = [
+                    'S.No', 'Emp ID', 'UAN No', 'ESI No', 'Employee Name', 'Department', 'Date of Joining', 'Year of Experience', 'Designation', 'Category',
+                    'Working Days', 'Present', 'N/H', 'EL', 'CL', 'SL', 'Payable Days', 'OT Hours',
+                    'Gross', 'Basic+DA', 'HRA', 'Conv', 'Washing Allow', 'Other Allow', 'Gross Wages',
+                    'Basic+DA', 'HRA', 'Conv', 'Wash Allow', 'Other Allow', 'OT Wages', 'Gross Wages',
+                    'PF Gross', 'ESI Gross',
+                    'PF Dedn', 'ESI Dedn', 'LIC Dedn', 'Advance Dedn', 'Other Dedn', 'Total Dedn',
+                    'Net Salary',
+                    'New Advance', 'Installment', 'Opening Advance', 'Closing Advance'
+                ]
+                for col_idx, h in enumerate(headers):
+                    ws.write(3, col_idx, h, fmt_col_header)
+
+                row_idx = 4
+                default_emp_days = staff_working_days
+                for idx, r in enumerate(rows, start=1):
+                    ws.write(row_idx, 0, idx, fmt_center)
+                    ws.write(row_idx, 1, str(r.get('Emp_No', '')), fmt_text_bold)
+                    uan_str = str(r.get('UAN_No') or r.get('UAN') or '').strip()
+                    esi_str = str(r.get('ESI_No') or '').strip()
+                    ws.write(row_idx, 2, uan_str if uan_str and uan_str not in ('0', 'None', 'nan') else '-', fmt_text)
+                    ws.write(row_idx, 3, esi_str if esi_str and esi_str not in ('0', 'None', 'nan') else '-', fmt_text)
+                    ws.write(row_idx, 4, str(r.get('Employee_Name') or r.get('Name', '')), fmt_text)
+                    ws.write(row_idx, 5, str(r.get('Department', '') or '-'), fmt_text)
+                    ws.write(row_idx, 6, format_doj_display(r.get('DOJ')), fmt_center)
+                    exp_str = r.get('Experience_Formatted') or calculate_experience_str(r.get('DOJ'))
+                    ws.write(row_idx, 7, exp_str, fmt_center)
+                    ws.write(row_idx, 8, str(r.get('Designation', '') or '-'), fmt_text)
+                    ws.write(row_idx, 9, str(r.get('Category', '')), fmt_center)
+
+                    ws.write(row_idx, 10, float(r.get('Working_Days', default_emp_days) or default_emp_days), fmt_num)
+                    ws.write(row_idx, 11, float(r.get('Present_Days', default_emp_days) or default_emp_days), fmt_num)
+                    ws.write(row_idx, 12, float(r.get('NH', 0.0) or 0.0), fmt_num)
+                    ws.write(row_idx, 13, float(r.get('EL', 0.0) or 0.0), fmt_num)
+                    ws.write(row_idx, 14, float(r.get('CL', 0.0) or 0.0), fmt_num)
+                    ws.write(row_idx, 15, float(r.get('SL', 0.0) or 0.0), fmt_num)
+                    ws.write(row_idx, 16, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_num)
+                    ws.write(row_idx, 17, float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0), fmt_num)
+
+                    fg = float(r.get('Fixed_Gross', 0.0) or 0.0)
+                    ws.write(row_idx, 18, fg, fmt_currency)
+                    ws.write(row_idx, 19, float(r.get('Basic_DA', 0.0) or fg * 0.50), fmt_currency)
+                    ws.write(row_idx, 20, float(r.get('HRA', 0.0) or fg * 0.20), fmt_currency)
+                    ws.write(row_idx, 21, float(r.get('Conveyance_Allowance', 0.0) or fg * 0.10), fmt_currency)
+                    ws.write(row_idx, 22, float(r.get('Washing_Allowance', 0.0) or fg * 0.10), fmt_currency)
+                    ws.write(row_idx, 23, float(r.get('Other_Allowance', 0.0) or fg * 0.10), fmt_currency)
+                    ws.write(row_idx, 24, fg, fmt_currency_bold)
+
+                    ws.write(row_idx, 25, float(r.get('Earned_Basic_DA', r.get('Basic_DA_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 26, float(r.get('Earned_HRA', r.get('HRA_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 27, float(r.get('Earned_Conveyance', r.get('Conveyance_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 28, float(r.get('Earned_Washing', r.get('Washing_Allowance_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 29, float(r.get('Earned_Other', r.get('Other_Allowance_Earned', 0.0)) or 0.0), fmt_currency)
+                    ws.write(row_idx, 30, float(r.get('OT_Wages', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 31, float(r.get('Gross_Wages', 0.0) or 0.0), fmt_currency_bold)
+
+                    # Statutory Gross
+                    pf_gross_val = float(r.get('PF_Gross', r.get('PF_Eligible_Gross', 0.0)) or 0.0)
+                    esi_gross_val = float(r.get('ESI_Gross', r.get('ESI_Eligible_Gross', 0.0)) or 0.0)
+                    ws.write(row_idx, 32, pf_gross_val, fmt_currency)
+                    ws.write(row_idx, 33, esi_gross_val, fmt_currency)
+
+                    # Deductions
+                    adv_dedn = float(r.get('Advance_Deduction', 0.0) or 0.0)
+                    ws.write(row_idx, 34, float(r.get('PF_Deduction', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 35, float(r.get('ESI_Deduction', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 36, float(r.get('LIC_Deduction', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 37, adv_dedn, fmt_currency)
+                    ws.write(row_idx, 38, float(r.get('Other_Deduction', 0.0) or 0.0), fmt_currency)
+                    ws.write(row_idx, 39, float(r.get('Total_Deduction', 0.0) or 0.0), fmt_currency_bold)
+
+                    ws.write(row_idx, 40, float(r.get('Net_Salary', 0.0) or 0.0), fmt_net_salary)
+                    
+                    # Advance Tracking
+                    open_adv = float(r.get('Opening_Advance', 0.0) or 0.0)
+                    new_adv = float(r.get('New_Advance', 0.0) or 0.0)
+                    raw_closing = r.get('Closing_Advance')
+                    if raw_closing is not None and str(raw_closing).strip() != '' and float(raw_closing) >= 0:
+                        closing_adv = float(raw_closing)
+                    else:
+                        closing_adv = max(0.0, open_adv + new_adv - adv_dedn)
+                    
+                    ws.write(row_idx, 41, new_adv, fmt_currency) # New Advance
+                    ws.write(row_idx, 42, adv_dedn, fmt_currency) # Installment
+                    ws.write(row_idx, 43, open_adv, fmt_currency) # Opening Advance
+                    ws.write(row_idx, 44, closing_adv, fmt_currency) # Closing Advance
+                    row_idx += 1
+
+                # Total Row
+                ws.merge_range(row_idx, 0, row_idx, 9, f"TOTAL ({len(rows)} Employees)", fmt_total_label)
+                for c_i in range(10, 18):
+                    ws.write(row_idx, c_i, '', fmt_total_label)
+                for c_i in range(18, 45):
+                    col_letter = xl_col_to_name(c_i)
+                    ws.write_formula(row_idx, c_i, f"=SUM({col_letter}5:{col_letter}{row_idx})", fmt_total_currency)
+
+                # Auto-fit column widths
+                ws.set_column(0, 0, 6)   # S.No
+                ws.set_column(1, 1, 10)  # Emp ID
+                ws.set_column(2, 3, 16)  # UAN & ESI
+                ws.set_column(4, 4, 24)  # Name
+                ws.set_column(5, 5, 16)  # Dept
+                ws.set_column(6, 6, 14)  # Date of Joining
+                ws.set_column(7, 7, 20)  # Year of Experience
+                ws.set_column(8, 8, 16)  # Designation
+                ws.set_column(9, 9, 16)  # Category
+                ws.set_column(10, 17, 10) # Attendance
+                ws.set_column(18, 44, 14) # Currency columns
 
         else:
             # WORKER COLUMNS (55 Cols: A to BC)

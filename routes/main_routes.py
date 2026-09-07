@@ -281,6 +281,7 @@ def attendance():
                 'arrears': float(existing_t.get('Arrears', 0.0) or 0.0),
                 'naps': float(existing_t.get('NAPS_Deduction', 0.0) or 0.0),
                 'lic': lic_val,
+                'tds': float(existing_t.get('TDS_Deduction', 0.0) or 0.0),
                 'advance': float(existing_t.get('Advance_Deduction', 0.0) or 0.0),
                 'opening_adv': float(existing_t.get('Opening_Advance', 0.0) or 0.0),
                 'new_adv': float(existing_t.get('New_Advance', 0.0) or 0.0),
@@ -419,10 +420,13 @@ def attendance():
                 else:
                     lic_val = lic_default
 
+                tds_val = _get_float_val(r_data, ['TDS', 'TDS_Deduction', 'TDS Deduction'], _safe_float(existing_t.get('TDS_Deduction'), 0.0))
+
                 ded_dict = {
                     'arrears': _get_float_val(r_data, ['Arrears'], _safe_float(existing_t.get('Arrears'), 0.0)),
                     'naps': _get_float_val(r_data, ['NAPS', 'NAPS_Deduction', 'NAPS Deduction'], _safe_float(existing_t.get('NAPS_Deduction'), 0.0)),
                     'lic': lic_val,
+                    'tds': tds_val,
                     'advance': advance_ded,
                     'opening_adv': opening_adv,
                     'new_adv': new_adv,
@@ -623,6 +627,7 @@ def wages():
                 'arrears': get_f(f"{prefix}arrears", existing_t.get('Arrears', 0.0)),
                 'naps': get_f(f"{prefix}naps", existing_t.get('NAPS_Deduction', 0.0)),
                 'lic': get_f(f"{prefix}lic", existing_t.get('LIC_Deduction', emp.get('LIC', 0.0))),
+                'tds': get_f(f"{prefix}tds", existing_t.get('TDS_Deduction', 0.0)),
                 'advance': get_f(f"{prefix}advance", existing_t.get('Advance_Deduction', 0.0)),
                 'accommodation': get_f(f"{prefix}accommodation", existing_t.get('Accommodation_Deduction', 0.0)),
                 'other': get_f(f"{prefix}other", existing_t.get('Other_Deduction', 0.0))
@@ -664,6 +669,7 @@ def wages():
                 'arrears': float(t.get('Arrears', 0.0) or 0.0),
                 'naps': float(t.get('NAPS_Deduction', 0.0) or 0.0),
                 'lic': float(t.get('LIC_Deduction', emp.get('LIC', 0.0)) or emp.get('LIC', 0.0)),
+                'tds': float(t.get('TDS_Deduction', 0.0) or 0.0),
                 'advance': float(t.get('Advance_Deduction', 0.0) or 0.0),
                 'accommodation': float(t.get('Accommodation_Deduction', 0.0) or 0.0),
                 'other': float(t.get('Other_Deduction', 0.0) or 0.0)

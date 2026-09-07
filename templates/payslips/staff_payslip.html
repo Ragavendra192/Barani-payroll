@@ -131,9 +131,9 @@
             <thead>
                 <tr class="section-header">
                     <th style="width: 35%;">EARNINGS</th>
-                    <th style="width: 15%;">AMOUNT (₹)</th>
+                    <th style="width: 15%;">AMOUNT (Rs.)</th>
                     <th style="width: 35%;">DEDUCTIONS</th>
-                    <th style="width: 15%;">AMOUNT (₹)</th>
+                    <th style="width: 15%;">AMOUNT (Rs.)</th>
                 </tr>
             </thead>
             <tbody>
@@ -181,9 +181,9 @@
                 </tr>
                 <tr class="bold" style="background-color: #f8fafc;">
                     <td>GROSS SALARY</td>
-                    <td class="text-right">₹{{ "%.2f"|format(row.Gross_Salary) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(row.Gross_Salary) }}</td>
                     <td>TOTAL DEDUCTIONS</td>
-                    <td class="text-right">₹{{ "%.2f"|format(row.Total_Deduction) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(row.Total_Deduction) }}</td>
                 </tr>
             </tbody>
         </table>
@@ -192,7 +192,7 @@
         <table style="margin-bottom: 30px;">
             <tr style="background-color: #e2e8f0;">
                 <td class="bold fs-6" style="padding: 10px;">NET SALARY PAYABLE:</td>
-                <td class="bold text-right fs-6" style="padding: 10px;">₹{{ "%.2f"|format(row.Net_Salary) }}</td>
+                <td class="bold text-right fs-6" style="padding: 10px;">Rs. {{ "%.2f"|format(row.Net_Salary) }}</td>
             </tr>
         </table>
 

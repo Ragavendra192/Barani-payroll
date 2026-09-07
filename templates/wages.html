@@ -141,6 +141,7 @@
                             <th class="text-end text-danger">ESI</th>
                             <th class="text-end text-danger">NAPS Dedn</th>
                             <th class="text-end text-danger">LIC</th>
+                            <th class="text-end text-danger">TDS</th>
                             <th class="text-end text-secondary" style="width: 90px;">Opening Adv</th>
                             <th class="text-end" style="width: 90px;">Advance Dedn</th>
                             <th class="text-end text-info" style="width: 90px;">Closing Adv</th>
@@ -191,6 +192,9 @@
                                 </td>
                                 <td class="text-end text-danger font-monospace">
                                     ₹{{ "{:,.2f}".format(r.LIC_Deduction or 0.0) }}
+                                </td>
+                                <td class="text-end text-danger font-monospace">
+                                    ₹{{ "{:,.2f}".format(r.TDS_Deduction or 0.0) }}
                                 </td>
 
                                 <td class="text-end fw-bold text-secondary font-monospace pt-2" id="open_adv_{{ r.Employee_ID }}">
