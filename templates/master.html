@@ -490,11 +490,11 @@ function syncModalSalarySplit() {
         if (pd > 0) {
             const estGross = pd * 26.0;
             fixedGrossInput.value = estGross.toFixed(2);
-            basicInput.value = (estGross * 0.50).toFixed(2);
-            hraInput.value = (estGross * 0.20).toFixed(2);
-            convInput.value = (estGross * 0.10).toFixed(2);
-            washInput.value = (estGross * 0.10).toFixed(2);
-            otherInput.value = (estGross * 0.10).toFixed(2);
+            basicInput.value = Math.round(estGross * 0.50).toFixed(2);
+            hraInput.value = Math.round(estGross * 0.20).toFixed(2);
+            convInput.value = Math.round(estGross * 0.10).toFixed(2);
+            washInput.value = Math.round(estGross * 0.10).toFixed(2);
+            otherInput.value = Math.round(estGross * 0.10).toFixed(2);
         } else {
             basicInput.value = '';
             hraInput.value = '';
@@ -509,11 +509,11 @@ function syncModalSalarySplit() {
 
         const fg = parseFloat(fixedGrossInput.value) || 0;
         if (fg > 0) {
-            basicInput.value = (fg * 0.50).toFixed(2);
-            hraInput.value = (fg * 0.20).toFixed(2);
-            convInput.value = (fg * 0.10).toFixed(2);
-            washInput.value = (fg * 0.10).toFixed(2);
-            otherInput.value = (fg * 0.10).toFixed(2);
+            basicInput.value = Math.round(fg * 0.50).toFixed(2);
+            hraInput.value = Math.round(fg * 0.20).toFixed(2);
+            convInput.value = Math.round(fg * 0.10).toFixed(2);
+            washInput.value = Math.round(fg * 0.10).toFixed(2);
+            otherInput.value = Math.round(fg * 0.10).toFixed(2);
         } else {
             basicInput.value = '';
             hraInput.value = '';

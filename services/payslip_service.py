@@ -83,21 +83,21 @@ def get_payslip_template(row):
 def get_worker_deductions_list(row):
     deductions = []
     if float(row.get('PF_Deduction', 0.0) or 0.0) > 0:
-        deductions.append(('PF EMPLOYEE CONTRIBUTION', float(row.get('PF_Deduction', 0.0))))
+        deductions.append(('PF', float(row.get('PF_Deduction', 0.0))))
     if float(row.get('Advance_Deduction', 0.0) or 0.0) > 0:
         deductions.append(('ADVANCE', float(row.get('Advance_Deduction', 0.0))))
     if float(row.get('ESI_Deduction', 0.0) or 0.0) > 0:
-        deductions.append(('ESI DEDUCTION', float(row.get('ESI_Deduction', 0.0))))
+        deductions.append(('ESI', float(row.get('ESI_Deduction', 0.0))))
     if float(row.get('LIC_Deduction', 0.0) or 0.0) > 0:
-        deductions.append(('LIC DEDUCTION', float(row.get('LIC_Deduction', 0.0))))
+        deductions.append(('LIC', float(row.get('LIC_Deduction', 0.0))))
     if float(row.get('TDS_Deduction', 0.0) or 0.0) > 0:
-        deductions.append(('TDS DEDUCTION', float(row.get('TDS_Deduction', 0.0))))
+        deductions.append(('TDS', float(row.get('TDS_Deduction', 0.0))))
     if float(row.get('NAPS_Deduction', 0.0) or 0.0) > 0:
-        deductions.append(('NAPS DEDUCTION', float(row.get('NAPS_Deduction', 0.0))))
+        deductions.append(('NAPS', float(row.get('NAPS_Deduction', 0.0))))
     if float(row.get('Accommodation_Deduction', 0.0) or 0.0) > 0:
-        deductions.append(('ACCOMMODATION DEDUCTION', float(row.get('Accommodation_Deduction', 0.0))))
+        deductions.append(('ACCOMMODATION', float(row.get('Accommodation_Deduction', 0.0))))
     if float(row.get('Other_Deduction', 0.0) or 0.0) > 0:
-        deductions.append(('OTHER DEDUCTION', float(row.get('Other_Deduction', 0.0))))
+        deductions.append(('OTHERS', float(row.get('Other_Deduction', 0.0))))
     return deductions
 
 def generate_payslip_pdf(year, month, emp_no, category=None):

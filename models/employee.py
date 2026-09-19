@@ -3,6 +3,20 @@ import datetime as dt
 import pandas as pd
 from db import get_db_connection
 from utils.contact_utils import normalize_indian_phone, mask_phone_number
+from decimal import Decimal, ROUND_HALF_UP
+
+def round_half_rupee(val):
+    """
+    Rounds value to nearest integer with >= 0.50 rounding up, < 0.50 rounding down.
+    Returns float (e.g. 5080.40 -> 5080.0, 2540.50 -> 2541.0).
+    """
+    if val is None:
+        return 0.0
+    try:
+        d = Decimal(str(round(float(val), 4)))
+        return float(d.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    except Exception:
+        return 0.0
 
 _CONTACT_COLS_CHECKED = False
 
@@ -366,15 +380,15 @@ def add_employee(data):
 
         components_sum = b_da + hra + conv + wash + other
         if components_sum == 0 and fixed_gross > 0:
-            b_da = round(fixed_gross * 0.50, 2)
-            hra = round(fixed_gross * 0.20, 2)
-            conv = round(fixed_gross * 0.10, 2)
-            wash = round(fixed_gross * 0.10, 2)
-            other = round(fixed_gross * 0.10, 2)
+            b_da = round_half_rupee(fixed_gross * 0.50)
+            hra = round_half_rupee(fixed_gross * 0.20)
+            conv = round_half_rupee(fixed_gross * 0.10)
+            wash = round_half_rupee(fixed_gross * 0.10)
+            other = round_half_rupee(fixed_gross * 0.10)
 
         if basic == 0 and da == 0 and b_da > 0:
-            basic = round(b_da * 0.50, 2)
-            da = round(b_da * 0.50, 2)
+            basic = round_half_rupee(b_da * 0.50)
+            da = round_half_rupee(b_da * 0.50)
         elif basic + da > 0 and b_da == 0:
             b_da = round(basic + da, 2)
 
@@ -389,18 +403,18 @@ def add_employee(data):
         if basic + da > 0 and b_da == 0:
             b_da = round(basic + da, 2)
         elif b_da > 0 and basic + da == 0:
-            basic = round(b_da * 0.50, 2)
-            da = round(b_da * 0.50, 2)
+            basic = round_half_rupee(b_da * 0.50)
+            da = round_half_rupee(b_da * 0.50)
 
         components_sum = b_da + hra + conv + wash + other
         if fixed_gross > 0 and components_sum == 0:
-            b_da = round(fixed_gross * 0.50, 2)
-            hra = round(fixed_gross * 0.20, 2)
-            conv = round(fixed_gross * 0.10, 2)
-            wash = round(fixed_gross * 0.10, 2)
-            other = round(fixed_gross * 0.10, 2)
-            basic = round(b_da * 0.50, 2)
-            da = round(b_da * 0.50, 2)
+            b_da = round_half_rupee(fixed_gross * 0.50)
+            hra = round_half_rupee(fixed_gross * 0.20)
+            conv = round_half_rupee(fixed_gross * 0.10)
+            wash = round_half_rupee(fixed_gross * 0.10)
+            other = round_half_rupee(fixed_gross * 0.10)
+            basic = round_half_rupee(b_da * 0.50)
+            da = round_half_rupee(b_da * 0.50)
         elif fixed_gross == 0 and components_sum > 0:
             fixed_gross = round(components_sum, 2)
 
@@ -512,23 +526,23 @@ def update_employee(employee_id, data):
         components_sum = b_da + hra + conv + wash + other
         if per_day_wage > 0:
             if components_sum == 0 or abs(components_sum - per_day_wage) > 0.5:
-                b_da = round(per_day_wage * 0.50, 2)
-                hra = round(per_day_wage * 0.20, 2)
-                conv = round(per_day_wage * 0.10, 2)
-                wash = round(per_day_wage * 0.10, 2)
-                other = round(per_day_wage * 0.10, 2)
-                basic = round(b_da * 0.50, 2)
-                da = round(b_da * 0.50, 2)
+                b_da = round_half_rupee(per_day_wage * 0.50)
+                hra = round_half_rupee(per_day_wage * 0.20)
+                conv = round_half_rupee(per_day_wage * 0.10)
+                wash = round_half_rupee(per_day_wage * 0.10)
+                other = round_half_rupee(per_day_wage * 0.10)
+                basic = round_half_rupee(b_da * 0.50)
+                da = round_half_rupee(b_da * 0.50)
         elif components_sum == 0 and fixed_gross > 0:
-            b_da = round(fixed_gross * 0.50, 2)
-            hra = round(fixed_gross * 0.20, 2)
-            conv = round(fixed_gross * 0.10, 2)
-            wash = round(fixed_gross * 0.10, 2)
-            other = round(fixed_gross * 0.10, 2)
+            b_da = round_half_rupee(fixed_gross * 0.50)
+            hra = round_half_rupee(fixed_gross * 0.20)
+            conv = round_half_rupee(fixed_gross * 0.10)
+            wash = round_half_rupee(fixed_gross * 0.10)
+            other = round_half_rupee(fixed_gross * 0.10)
 
         if basic == 0 and da == 0 and b_da > 0:
-            basic = round(b_da * 0.50, 2)
-            da = round(b_da * 0.50, 2)
+            basic = round_half_rupee(b_da * 0.50)
+            da = round_half_rupee(b_da * 0.50)
         elif basic + da > 0 and b_da == 0:
             b_da = round(basic + da, 2)
 
@@ -543,18 +557,18 @@ def update_employee(employee_id, data):
         if basic + da > 0 and b_da == 0:
             b_da = round(basic + da, 2)
         elif b_da > 0 and basic + da == 0:
-            basic = round(b_da * 0.50, 2)
-            da = round(b_da * 0.50, 2)
+            basic = round_half_rupee(b_da * 0.50)
+            da = round_half_rupee(b_da * 0.50)
 
         components_sum = b_da + hra + conv + wash + other
         if fixed_gross > 0 and components_sum == 0:
-            b_da = round(fixed_gross * 0.50, 2)
-            hra = round(fixed_gross * 0.20, 2)
-            conv = round(fixed_gross * 0.10, 2)
-            wash = round(fixed_gross * 0.10, 2)
-            other = round(fixed_gross * 0.10, 2)
-            basic = round(b_da * 0.50, 2)
-            da = round(b_da * 0.50, 2)
+            b_da = round_half_rupee(fixed_gross * 0.50)
+            hra = round_half_rupee(fixed_gross * 0.20)
+            conv = round_half_rupee(fixed_gross * 0.10)
+            wash = round_half_rupee(fixed_gross * 0.10)
+            other = round_half_rupee(fixed_gross * 0.10)
+            basic = round_half_rupee(b_da * 0.50)
+            da = round_half_rupee(b_da * 0.50)
         elif fixed_gross == 0 and components_sum > 0:
             fixed_gross = round(components_sum, 2)
 

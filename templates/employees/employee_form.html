@@ -206,11 +206,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (empType === 'STAFF') {
             const gross = parseFloat(fixedGrossInput.value) || 0.0;
             if (gross > 0) {
-                basicInput.value = (gross * 0.50).toFixed(2);
-                hraInput.value = (gross * 0.20).toFixed(2);
-                convInput.value = (gross * 0.10).toFixed(2);
-                washInput.value = (gross * 0.10).toFixed(2);
-                otherInput.value = (gross * 0.10).toFixed(2);
+                basicInput.value = Math.round(gross * 0.50).toFixed(2);
+                hraInput.value = Math.round(gross * 0.20).toFixed(2);
+                convInput.value = Math.round(gross * 0.10).toFixed(2);
+                washInput.value = Math.round(gross * 0.10).toFixed(2);
+                otherInput.value = Math.round(gross * 0.10).toFixed(2);
             }
         }
     }
@@ -256,11 +256,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (pd > 0) {
                     const estGross = (pd * 26.0).toFixed(2);
                     fixedGrossInput.value = estGross;
-                    basicInput.value = (estGross * 0.50).toFixed(2);
-                    hraInput.value = (estGross * 0.20).toFixed(2);
-                    convInput.value = (estGross * 0.10).toFixed(2);
-                    washInput.value = (estGross * 0.10).toFixed(2);
-                    otherInput.value = (estGross * 0.10).toFixed(2);
+                    basicInput.value = Math.round(estGross * 0.50).toFixed(2);
+                    hraInput.value = Math.round(estGross * 0.20).toFixed(2);
+                    convInput.value = Math.round(estGross * 0.10).toFixed(2);
+                    washInput.value = Math.round(estGross * 0.10).toFixed(2);
+                    otherInput.value = Math.round(estGross * 0.10).toFixed(2);
                 }
             }
         });

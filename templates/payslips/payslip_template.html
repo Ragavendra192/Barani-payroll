@@ -45,7 +45,7 @@
             font-size: 9px;
             text-align: center;
             font-weight: bold;
-            color: #1e293b;
+            color: #000;
             margin-top: 2px;
         }
         .payslip-month-banner {
@@ -58,6 +58,7 @@
             padding: 4px 0;
             margin-bottom: 6px;
             letter-spacing: 0.5px;
+            color: #000;
         }
         table.payslip-table {
             width: 100%;
@@ -68,19 +69,21 @@
             border: 1px solid #000;
             padding: 4px 6px;
             font-size: 9.5px;
+            color: #000;
         }
         .lbl {
             font-weight: bold;
             background-color: #f8fafc;
-            color: #0f172a;
+            color: #000;
         }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .bold { font-weight: bold; }
 
+        table.payslip-table thead.earnings-head th,
         .earnings-head th {
-            background-color: #0f4c81;
-            color: #ffffff;
+            background-color: #0f4c81 !important;
+            color: #ffffff !important;
             border: 1px solid #000;
             padding: 5px;
             font-size: 10px;
@@ -98,10 +101,11 @@
             justify-content: space-between;
             align-items: center;
             font-weight: bold;
+            color: #000;
         }
         .net-pay-amount {
             font-size: 15px;
-            color: #047857;
+            color: #000;
         }
         .net-pay-words {
             font-size: 9.5px;
@@ -109,12 +113,13 @@
             padding-top: 4px;
             margin-top: 4px;
             font-style: italic;
+            color: #000;
         }
         .footer-note {
             margin-top: 10px;
             text-align: center;
             font-size: 8.5px;
-            color: #475569;
+            color: #000;
             font-style: italic;
         }
 
@@ -146,7 +151,7 @@
                     <img src="/static/images/barani_logo.png" alt="BHIPL Logo" style="max-height: 48px; max-width: 100px;">
                 </td>
                 <td style="width: 85%; text-align: center;">
-                    <div class="company-title">BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1</div>
+                    <div class="company-title">BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - I</div>
                     <div class="company-address">
                         1043/1, 1044/1 & 1045/2, Kurumbapalayam, Main Rd, Kalapatti, Tamil Nadu 641048
                     </div>
@@ -163,78 +168,78 @@
         <table class="payslip-table">
             <tr>
                 <td class="lbl" style="width: 16%;">Employee Name</td>
-                <td style="width: 34%; font-weight: bold;">{{ row.Employee_Name or '-' }}</td>
+                <td style="width: 34%; font-weight: bold; color: #000;">{{ row.Employee_Name or '-' }}</td>
                 <td class="lbl" style="width: 16%;">Date of Joining</td>
-                <td style="width: 34%;">{{ row.DOJ or '-' }}</td>
+                <td style="width: 34%; color: #000;">{{ row.DOJ or '-' }}</td>
             </tr>
             <tr>
                 <td class="lbl">Employee No.</td>
-                <td style="font-weight: bold; color: #0f4c81;">{{ row.Emp_No or '-' }}</td>
+                <td style="font-weight: bold; color: #000;">{{ row.Emp_No or '-' }}</td>
                 <td class="lbl">Bank</td>
-                <td>{{ row.Bank_Name or row.Bank or '-' }}</td>
+                <td style="color: #000;">{{ row.Bank_Name or row.Bank or '-' }}</td>
             </tr>
             <tr>
                 <td class="lbl">Father Name</td>
-                <td>{{ row.Father_Name or '-' }}</td>
+                <td style="color: #000;">{{ row.Father_Name or '-' }}</td>
                 <td class="lbl">Bank A/C No.</td>
-                <td style="font-weight: bold;">{{ row.Account_No or '-' }}</td>
+                <td style="font-weight: bold; color: #000;">{{ row.Account_No or '-' }}</td>
             </tr>
             <tr>
                 <td class="lbl">Department</td>
-                <td>{{ row.Department or '-' }}</td>
+                <td style="color: #000;">{{ row.Department or '-' }}</td>
                 <td class="lbl">IFSC Code</td>
-                <td>{{ row.IFSC_Code or '-' }}</td>
+                <td style="color: #000;">{{ row.IFSC_Code or '-' }}</td>
             </tr>
             <tr>
                 <td class="lbl">Designation</td>
-                <td>{{ row.Designation or '-' }}</td>
+                <td style="color: #000;">{{ row.Designation or '-' }}</td>
                 <td class="lbl">UAN Number</td>
-                <td>{{ row.UAN or '-' }}</td>
+                <td style="color: #000;">{{ row.UAN or '-' }}</td>
             </tr>
             <tr>
                 <td class="lbl">Date of Birth</td>
-                <td>{{ row.DOB or '-' }}</td>
+                <td style="color: #000;">{{ row.DOB or '-' }}</td>
                 <td class="lbl">ESI Number</td>
-                <td>{{ row.ESI_No or '-' }}</td>
+                <td style="color: #000;">{{ row.ESI_No or '-' }}</td>
             </tr>
         </table>
 
         <!-- ATTENDANCE / LEAVE / ADVANCE SUMMARY TABLE -->
         <table class="payslip-table text-center">
-            <thead style="background-color: #e2e8f0; font-weight: bold;">
+            <thead style="background-color: #e2e8f0; font-weight: bold; color: #000;">
                 <tr>
-                    <th style="text-align: left; width: 14%;">Leave Type</th>
-                    <th style="width: 7%;">Op. Bal.</th>
-                    <th style="width: 7%;">Availed</th>
-                    <th style="width: 7%;">Cl. Bal.</th>
-                    <th style="width: 9%;">Total Days</th>
-                    <th style="width: 9%;">Present Days</th>
-                    <th style="width: 8%;">Week Off</th>
-                    <th style="width: 8%;">Holidays</th>
-                    <th style="width: 9%;">Paid Leave</th>
-                    <th style="width: 9%;">Unpaid Leave</th>
-                    <th style="width: 13%;">Paid Days</th>
+                    <th style="text-align: left; width: 14%; color: #000;">Leave Type</th>
+                    <th style="width: 7%; color: #000;">Op. Bal.</th>
+                    <th style="width: 7%; color: #000;">Availed</th>
+                    <th style="width: 7%; color: #000;">Cl. Bal.</th>
+                    <th style="width: 9%; color: #000;">Total Days</th>
+                    <th style="width: 9%; color: #000;">Present Days</th>
+                    <th style="width: 8%; color: #000;">Week Off</th>
+                    <th style="width: 8%; color: #000;">Holidays</th>
+                    <th style="width: 9%; color: #000;">Paid Leave</th>
+                    <th style="width: 9%; color: #000;">Unpaid Leave</th>
+                    <th style="width: 13%; color: #000;">Paid Days</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="text-align: left; font-weight: bold;">Earned Leave</td>
-                    <td>{{ "%.1f"|format(row.EL_Op or 18.0) }}</td>
-                    <td>{{ "%.1f"|format(row.EL or 0.0) }}</td>
-                    <td>{{ "%.1f"|format(row.EL_Cl or (18.0 - (row.EL or 0.0))) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; font-weight: bold;">{{ "%.1f"|format(row.Working_Days or 26.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; font-weight: bold;">{{ "%.1f"|format(row.Present_Days or 0.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle;">{{ "%.1f"|format(row.Week_Off or 4.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle;">{{ "%.1f"|format(row.NH or 0.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle;">{{ "%.1f"|format((row.EL or 0.0) + (row.CL or 0.0) + (row.SL or 0.0)) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; color: #dc2626; font-weight: bold;">{{ "%.1f"|format(row.LOP_Days or 0.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; font-weight: bold;">{{ "%.1f"|format(row.Total_Days or 0.0) }}</td>
+                    <td style="text-align: left; font-weight: bold; color: #000;">Earned Leave</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.EL_Op or 18.0) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.EL or 0.0) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.EL_Cl or (18.0 - (row.EL or 0.0))) }}</td>
+                    <td rowspan="2" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Working_Days or 26.0) }}</td>
+                    <td rowspan="2" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Present_Days or 0.0) }}</td>
+                    <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format(row.Week_Off or 4.0) }}</td>
+                    <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format(row.NH or 0.0) }}</td>
+                    <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format((row.EL or 0.0) + (row.CL or 0.0) + (row.SL or 0.0)) }}</td>
+                    <td rowspan="2" style="vertical-align: middle; color: #000; font-weight: bold;">{{ "%.1f"|format(row.LOP_Days or 0.0) }}</td>
+                    <td rowspan="2" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Total_Days or 0.0) }}</td>
                 </tr>
                 <tr>
-                    <td style="text-align: left; font-weight: bold;">Casual Leave</td>
-                    <td>{{ "%.1f"|format(row.CL_Op or 5.0) }}</td>
-                    <td>{{ "%.1f"|format(row.CL or 0.0) }}</td>
-                    <td>{{ "%.1f"|format(row.CL_Cl or (5.0 - (row.CL or 0.0))) }}</td>
+                    <td style="text-align: left; font-weight: bold; color: #000;">Casual Leave</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.CL_Op or 5.0) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.CL or 0.0) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.CL_Cl or (5.0 - (row.CL or 0.0))) }}</td>
                 </tr>
             </tbody>
         </table>
@@ -242,10 +247,10 @@
         <!-- OPENING AND CLOSING ADVANCE BOX -->
         <table class="payslip-table" style="margin-bottom: 6px; background-color: #f8fafc; font-size: 9.5px; font-weight: bold; width: 100%;">
             <tr>
-                <td style="width: 50%; text-align: left; padding: 4px 10px; border: 1px solid #000;">
+                <td style="width: 50%; text-align: left; padding: 4px 10px; border: 1px solid #000; color: #000;">
                     Opening Advance: Rs. {{ "{:,.2f}".format(row.Opening_Advance or 0.0) }}
                 </td>
-                <td style="width: 50%; text-align: right; padding: 4px 10px; border: 1px solid #000;">
+                <td style="width: 50%; text-align: right; padding: 4px 10px; border: 1px solid #000; color: #000;">
                     Closing Advance: Rs. {{ "{:,.2f}".format(row.Closing_Advance if row.Closing_Advance is defined and row.Closing_Advance is not none else ((row.Opening_Advance or 0.0) - (row.Advance_Deduction or 0.0))) }}
                 </td>
             </tr>
@@ -255,69 +260,69 @@
         <table class="payslip-table">
             <thead class="earnings-head">
                 <tr>
-                    <th style="width: 28%; text-align: left;">DESCRIPTION</th>
-                    <th style="width: 17%; text-align: right;">FIXED GROSS</th>
-                    <th style="width: 17%; text-align: right;">EARNED GROSS</th>
-                    <th style="width: 25%; text-align: left;">DEDUCTIONS</th>
-                    <th style="width: 13%; text-align: right;">AMOUNT</th>
+                    <th style="width: 28%; text-align: left; color: #ffffff !important;">DESCRIPTION</th>
+                    <th style="width: 17%; text-align: right; color: #ffffff !important;">FIXED GROSS</th>
+                    <th style="width: 17%; text-align: right; color: #ffffff !important;">EARNED GROSS</th>
+                    <th style="width: 25%; text-align: left; color: #ffffff !important;">DEDUCTIONS</th>
+                    <th style="width: 13%; text-align: right; color: #ffffff !important;">AMOUNT</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>BASIC + DA</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Master_Basic + row.Master_DA if row.Master_Basic is defined and (row.Master_Basic + row.Master_DA) > 0 else row.Basic_DA or 0.0) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Basic_DA_Earned or 0.0) }}</td>
-                    <td>PF EMPLOYEE CONTRIBUTION</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.PF_Deduction or 0.0) }}</td>
+                    <td style="color: #000;">BASIC + DA</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_Basic + row.Master_DA if row.Master_Basic is defined and (row.Master_Basic + row.Master_DA) > 0 else row.Basic_DA or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Basic_DA_Earned or 0.0) }}</td>
+                    <td style="color: #000;">PF</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.PF_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
-                    <td>HOUSE RENT ALLOWANCE</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Master_HRA if row.Master_HRA is defined and row.Master_HRA > 0 else row.HRA or 0.0) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.HRA_Earned or 0.0) }}</td>
-                    <td>ESI DEDUCTION</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.ESI_Deduction or 0.0) }}</td>
+                    <td style="color: #000;">HOUSE RENT ALLOWANCE</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_HRA if row.Master_HRA is defined and row.Master_HRA > 0 else row.HRA or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.HRA_Earned or 0.0) }}</td>
+                    <td style="color: #000;">ESI</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.ESI_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
-                    <td>CONVEYANCE ALLOWANCE</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Master_Conveyance if row.Master_Conveyance is defined and row.Master_Conveyance > 0 else row.Conveyance_Allowance or 0.0) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Conveyance_Earned or 0.0) }}</td>
-                    <td>LIC DEDUCTION</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.LIC_Deduction or 0.0) }}</td>
+                    <td style="color: #000;">CONVEYANCE ALLOWANCE</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_Conveyance if row.Master_Conveyance is defined and row.Master_Conveyance > 0 else row.Conveyance_Allowance or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Conveyance_Earned or 0.0) }}</td>
+                    <td style="color: #000;">LIC</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.LIC_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
-                    <td>WASHING ALLOWANCE</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Master_Washing if row.Master_Washing is defined and row.Master_Washing > 0 else row.Washing_Allowance or 0.0) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Washing_Allowance_Earned or 0.0) }}</td>
-                    <td>TDS DEDUCTION</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.TDS_Deduction or 0.0) }}</td>
+                    <td style="color: #000;">WASHING ALLOWANCE</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_Washing if row.Master_Washing is defined and row.Master_Washing > 0 else row.Washing_Allowance or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Washing_Allowance_Earned or 0.0) }}</td>
+                    <td style="color: #000;">TDS</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.TDS_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
-                    <td>OTHER ALLOWANCES</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Master_Other if row.Master_Other is defined and row.Master_Other > 0 else row.Other_Allowance or 0.0) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Other_Allowance_Earned or 0.0) }}</td>
-                    <td>ADVANCE DEDUCTION</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Advance_Deduction or 0.0) }}</td>
+                    <td style="color: #000;">OTHER ALLOWANCES</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_Other if row.Master_Other is defined and row.Master_Other > 0 else row.Other_Allowance or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Other_Allowance_Earned or 0.0) }}</td>
+                    <td style="color: #000;">ADVANCE</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Advance_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
-                    <td>OVERTIME WAGES (OT)</td>
-                    <td class="text-right">0.00</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.OT_Wages or 0.0) }}</td>
-                    <td>ACCOMMODATION DEDUCTION</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Accommodation_Deduction or 0.0) }}</td>
+                    <td style="color: #000;">OVERTIME WAGES (OT)</td>
+                    <td class="text-right" style="color: #000;">0.00</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.OT_Wages or 0.0) }}</td>
+                    <td style="color: #000;">ACCOMMODATION</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Accommodation_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
-                    <td>SPECIAL ALLOWANCE (SPL)</td>
-                    <td class="text-right">0.00</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Special_Allowance_Earned or 0.0) }}</td>
-                    <td>OTHER DEDUCTION</td>
-                    <td class="text-right">{{ "{:,.2f}".format((row.Other_Deduction or 0.0) + (row.NAPS_Deduction or 0.0)) }}</td>
+                    <td style="color: #000;">SPECIAL ALLOWANCE (SPL)</td>
+                    <td class="text-right" style="color: #000;">0.00</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Special_Allowance_Earned or 0.0) }}</td>
+                    <td style="color: #000;">OTHERS</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format((row.Other_Deduction or 0.0) + (row.NAPS_Deduction or 0.0)) }}</td>
                 </tr>
                 <tr style="background-color: #f1f5f9; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000;">
-                    <td>TOTAL EARNINGS</td>
-                    <td class="text-right">{{ "{:,.2f}".format(row.Fixed_Gross or 0.0) }}</td>
-                    <td class="text-right" style="color: #047857;">{{ "{:,.2f}".format(row.Gross_Wages or 0.0) }}</td>
-                    <td>TOTAL DEDUCTIONS</td>
-                    <td class="text-right" style="color: #dc2626;">{{ "{:,.2f}".format(row.Total_Deduction or 0.0) }}</td>
+                    <td style="color: #000;">TOTAL EARNINGS</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Fixed_Gross or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Gross_Wages or 0.0) }}</td>
+                    <td style="color: #000;">TOTAL DEDUCTIONS</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Total_Deduction or 0.0) }}</td>
                 </tr>
             </tbody>
         </table>
@@ -328,15 +333,15 @@
                 <td style="padding: 6px 10px; border: none;">
                     <table style="width: 100%; border: none; border-collapse: collapse;">
                         <tr>
-                            <td style="border: none; padding: 0; font-size: 12px; font-weight: bold; text-transform: uppercase;">
-                                NET PAY (ROD +):
+                            <td style="border: none; padding: 0; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #000;">
+                                NET PAY:
                             </td>
-                            <td style="border: none; padding: 0; text-align: right; font-size: 15px; font-weight: bold; color: #047857;">
+                            <td style="border: none; padding: 0; text-align: right; font-size: 15px; font-weight: bold; color: #000;">
                                 Rs. {{ "{:,.2f}".format(row.Net_Salary or 0.0) }}
                             </td>
                         </tr>
                     </table>
-                    <div style="font-size: 9.5px; border-top: 1px solid #cbd5e1; padding-top: 4px; margin-top: 4px; font-style: italic; color: #334155;">
+                    <div style="font-size: 9.5px; border-top: 1px solid #cbd5e1; padding-top: 4px; margin-top: 4px; font-style: italic; color: #000;">
                         Net Pay in Words: <span style="font-style: normal; font-weight: bold; color: #000;">{{ net_in_words }}</span>
                     </div>
                 </td>
