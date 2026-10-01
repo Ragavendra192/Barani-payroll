@@ -44,6 +44,11 @@ app.register_blueprint(payslips_bp)
 app.register_blueprint(reports_bp)
 app.register_blueprint(history_bp)
 
+from utils.excel_rounding import display_currency, display_decimal
+
+app.jinja_env.filters['display_currency'] = display_currency
+app.jinja_env.filters['display_decimal'] = display_decimal
+
 @app.context_processor
 def inject_global_vars():
     return {
@@ -58,3 +63,8 @@ if __name__ == "__main__":
     print("  Running on http://127.0.0.1:5006")
     print("========================================================\n")
     app.run(host='0.0.0.0', port=5007, debug=True)
+
+
+
+
+

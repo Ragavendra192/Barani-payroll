@@ -105,8 +105,8 @@ def download_payroll_summary(year, month):
             'bold': True, 'align': 'center', 'valign': 'vcenter', 'font_size': 12
         })
         data_fmt = workbook.add_format({'border': 1, 'font_size': 9})
-        num_fmt = workbook.add_format({'border': 1, 'num_format': '#,##0.00', 'font_size': 9})
-        bold_num_fmt = workbook.add_format({'border': 1, 'bold': True, 'num_format': '#,##0.00', 'font_size': 10})
+        num_fmt = workbook.add_format({'border': 1, 'num_format': '#,##0', 'font_size': 9})
+        bold_num_fmt = workbook.add_format({'border': 1, 'bold': True, 'num_format': '#,##0', 'font_size': 10})
 
         # --- HEADERS ---
         # Row 0: Company Name

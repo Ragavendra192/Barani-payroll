@@ -12,116 +12,9 @@ def generate_monthly_salary_statement_excel(year, month):
       5. Non-pf ESi staff (STAFF_NON_PF_ESI)
       6. Non-pf ESi worker (WORKER_NON_PF_ESI)
     """
-    output = io.BytesIO()
-    
-    category_sheets = [
-        ("STAFFS", "STAFF_PF_ESI"),
-        ("WORKER'S - ESI PF", "WORKER_PF_ESI"),
-        ("STAFF'S (NAPS)", "STAFF_NAPS"),
-        ("WORKER'S (NAPS)", "WORKER_NAPS"),
-        ("Non-pf ESi staff", "STAFF_NON_PF_ESI"),
-        ("Non-pf ESi worker", "WORKER_NON_PF_ESI")
-    ]
-
-    from services.payroll_engine import calculate_payroll
-    from models.payroll_period_settings import get_period_settings_info
-    period_info = get_period_settings_info(year, month)
-    worker_working_days = period_info.get('worker_working_days', 26.0)
-    staff_working_days = period_info.get('staff_working_days', 26.0)
-
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        for sheet_title, cat in category_sheets:
-            records = get_payroll_transactions(year, month, category=cat)
-            
-            if not records:
-                # Add empty dataframe with standard columns
-                df = pd.DataFrame(columns=[
-                    "Emp No", "ERP Emp No", "Name", "Department", "Designation",
-                    "Working Days", "OT Hours", "Per Day Wage",
-                    "Basic + DA", "HRA", "Conveyance", "Washing", "Other",
-                    "Special Allowance", "SPL Amount", "OT Wages", "Gross Wages",
-                    "PF", "ESI", "NAPS", "LIC", "Opening Advance", "New Advance", "Advance", "Closing Advance", "Accommodation", "Other Dedn", "Total Dedn", "Net Salary"
-                ])
-            else:
-                formatted_rows = []
-                for r in records:
-                    emp_is_staff = ('STAFF' in str(r.get('Category') or r.get('Employee_Type')).upper())
-                    emp_std_days = staff_working_days if emp_is_staff else worker_working_days
-                    pres_days = float(r.get('Present_Days') if r.get('Present_Days') is not None else emp_std_days)
-                    nh_days = float(r.get('NH') or r.get('PH') or 0.0)
-                    cl_days = float(r.get('CL') or 0.0)
-                    sl_days = float(r.get('SL') or 0.0)
-                    el_days = float(r.get('EL') or r.get('PL') or 0.0)
-                    act_ot = float(r.get('Act_OT_Hrs') or r.get('Actual_OT_Hours') or r.get('OT_Hours') or 0.0)
-
-                    att_dict = {'present_days': pres_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
-                    pdw = float(r.get('Per_Day_Wage') or 0.0)
-                    sal_dict = {
-                        'Fixed_Gross': float(r.get('Fixed_Gross') or 0.0),
-                        'Basic_DA': float(r.get('Basic_DA') or 0.0),
-                        'HRA': float(r.get('HRA') or 0.0),
-                        'Conveyance_Allowance': float(r.get('Conveyance_Allowance') or 0.0),
-                        'Washing_Allowance': float(r.get('Washing_Allowance') or 0.0),
-                        'Other_Allowance': float(r.get('Other_Allowance') or 0.0),
-                        'Per_Day_Wage': pdw,
-                        'OT_Rate': float(r.get('OT_Rate', 56.25) or 56.25),
-                        'PF_Eligible': 'PF' in str(r.get('Category', '')),
-                        'ESI_Eligible': 'ESI' in str(r.get('Category', ''))
-                    }
-                    ded_dict = {
-                        'arrears': float(r.get('Arrears', 0.0) or 0.0),
-                        'naps': float(r.get('NAPS_Deduction', 0.0) or 0.0),
-                        'lic': float(r.get('LIC_Deduction', 0.0) or 0.0),
-                        'advance': float(r.get('Advance_Deduction', 0.0) or 0.0),
-                        'opening_adv': float(r.get('Opening_Advance', 0.0) or 0.0),
-                        'new_adv': float(r.get('New_Advance', 0.0) or 0.0),
-                        'closing_adv': float(r.get('Closing_Advance', 0.0) or 0.0),
-                        'accommodation': float(r.get('Accommodation_Deduction', 0.0) or 0.0),
-                        'other': float(r.get('Other_Deduction', 0.0) or 0.0)
-                    }
-                    c_res = calculate_payroll(r, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
-
-                    formatted_rows.append({
-                        "Emp No": r.get('Emp_No'),
-                        "ERP Emp No": r.get('ERP_Emp_No') or r.get('Emp_No'),
-                        "Emp Code": r.get('Emp_Code'),
-                        "Name": r.get('Employee_Name'),
-                        "Department": r.get('Department'),
-                        "Designation": r.get('Designation'),
-                        "Grade": r.get('Grade'),
-                        "Present Days": c_res.get('Present_Days', 0.0),
-                        "Total Days": c_res.get('Total_Days', 0.0),
-                        "Working Days": emp_std_days,
-                        "OT Hours": c_res.get('OT_Hours', 0.0),
-                        "Per Day Wage": c_res.get('Per_Day_Wage', 0.0),
-                        "Basic + DA": c_res.get('Earned_Basic_DA', 0.0),
-                        "HRA": c_res.get('Earned_HRA', 0.0),
-                        "Conveyance": c_res.get('Earned_Conveyance', 0.0),
-                        "Washing": c_res.get('Earned_Washing', 0.0),
-                        "Other": c_res.get('Earned_Other', 0.0),
-                        "Special Allowance": c_res.get('Earned_Special', 0.0),
-                        "SPL Amount": c_res.get('Special_OT_Amount', 0.0),
-                        "OT Wages": c_res.get('OT_Wages', 0.0),
-                        "Gross Wages": c_res.get('Gross_Wages', 0.0),
-                        "PF": c_res.get('PF_Deduction', 0.0),
-                        "ESI": c_res.get('ESI_Deduction', 0.0),
-                        "NAPS": c_res.get('NAPS_Deduction', 0.0),
-                        "LIC": c_res.get('LIC_Deduction', 0.0),
-                        "Opening Advance": c_res.get('Opening_Advance', 0.0),
-                        "New Advance": c_res.get('New_Advance', 0.0),
-                        "Advance": c_res.get('Advance_Deduction', 0.0),
-                        "Closing Advance": c_res.get('Closing_Advance', 0.0),
-                        "Accommodation": c_res.get('Accommodation_Deduction', 0.0),
-                        "Arrears": c_res.get('Arrears', 0.0),
-                        "Total Dedn": c_res.get('Total_Deduction', 0.0),
-                        "Net Salary": c_res.get('Net_Salary', 0.0)
-                    })
-                df = pd.DataFrame(formatted_rows)
-            
-            df.to_excel(writer, sheet_name=sheet_title, index=False)
-
-    output.seek(0)
-    return output
+    from services.wages_excel_exporter import generate_wages_excel
+    buf, _ = generate_wages_excel(year, month, category_filter='ALL')
+    return buf
 
 
 def generate_employee_master_excel(employees=None, include_sample=False):
@@ -428,22 +321,22 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
             'Type': emp.get('Employee_Type', ''),
             'Category': emp.get('Category', ''),
             'Company_Working_Days': emp_working_days,
-            'Present': _safe_float(existing_t.get('Present_Days'), default=emp_working_days),
-            'NH': _safe_float(existing_t.get('NH'), 0.0),
-            'EL': _safe_float(existing_t.get('EL'), 0.0),
-            'CL': _safe_float(existing_t.get('CL'), 0.0),
-            'SL': _safe_float(existing_t.get('SL'), 0.0),
-            'OT_Hours': _safe_float(existing_t.get('Act_OT_Hrs'), 0.0),
+            'Present': 0.0,
+            'NH': 0.0,
+            'EL': 0.0,
+            'CL': 0.0,
+            'SL': 0.0,
+            'OT_Hours': 0.0,
             'Opening_Advance': open_adv,
             'New_Advance': new_adv,
             'Advance_Deduction': adv_ded,
             'Closing_Advance': close_adv,
-            'Arrears': _safe_float(existing_t.get('Arrears'), 0.0),
-            'NAPS': _safe_float(existing_t.get('NAPS_Deduction'), 0.0),
+            'Arrears': 0.0,
+            'NAPS': 0.0,
             'LIC': lic_val,
-            'TDS': _safe_float(existing_t.get('TDS_Deduction'), 0.0),
-            'Accommodation': _safe_float(existing_t.get('Accommodation_Deduction'), 0.0),
-            'Other': _safe_float(existing_t.get('Other_Deduction'), 0.0)
+            'TDS': 0.0,
+            'Accommodation': 0.0,
+            'Other': 0.0
         }
 
         is_even = (r_idx % 2 == 0)

@@ -76,12 +76,12 @@ class TestAllPayrollCategories(unittest.TestCase):
 
         self.assertEqual(res['Category'], 'WORKER_PF_ESI')
         self.assertEqual(res['Fixed_Gross'], 28860.0) # 1110 * 26
-        self.assertEqual(res['Gross_Wages'], 30874.0)
+        self.assertEqual(res['Gross_Wages'], 30871.875)
         self.assertEqual(res['PF_Deduction'], 1800.0)
         self.assertEqual(res['Accounts_PF_Deduction'], 1800.0)
         self.assertEqual(res['ESI_Gross'], 0.0) # Fixed Gross > 21000
         self.assertEqual(res['Total_Deduction'], 9075.0) # 1800 + 275 + 7000
-        self.assertEqual(res['Net_Salary'], 21799.0)
+        self.assertEqual(res['Net_Salary'], 21796.875)
 
     def test_staff_naps(self):
         sal = {'Gross_Wages': 17000.0}

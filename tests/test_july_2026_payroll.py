@@ -2,7 +2,9 @@ import unittest
 import openpyxl
 from decimal import Decimal, ROUND_HALF_UP
 
-EXCEL_PATH = r"C:\Users\Ragzz\Downloads\BHIPL UNIT - 1 SALARY STATEMENT FOR THE MONTH OF July-2026.xlsx"
+import os
+_LOCAL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "BHIPL UNIT - 1 SALARY STATEMENT FOR THE MONTH OF July-2026 (1).xlsx")
+EXCEL_PATH = _LOCAL_PATH if os.path.exists(_LOCAL_PATH) else r"C:\Users\Ragzz\Downloads\BHIPL UNIT - 1 SALARY STATEMENT FOR THE MONTH OF July-2026.xlsx"
 
 def d(val):
     if val is None or str(val).strip() == '':

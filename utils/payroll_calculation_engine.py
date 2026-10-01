@@ -20,6 +20,14 @@ Guarantees:
 from decimal import Decimal, ROUND_HALF_UP
 import math
 
+from utils.excel_rounding import (
+    excel_round,
+    excel_roundup,
+    excel_rounddown,
+    display_currency,
+    display_decimal
+)
+
 def money(val):
     """Convert input value to Decimal rounded to 2 decimal places with ROUND_HALF_UP."""
     if val is None or str(val).strip() == '':
@@ -87,22 +95,21 @@ def calculate_attendance(att_dict, is_worker=False, standard_days=26.0, deduct_l
     }
 
 def calculate_earned_salary(fixed_val, worked_days_dec, standard_days_dec):
-    """Calculate prorated earned salary component using Decimal math rounded to nearest integer."""
+    """Calculate prorated earned salary component preserving full Decimal precision without premature integer rounding."""
     if standard_days_dec <= Decimal('0.0'):
         return Decimal('0.00')
-    fixed_dec = money(fixed_val)
-    earned = (fixed_dec / standard_days_dec) * worked_days_dec
-    return round_half(earned)
+    fixed_dec = to_dec(fixed_val, '0.00')
+    return (fixed_dec * worked_days_dec) / standard_days_dec
 
 def calculate_ot(act_ot_hours, per_day_wage, ot_rate_override=None):
     """Calculate OT and Special OT wages for Workers based on Per Day Wage / 8."""
     act_ot_dec = to_dec(act_ot_hours, '0.0')
-    per_day_dec = money(per_day_wage)
+    per_day_dec = to_dec(per_day_wage, '0.0')
     
     if per_day_dec > Decimal('0.0'):
-        ot_rate = (per_day_dec / Decimal('8.0')).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+        ot_rate = per_day_dec / Decimal('8.0')
     elif ot_rate_override is not None and float(ot_rate_override) > 0:
-        ot_rate = money(ot_rate_override)
+        ot_rate = to_dec(ot_rate_override, '0.0')
     else:
         ot_rate = Decimal('56.25')
 
@@ -113,16 +120,17 @@ def calculate_ot(act_ot_hours, per_day_wage, ot_rate_override=None):
         capped_ot = Decimal('50.0')
         special_ot = act_ot_dec - Decimal('50.0')
 
-    ot_wages = round_half(capped_ot * ot_rate)
-    special_ot_amount = round_half(special_ot * ot_rate)
+    ot_wages = capped_ot * ot_rate
+    special_ot_amount = special_ot * ot_rate
 
     return {
         'act_ot_hours': float(act_ot_dec),
         'capped_ot_hours': float(capped_ot),
         'special_ot_hours': float(special_ot),
-        'ot_rate': float(ot_rate.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)),
+        'ot_rate': float(ot_rate),
         'ot_wages': float(ot_wages),
         'special_ot_amount': float(special_ot_amount),
+        'ot_rate_dec': ot_rate,
         'ot_wages_dec': ot_wages,
         'special_ot_dec': special_ot_amount
     }
@@ -195,7 +203,7 @@ def calculate_staff_pf_esi_earned_gross(salary, att_info, standard_days_dec):
     earned_other = calculate_earned_salary(fixed_other, worked_days_dec, standard_days_dec)
     earned_spl = calculate_earned_salary(fixed_spl, worked_days_dec, standard_days_dec)
 
-    earned_gross = round_half(earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + earned_spl)
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + earned_spl
 
     return {
         'fixed_gross': fixed_gross,
@@ -220,17 +228,17 @@ def calculate_staff_pf_esi_pf(earned_gross_dec, is_pf_eligible=True):
     raw_pf_gross = earned_gross_dec * Decimal('0.80')
     if raw_pf_gross < Decimal('0.00'):
         raw_pf_gross = Decimal('0.00')
-    pf_gross = round_half(min(raw_pf_gross, Decimal('15000.00')))
-    pf_ded = round_half(min(pf_gross * Decimal('0.12'), Decimal('1800.00')))
+    pf_gross = min(raw_pf_gross, Decimal('15000.00'))
+    pf_ded = min(pf_gross * Decimal('0.12'), Decimal('1800.00'))
     accounts_pf_ded = Decimal('1800.00') if pf_gross >= Decimal('15000.00') else pf_ded
     return pf_gross, pf_ded, accounts_pf_ded
 
 def calculate_staff_pf_esi_esi(earned_gross_dec, fixed_gross_dec, is_esi_eligible=True):
     if not is_esi_eligible or fixed_gross_dec > Decimal('21001.00'):
         return Decimal('0.00'), Decimal('0.00'), Decimal('0.00')
-    esi_gross = round_half(earned_gross_dec * Decimal('0.90')) if earned_gross_dec <= Decimal('21000.00') else Decimal('0.00')
+    esi_gross = (earned_gross_dec * Decimal('0.90')) if earned_gross_dec <= Decimal('21000.00') else Decimal('0.00')
     raw_ded = esi_gross * Decimal('0.0075')
-    esi_ded = round_half(raw_ded)
+    esi_ded = excel_roundup(raw_ded, 0)
     return esi_gross, esi_ded, esi_ded
 
 def calculate_staff_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_esi):
@@ -243,7 +251,7 @@ def calculate_staff_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_esi
     accom = money(ded_dict.get('accommodation') or ded_dict.get('Accommodation'))
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
-    total_ded = round_half(pf_ded + esi_ded + pt + mess + lic + tds + naps + advance + accom + other)
+    total_ded = pf_ded + esi_ded + pt + mess + lic + tds + naps + advance + accom + other
     op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
@@ -254,7 +262,7 @@ def calculate_staff_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_esi
     }
 
 def calculate_staff_pf_esi_net(earned_gross, total_deduction, arrears):
-    return round_half(earned_gross - total_deduction + arrears)
+    return earned_gross - total_deduction + arrears
 
 def calculate_staff_pf_esi(emp, salary, attendance, deductions, standard_days=27.0):
     """Category 1: STAFF_PF_ESI Calculation Routine"""
@@ -269,7 +277,7 @@ def calculate_staff_pf_esi(emp, salary, attendance, deductions, standard_days=27
 
     ded_info = calculate_staff_pf_esi_deductions(deductions, pf_ded_dec, esi_ded_dec, acc_pf_dec, acc_esi_dec)
     arrears = money(deductions.get('arrears') or deductions.get('Arrears'))
-    earned_gross_total = round_half(earn_info['earned_gross'] + arrears)
+    earned_gross_total = earn_info['earned_gross'] + arrears
     earn_info['earned_gross'] = earned_gross_total
     
     net_pay = calculate_staff_pf_esi_net(earned_gross_total, ded_info['total_ded'], Decimal('0.00'))
@@ -352,7 +360,7 @@ def calculate_worker_pf_esi_earned_gross(salary, att_info, attendance, standard_
     act_ot = attendance.get('actual_ot_hours') or attendance.get('ot_hours') or attendance.get('Act_OT_hrs') or 0.0
     ot_info = calculate_ot(act_ot, per_day_wage, salary.get('OT_Rate'))
 
-    earned_gross = round_half(earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + ot_info['ot_wages_dec'] + ot_info['special_ot_dec'])
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + ot_info['ot_wages_dec'] + ot_info['special_ot_dec']
 
     return {
         'per_day_wage': per_day_wage,
@@ -379,16 +387,16 @@ def calculate_worker_pf_esi_pf(earned_gross_dec, earned_basic_da_dec, earned_hra
     raw_pf_gross = earned_gross_dec - earned_hra_dec - ot_wages_dec
     if raw_pf_gross < Decimal('0.00'):
         raw_pf_gross = Decimal('0.00')
-    pf_gross = round_half(min(raw_pf_gross, Decimal('15000.00')))
-    pf_ded = round_half(min(pf_gross * Decimal('0.12'), Decimal('1800.00')))
+    pf_gross = min(raw_pf_gross, Decimal('15000.00'))
+    pf_ded = min(pf_gross * Decimal('0.12'), Decimal('1800.00'))
     return pf_gross, pf_ded, pf_ded
 
 def calculate_worker_pf_esi_esi(earned_gross_dec, fixed_gross_dec, is_esi_eligible=True):
     if not is_esi_eligible or fixed_gross_dec > Decimal('21000.00'):
         return Decimal('0.00'), Decimal('0.00'), Decimal('0.00')
     raw_esi_gross = earned_gross_dec * Decimal('0.90')
-    esi_gross = round_half(min(raw_esi_gross, Decimal('21000.00')))
-    esi_ded = round_half(esi_gross * Decimal('0.0075'))
+    esi_gross = min(raw_esi_gross, Decimal('21000.00'))
+    esi_ded = esi_gross * Decimal('0.0075')
     acc_esi_ded = esi_ded
     return esi_gross, esi_ded, acc_esi_ded
 
@@ -398,7 +406,7 @@ def calculate_worker_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_es
     advance = money(ded_dict.get('advance') or ded_dict.get('Advance'))
     accom = money(ded_dict.get('accommodation') or ded_dict.get('Accommodation'))
     
-    total_ded = round_half(pf_ded + esi_ded + lic + advance + naps + accom)
+    total_ded = pf_ded + esi_ded + lic + advance + naps + accom
     op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
@@ -409,7 +417,7 @@ def calculate_worker_pf_esi_deductions(ded_dict, pf_ded, esi_ded, acc_pf, acc_es
     }
 
 def calculate_worker_pf_esi_net(earned_gross, total_deduction, arrears):
-    return round_half(earned_gross - total_deduction + arrears)
+    return earned_gross - total_deduction + arrears
 
 def calculate_worker_pf_esi(emp, salary, attendance, deductions, standard_days=26.0):
     """Category 2: WORKER_PF_ESI Calculation Routine"""
@@ -455,7 +463,7 @@ def calculate_staff_naps_earned_gross(salary, att_info, standard_days_dec):
     earned_other = calculate_earned_salary(fixed_other, worked_days_dec, standard_days_dec)
     earned_spl = calculate_earned_salary(fixed_spl, worked_days_dec, standard_days_dec)
 
-    earned_gross = round_half(earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + earned_spl)
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + earned_spl
 
     return {
         'fixed_gross': fixed_gross,
@@ -486,7 +494,7 @@ def calculate_staff_naps_deductions(ded_dict):
     accom = money(ded_dict.get('accommodation') or ded_dict.get('Accommodation'))
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
-    total_ded = round_half(naps + advance + lic + accom + other)
+    total_ded = naps + advance + lic + accom + other
     op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
@@ -497,7 +505,7 @@ def calculate_staff_naps_deductions(ded_dict):
     }
 
 def calculate_staff_naps_net(earned_gross, total_deduction, arrears):
-    return round_half(earned_gross - total_deduction + arrears)
+    return earned_gross - total_deduction + arrears
 
 def calculate_staff_naps(emp, salary, attendance, deductions, standard_days=26.0):
     """Category 3: STAFF_NAPS Calculation Routine (Exempt from PF & ESI)"""
@@ -507,7 +515,7 @@ def calculate_staff_naps(emp, salary, attendance, deductions, standard_days=26.0
     
     ded_info = calculate_staff_naps_deductions(deductions)
     arrears = money(deductions.get('arrears') or deductions.get('Arrears'))
-    earned_gross_total = round_half(earn_info['earned_gross'] + arrears)
+    earned_gross_total = earn_info['earned_gross'] + arrears
     net_pay = calculate_staff_naps_net(earned_gross_total, ded_info['total_ded'], Decimal('0.00'))
     ot_info = calculate_ot(0.0, 0.0, 0.0)
 
@@ -588,7 +596,7 @@ def calculate_worker_naps_earned_gross(salary, att_info, attendance, standard_da
     act_ot = attendance.get('actual_ot_hours') or attendance.get('ot_hours') or attendance.get('Act_OT_hrs') or 0.0
     ot_info = calculate_ot(act_ot, per_day_wage, salary.get('OT_Rate'))
 
-    earned_gross = round_half(earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + ot_info['ot_wages_dec'] + ot_info['special_ot_dec'])
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + ot_info['ot_wages_dec'] + ot_info['special_ot_dec']
 
     return {
         'per_day_wage': per_day_wage,
@@ -621,7 +629,7 @@ def calculate_worker_naps_deductions(ded_dict):
     accom = money(ded_dict.get('accommodation') or ded_dict.get('Accommodation'))
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
-    total_ded = round_half(naps + advance + lic + accom + other)
+    total_ded = naps + advance + lic + accom + other
     op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
@@ -632,7 +640,7 @@ def calculate_worker_naps_deductions(ded_dict):
     }
 
 def calculate_worker_naps_net(earned_gross, total_deduction, arrears):
-    return round_half(earned_gross - total_deduction + arrears)
+    return earned_gross - total_deduction + arrears
 
 def calculate_worker_naps(emp, salary, attendance, deductions, standard_days=26.0):
     """Category 4: WORKER_NAPS Calculation Routine (Exempt from PF & ESI)"""
@@ -673,7 +681,7 @@ def calculate_staff_non_pf_esi_earned_gross(salary, att_info, standard_days_dec)
     earned_other = calculate_earned_salary(fixed_other, worked_days_dec, standard_days_dec)
     earned_spl = calculate_earned_salary(fixed_spl, worked_days_dec, standard_days_dec)
 
-    earned_gross = round_half(earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + earned_spl)
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + earned_spl
 
     return {
         'fixed_gross': fixed_gross,
@@ -698,7 +706,7 @@ def calculate_staff_non_pf_esi_deductions(ded_dict):
     accom = money(ded_dict.get('accommodation') or ded_dict.get('Accommodation'))
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
-    total_ded = round_half(advance + lic + accom + other)
+    total_ded = advance + lic + accom + other
     op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
@@ -709,7 +717,7 @@ def calculate_staff_non_pf_esi_deductions(ded_dict):
     }
 
 def calculate_staff_non_pf_esi_net(earned_gross, total_deduction, arrears):
-    return round_half(earned_gross - total_deduction + arrears)
+    return earned_gross - total_deduction + arrears
 
 def calculate_staff_non_pf_esi(emp, salary, attendance, deductions, standard_days=26.0):
     """Category 5: STAFF_NON_PF_ESI Calculation Routine (Excluded from PF & ESI)"""
@@ -719,7 +727,7 @@ def calculate_staff_non_pf_esi(emp, salary, attendance, deductions, standard_day
 
     ded_info = calculate_staff_non_pf_esi_deductions(deductions)
     arrears = money(deductions.get('arrears') or deductions.get('Arrears'))
-    earned_gross_total = round_half(earn_info['earned_gross'] + arrears)
+    earned_gross_total = earn_info['earned_gross'] + arrears
     net_pay = calculate_staff_non_pf_esi_net(earned_gross_total, ded_info['total_ded'], Decimal('0.00'))
     ot_info = calculate_ot(0.0, 0.0, 0.0)
 
@@ -737,7 +745,15 @@ def calculate_staff_non_pf_esi(emp, salary, attendance, deductions, standard_day
 
 def calculate_worker_non_pf_esi_earned_gross(salary, att_info, attendance, standard_days_dec):
     per_day_wage = money(salary.get('Per_Day_Wage') or salary.get('per_day_wage'))
-    if per_day_wage > Decimal('0.00'):
+    if per_day_wage > Decimal('2000.00'):
+        fixed_gross = per_day_wage
+        per_day_wage = money(fixed_gross / standard_days_dec) if standard_days_dec > Decimal('0.0') else Decimal('0.00')
+        fixed_basic_da = money(salary.get('Basic_DA') or (fixed_gross * Decimal('0.50')))
+        fixed_hra = money(salary.get('HRA') or (fixed_gross * Decimal('0.20')))
+        fixed_conv = money(salary.get('Conveyance_Allowance') or (fixed_gross * Decimal('0.10')))
+        fixed_wash = money(salary.get('Washing_Allowance') or (fixed_gross * Decimal('0.10')))
+        fixed_other = money(salary.get('Other_Allowance') or (fixed_gross * Decimal('0.10')))
+    elif per_day_wage > Decimal('0.00'):
         fixed_gross = money(per_day_wage * standard_days_dec)
         
         b_da = money(salary.get('Basic_DA'))
@@ -800,7 +816,7 @@ def calculate_worker_non_pf_esi_earned_gross(salary, att_info, attendance, stand
     act_ot = attendance.get('actual_ot_hours') or attendance.get('ot_hours') or attendance.get('Act_OT_hrs') or 0.0
     ot_info = calculate_ot(act_ot, per_day_wage, salary.get('OT_Rate'))
 
-    earned_gross = round_half(earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + ot_info['ot_wages_dec'] + ot_info['special_ot_dec'])
+    earned_gross = earned_basic_da + earned_hra + earned_conv + earned_wash + earned_other + ot_info['ot_wages_dec'] + ot_info['special_ot_dec']
 
     return {
         'per_day_wage': per_day_wage,
@@ -827,7 +843,7 @@ def calculate_worker_non_pf_esi_deductions(ded_dict):
     accom = money(ded_dict.get('accommodation') or ded_dict.get('Accommodation'))
     other = money(ded_dict.get('other') or ded_dict.get('Other'))
 
-    total_ded = round_half(advance + lic + accom + other)
+    total_ded = advance + lic + accom + other
     op_adv, nw_adv, inst, cl_adv = _extract_advance_info(ded_dict, advance)
 
     return {
@@ -837,8 +853,16 @@ def calculate_worker_non_pf_esi_deductions(ded_dict):
         'opening_adv': op_adv, 'new_adv': nw_adv, 'installment': inst, 'closing_adv': cl_adv
     }
 
-def calculate_worker_non_pf_esi_net(earned_gross, total_deduction, arrears):
-    return round_half(earned_gross - total_deduction + arrears)
+def calculate_worker_non_pf_esi_net(earned_gross, total_deduction, arrears, round_net=False):
+    """
+    Worker Non-PF/ESI Net calculation.
+    Where old Excel explicitly uses =ROUND(AL5-AR5, 0), round_net=True applies excel_round.
+    Otherwise retains unrounded Decimal precision matching =+AL5-AR5.
+    """
+    net = earned_gross - total_deduction + arrears
+    if round_net:
+        return excel_round(net, 0)
+    return net
 
 def calculate_worker_non_pf_esi(emp, salary, attendance, deductions, standard_days=26.0):
     """Category 6: WORKER_NON_PF_ESI Calculation Routine (Excluded from PF & ESI)"""
@@ -848,7 +872,8 @@ def calculate_worker_non_pf_esi(emp, salary, attendance, deductions, standard_da
 
     ded_info = calculate_worker_non_pf_esi_deductions(deductions)
     arrears = money(deductions.get('arrears') or deductions.get('Arrears'))
-    net_pay = calculate_worker_non_pf_esi_net(earn_info['earned_gross'], ded_info['total_ded'], arrears)
+    round_net = bool(salary.get('round_net_salary') or salary.get('round_net', False))
+    net_pay = calculate_worker_non_pf_esi_net(earn_info['earned_gross'], ded_info['total_ded'], arrears, round_net=round_net)
 
     return build_result(
         emp, 'WORKER_NON_PF_ESI', 'WORKER', 'NON_PF_ESI', att_info,
@@ -1084,18 +1109,18 @@ def build_result(emp, category, emp_type, pay_cat, att_info,
     emp_no = emp.get('Emp_No') or emp.get('ERP_Emp_No') or emp.get('emp_no') or emp.get('Emp_Code')
     name = emp.get('Employee_Name') or emp.get('Emp_Name') or emp.get('Name') or emp.get('emp_name') or ''
 
-    earned_basic_split = round_half(e_basic * Decimal('0.40'))
-    earned_da_split = round_half(e_basic * Decimal('0.60'))
+    earned_basic_split = e_basic * Decimal('0.40')
+    earned_da_split = e_basic * Decimal('0.60')
 
     std_days_dec = to_dec(att_info.get('standard_days', 26.0))
     lop_days_dec = att_info.get('lop_days_dec', Decimal('0.0'))
 
     if emp_type == 'STAFF':
-        per_day_salary = money(f_gross / std_days_dec) if std_days_dec > Decimal('0.0') else Decimal('0.00')
-        lop_deduction = round_half(per_day_salary * lop_days_dec)
+        per_day_salary = (f_gross / std_days_dec) if std_days_dec > Decimal('0.0') else Decimal('0.00')
+        lop_deduction = per_day_salary * lop_days_dec
     else:
-        per_day_salary = money(per_day_wage)
-        lop_deduction = round_half(per_day_salary * lop_days_dec)
+        per_day_salary = to_dec(per_day_wage, '0.00')
+        lop_deduction = per_day_salary * lop_days_dec
 
     res = {
         'Employee_ID': emp_id,
@@ -1187,6 +1212,24 @@ def build_result(emp, category, emp_type, pay_cat, att_info,
         'New_Advance': float(ded_info['new_adv']),
         'Installment': float(ded_info['installment']),
         'Closing_Advance': float(ded_info['closing_adv']),
+
+        # Exact Decimal representations for high-precision downstream processes
+        'Gross_Wages_dec': e_gross,
+        'Earned_Gross_dec': e_gross,
+        'Net_Salary_dec': net_pay,
+        'Net_Pay_dec': net_pay,
+        'Total_Deduction_dec': ded_info['total_ded'],
+        'PF_Gross_dec': pf_gross,
+        'PF_Deduction_dec': pf_ded,
+        'ESI_Gross_dec': esi_gross,
+        'ESI_Deduction_dec': esi_ded,
+        'Earned_Basic_DA_dec': e_basic,
+        'Earned_HRA_dec': e_hra,
+        'Earned_Conveyance_dec': e_conv,
+        'Earned_Washing_dec': e_wash,
+        'Earned_Other_dec': e_other,
+        'OT_Wages_dec': ot_info['ot_wages_dec'],
+        'Special_OT_dec': ot_info['special_ot_dec'],
 
         # Structured Breakdown Object
         'breakdown': {
