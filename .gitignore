@@ -12,4 +12,5 @@ env/
 *.sqlite
 *.sqlite3
 scratch/
-
+test*.xlsx
+Barani-payroll/

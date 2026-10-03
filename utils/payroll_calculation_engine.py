@@ -63,20 +63,21 @@ def to_dec(val, default='0.0'):
 def calculate_attendance(att_dict, is_worker=False, standard_days=26.0, deduct_lop=False):
     """
     Calculate worked days, leaves, and LOP days from attendance input.
-    Total_Worked_Days = Present_Days + N/H + Leave (EL/CL/SL)
+    Total_Worked_Days = Present_Days + N/H + EL + C-Off (Staff) + CL + SL
     """
     present_days = to_dec(att_dict.get('present_days') or att_dict.get('Present_Days'), '0.0')
-    ph = to_dec(att_dict.get('ph') or att_dict.get('PH') or att_dict.get('nh') or att_dict.get('N_H'), '0.0')
+    ph = to_dec(att_dict.get('ph') or att_dict.get('PH') or att_dict.get('nh') or att_dict.get('NH') or att_dict.get('N_H'), '0.0')
     cl = to_dec(att_dict.get('cl') or att_dict.get('CL'), '0.0')
     sl = to_dec(att_dict.get('sl') or att_dict.get('SL'), '0.0')
-    pl = to_dec(att_dict.get('pl') or att_dict.get('PL') or att_dict.get('el') or att_dict.get('EL') or att_dict.get('ch') or att_dict.get('C_H'), '0.0')
+    pl = to_dec(att_dict.get('pl') or att_dict.get('PL') or att_dict.get('el') or att_dict.get('EL'), '0.0')
+    coff = to_dec(att_dict.get('c_off') or att_dict.get('C_Off') or att_dict.get('coff') or att_dict.get('COff') or att_dict.get('comp_off') or att_dict.get('ch') or att_dict.get('C_H'), '0.0') if not is_worker else Decimal('0.0')
     std_days_dec = to_dec(standard_days, '26.0')
 
     total_days = att_dict.get('total_days') or att_dict.get('Total_Worked_Days')
     if total_days is not None and str(total_days).strip() != '':
         total_worked_days = to_dec(total_days, '0.0')
     else:
-        total_worked_days = present_days + ph + cl + sl + pl
+        total_worked_days = present_days + ph + cl + sl + pl + coff
 
     raw_lop = std_days_dec - total_worked_days
     lop_days = max(Decimal('0.0'), raw_lop) if deduct_lop else Decimal('0.0')
@@ -87,6 +88,8 @@ def calculate_attendance(att_dict, is_worker=False, standard_days=26.0, deduct_l
         'cl': float(cl),
         'sl': float(sl),
         'pl': float(pl),
+        'el': float(pl),
+        'c_off': float(coff),
         'total_worked_days': float(total_worked_days),
         'total_days_dec': total_worked_days,
         'lop_days': float(lop_days),
@@ -1140,6 +1143,8 @@ def build_result(emp, category, emp_type, pay_cat, att_info,
         'SL': att_info['sl'],
         'PL': att_info['pl'],
         'EL': att_info['pl'],
+        'C_Off': att_info.get('c_off', 0.0),
+        'c_off': att_info.get('c_off', 0.0),
         'Total_Worked_Days': att_info['total_worked_days'],
         'Worked_Days': att_info['total_worked_days'],
         'Total_Days': att_info['total_worked_days'],

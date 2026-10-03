@@ -18,6 +18,10 @@ def ensure_attendance_columns():
             BEGIN
                 ALTER TABLE PayrollAttendance ADD CL DECIMAL(5,2) DEFAULT 0.0, EL DECIMAL(5,2) DEFAULT 0.0;
             END
+            IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'PayrollAttendance' AND COLUMN_NAME = 'C_Off')
+            BEGIN
+                ALTER TABLE PayrollAttendance ADD C_Off DECIMAL(5,2) DEFAULT 0.0;
+            END
             IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'PayrollAttendance' AND COLUMN_NAME = 'SL')
             BEGIN
                 ALTER TABLE PayrollAttendance ADD SL DECIMAL(5,2) DEFAULT 0.0;
@@ -58,7 +62,7 @@ def get_payroll_transactions(year, month, category=None, emp_type=None, search=N
             ISNULL(t.Employee_Type, m.Employee_Type) AS Employee_Type,
             ISNULL(t.Payroll_Category, m.Payroll_Category) AS Payroll_Category,
             ISNULL(t.Category, CASE WHEN m.Category IS NOT NULL AND m.Category != '' THEN m.Category ELSE UPPER(m.Employee_Type) + '_' + UPPER(m.Payroll_Category) END) AS Category,
-            a.Present_Days, ISNULL(a.Normal_Holiday, 0.0) AS NH, ISNULL(a.CL, 0.0) AS CL, ISNULL(a.EL, 0.0) AS EL, ISNULL(a.SL, 0.0) AS SL,
+            a.Present_Days, ISNULL(a.Normal_Holiday, 0.0) AS NH, ISNULL(a.CL, 0.0) AS CL, ISNULL(a.EL, 0.0) AS EL, ISNULL(a.C_Off, 0.0) AS C_Off, ISNULL(a.SL, 0.0) AS SL,
             ISNULL(a.LOP_Days, 0.0) AS LOP_Days, ISNULL(t.LOP_Deduction, 0.0) AS LOP_Deduction,
             ISNULL(a.Total_Days, 0.0) AS Total_Days, ISNULL(a.Working_Days, p.Standard_Working_Days) AS Working_Days,
             a.Actual_OT_Hours AS Act_OT_Hrs, a.OT_Hours, a.Special_OT_Hours,
@@ -143,7 +147,7 @@ def get_payroll_attendance(year, month, max_retries=3):
         SELECT 
             a.PayrollAttendance_ID, a.PayrollPeriod_ID, a.Employee_ID,
             m.Emp_No, ISNULL(m.Employee_Name, m.Emp_Name) AS Employee_Name,
-            a.Present_Days, ISNULL(a.Normal_Holiday, 0.0) AS NH, ISNULL(a.CL, 0.0) AS CL, ISNULL(a.EL, 0.0) AS EL, ISNULL(a.SL, 0.0) AS SL,
+            a.Present_Days, ISNULL(a.Normal_Holiday, 0.0) AS NH, ISNULL(a.CL, 0.0) AS CL, ISNULL(a.EL, 0.0) AS EL, ISNULL(a.C_Off, 0.0) AS C_Off, ISNULL(a.SL, 0.0) AS SL,
             ISNULL(a.LOP_Days, 0.0) AS LOP_Days,
             ISNULL(a.Total_Days, 0.0) AS Total_Days, ISNULL(a.Working_Days, p.Standard_Working_Days) AS Working_Days,
             a.Actual_OT_Hours AS Act_OT_Hrs, a.OT_Hours, a.Special_OT_Hours,
@@ -200,7 +204,8 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                 cl_days = float(r.get('CL', 0.0))
                 sl_days = float(r.get('SL', 0.0))
                 el_days = float(r.get('EL', r.get('PL', 0.0)))
-                tot_days = float(r.get('Total_Days', r.get('Total_Worked_Days', pres_days + nh_days + cl_days + sl_days + el_days)))
+                coff_days = float(r.get('C_Off', r.get('c_off', 0.0)))
+                tot_days = float(r.get('Total_Days', r.get('Total_Worked_Days', pres_days + nh_days + cl_days + sl_days + el_days + coff_days)))
                 work_days = float(r.get('Working_Days', standard_days))
                 lop_days = float(r.get('LOP_Days', max(0.0, work_days - tot_days)))
                 lop_ded = float(r.get('LOP_Deduction', 0.0))
@@ -209,8 +214,8 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                 spl_ot = float(r.get('Special_OT_Hours', 0.0))
 
                 attendance_params.append((
-                    period_id, emp_id, pres_days, nh_days, cl_days, sl_days, el_days, lop_days, tot_days, work_days, act_ot, ot_h, spl_ot,
-                    period_id, emp_id, pres_days, nh_days, cl_days, sl_days, el_days, lop_days, tot_days, work_days, act_ot, ot_h, spl_ot
+                    period_id, emp_id, pres_days, nh_days, cl_days, sl_days, el_days, coff_days, lop_days, tot_days, work_days, act_ot, ot_h, spl_ot,
+                    period_id, emp_id, pres_days, nh_days, cl_days, sl_days, el_days, coff_days, lop_days, tot_days, work_days, act_ot, ot_h, spl_ot
                 ))
 
                 transaction_params.append((
@@ -253,10 +258,10 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                     USING (SELECT ? AS PayrollPeriod_ID, ? AS Employee_ID) AS s
                     ON t.PayrollPeriod_ID = s.PayrollPeriod_ID AND t.Employee_ID = s.Employee_ID
                     WHEN MATCHED THEN
-                        UPDATE SET Present_Days=?, Normal_Holiday=?, CL=?, SL=?, EL=?, LOP_Days=?, Total_Days=?, Working_Days=?, Actual_OT_Hours=?, OT_Hours=?, Special_OT_Hours=?
+                        UPDATE SET Present_Days=?, Normal_Holiday=?, CL=?, SL=?, EL=?, C_Off=?, LOP_Days=?, Total_Days=?, Working_Days=?, Actual_OT_Hours=?, OT_Hours=?, Special_OT_Hours=?
                     WHEN NOT MATCHED THEN
-                        INSERT (PayrollPeriod_ID, Employee_ID, Present_Days, Normal_Holiday, CL, SL, EL, LOP_Days, Total_Days, Working_Days, Actual_OT_Hours, OT_Hours, Special_OT_Hours)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                        INSERT (PayrollPeriod_ID, Employee_ID, Present_Days, Normal_Holiday, CL, SL, EL, C_Off, LOP_Days, Total_Days, Working_Days, Actual_OT_Hours, OT_Hours, Special_OT_Hours)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """, attendance_params)
 
             if transaction_params:

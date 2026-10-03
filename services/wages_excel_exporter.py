@@ -69,6 +69,7 @@ def generate_wages_excel(year, month, category_filter='ALL'):
             cl_days = float(t.get('CL') or 0.0)
             sl_days = float(t.get('SL') or 0.0)
             el_days = float(t.get('EL') or t.get('PL') or 0.0)
+            coff_days = float(t.get('C_Off') or t.get('c_off') or 0.0) if emp_is_staff else 0.0
             act_ot = float(t.get('Act_OT_Hrs') or t.get('Actual_OT_Hours') or t.get('OT_Hours') or 0.0)
 
             att_dict = {
@@ -77,6 +78,7 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 'cl': cl_days,
                 'sl': sl_days,
                 'el': el_days,
+                'c_off': coff_days,
                 'actual_ot_hours': act_ot
             }
 

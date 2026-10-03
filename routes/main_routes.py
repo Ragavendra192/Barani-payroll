@@ -265,11 +265,12 @@ def attendance():
             present_days = float(request.form.get(f"{prefix}present_days", 0.0) or 0.0)
             nh_days = float(request.form.get(f"{prefix}nh", 0.0) or 0.0)
             el_days = float(request.form.get(f"{prefix}el", 0.0) or 0.0)
+            coff_days = float(request.form.get(f"{prefix}coff", 0.0) or 0.0) if emp_is_staff else 0.0
             cl_days = float(request.form.get(f"{prefix}cl", 0.0) or 0.0)
             sl_days = float(request.form.get(f"{prefix}sl", 0.0) or 0.0)
             act_ot = float(request.form.get(f"{prefix}act_ot", 0.0) or 0.0)
 
-            att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
+            att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'c_off': coff_days, 'actual_ot_hours': act_ot}
             sal_dict = {'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
             
             # Preserve existing deductions and advance tracking if present
@@ -386,11 +387,12 @@ def attendance():
                 present_days = _get_float_val(r_data, ['Present', 'Present Days', 'Present_Days', 'PRES'], _safe_float(existing_t.get('Present_Days'), emp_std_days))
                 nh_days = _get_float_val(r_data, ['N/H', 'NH', 'National Holiday', 'N_H'], _safe_float(existing_t.get('NH'), 0.0))
                 el_days = _get_float_val(r_data, ['EL', 'Earned Leave', 'PL', 'Pl'], _safe_float(existing_t.get('EL'), 0.0))
+                coff_days = _get_float_val(r_data, ['C-Off', 'C_Off', 'Comp-Off', 'Comp Off', 'Comp_Off', 'COFF', 'C/Off', 'CH', 'C/H'], _safe_float(existing_t.get('C_Off'), 0.0)) if emp_is_staff else 0.0
                 cl_days = _get_float_val(r_data, ['CL', 'Casual Leave'], _safe_float(existing_t.get('CL'), 0.0))
                 sl_days = _get_float_val(r_data, ['SL', 'Sick Leave'], _safe_float(existing_t.get('SL'), 0.0))
                 act_ot = _get_float_val(r_data, ['OT Hours', 'OT_Hours', 'OT Hrs', 'Act OT Hrs', 'Act_OT_Hrs'], _safe_float(existing_t.get('Act_OT_Hrs'), 0.0))
 
-                att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
+                att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'c_off': coff_days, 'actual_ot_hours': act_ot}
                 sal_dict = {'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
                 
                 # Advance tracking support
@@ -465,10 +467,11 @@ def attendance():
             pres = float(r.get('Present_Days') if r.get('Present_Days') is not None else 0.0)
             nh = float(r.get('NH') or 0.0)
             el = float(r.get('EL') or 0.0)
+            coff = float(r.get('C_Off') or 0.0) if emp_is_staff else 0.0
             cl = float(r.get('CL') or 0.0)
             sl = float(r.get('SL') or 0.0)
             act_ot = float(r.get('Act_OT_Hrs') or 0.0)
-            tot_days = pres + nh + el + cl + sl
+            tot_days = pres + nh + el + coff + cl + sl
             lop = max(0.0, emp_std_days - tot_days)
             row = {
                 'Employee_ID': emp_id,
@@ -481,6 +484,7 @@ def attendance():
                 'Present_Days': pres,
                 'NH': nh,
                 'EL': el,
+                'C_Off': coff,
                 'CL': cl,
                 'SL': sl,
                 'Total_Days': tot_days,
@@ -500,6 +504,7 @@ def attendance():
                 'Present_Days': 0.0,
                 'NH': 0.0,
                 'EL': 0.0,
+                'C_Off': 0.0,
                 'CL': 0.0,
                 'SL': 0.0,
                 'Total_Days': 0.0,

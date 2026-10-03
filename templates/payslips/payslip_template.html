@@ -231,7 +231,7 @@
                     <td rowspan="2" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Present_Days or 0.0) }}</td>
                     <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format(row.Week_Off or 4.0) }}</td>
                     <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format(row.NH or 0.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format((row.EL or 0.0) + (row.CL or 0.0) + (row.SL or 0.0)) }}</td>
+                    <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format((row.EL or 0.0) + (row.C_Off or 0.0) + (row.CL or 0.0) + (row.SL or 0.0)) }}</td>
                     <td rowspan="2" style="vertical-align: middle; color: #000; font-weight: bold;">{{ "%.1f"|format(row.LOP_Days or 0.0) }}</td>
                     <td rowspan="2" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Total_Days or 0.0) }}</td>
                 </tr>

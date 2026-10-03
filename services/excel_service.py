@@ -242,8 +242,10 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
         ('Present', 'Present', 'number', 12, False),
         ('N/H', 'NH', 'number', 10, False),
         ('EL', 'EL', 'number', 10, False),
+        ('C-Off', 'C_Off', 'number', 10, False),
         ('CL', 'CL', 'number', 10, False),
         ('SL', 'SL', 'number', 10, False),
+        ('Total Present Days', 'Total_Present_Days', 'formula', 18, False),
         ('OT Hours', 'OT_Hours', 'number', 12, False),
         ('Opening Advance', 'Opening_Advance', 'currency', 16, True),
         ('New Advance', 'New_Advance', 'currency', 16, True),
@@ -257,10 +259,22 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
         ('Other', 'Other', 'currency', 14, False)
     ]
 
+    col_map = {col[1]: get_column_letter(idx) for idx, col in enumerate(columns_config, start=1)}
+    pres_col = col_map['Present']
+    nh_col = col_map['NH']
+    el_col = col_map['EL']
+    coff_col = col_map['C_Off']
+    sl_col = col_map['SL']
+    cl_col = col_map['CL']
+    open_col = col_map['Opening_Advance']
+    new_col = col_map['New_Advance']
+    ded_col = col_map['Advance_Deduction']
+
     # Styling definitions
     header_font = Font(name='Segoe UI', size=10, bold=True, color='FFFFFF')
     header_fill = PatternFill(start_color='1E293B', end_color='1E293B', fill_type='solid') # Slate dark
     adv_header_fill = PatternFill(start_color='0E7490', end_color='0E7490', fill_type='solid') # Teal blue for Advance columns
+    tot_header_fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid') # Navy blue for Total Present Days
 
     regular_font = Font(name='Segoe UI', size=9, color='000000')
     bold_font = Font(name='Segoe UI', size=9, bold=True, color='000000')
@@ -270,10 +284,15 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
     cell_border = Border(left=thin_border, right=thin_border, top=thin_border, bottom=thin_border)
 
     # Write headers
-    for c_idx, (header_name, _, _, _, is_adv) in enumerate(columns_config, start=1):
+    for c_idx, (header_name, dict_key, _, _, is_adv) in enumerate(columns_config, start=1):
         cell = ws.cell(row=1, column=c_idx, value=header_name)
         cell.font = header_font
-        cell.fill = adv_header_fill if is_adv else header_fill
+        if is_adv:
+            cell.fill = adv_header_fill
+        elif dict_key == 'Total_Present_Days':
+            cell.fill = tot_header_fill
+        else:
+            cell.fill = header_fill
         cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
         cell.border = cell_border
     ws.row_dimensions[1].height = 28
@@ -286,7 +305,8 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
         adv_info = adv_map.get(emp_no) or {}
 
         emp_type_str = str(emp.get('Employee_Type', '')).upper()
-        if 'STAFF' in emp_type_str:
+        is_staff = ('STAFF' in emp_type_str)
+        if is_staff:
             emp_working_days = staff_working_days if staff_working_days is not None else standard_days
         else:
             emp_working_days = worker_working_days if worker_working_days is not None else standard_days
@@ -321,12 +341,14 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
             'Type': emp.get('Employee_Type', ''),
             'Category': emp.get('Category', ''),
             'Company_Working_Days': emp_working_days,
-            'Present': 0.0,
-            'NH': 0.0,
-            'EL': 0.0,
-            'CL': 0.0,
-            'SL': 0.0,
-            'OT_Hours': 0.0,
+            'Present': _safe_float(existing_t.get('Present_Days'), 0.0),
+            'NH': _safe_float(existing_t.get('NH'), 0.0),
+            'EL': _safe_float(existing_t.get('EL'), 0.0),
+            'C_Off': _safe_float(existing_t.get('C_Off'), 0.0) if is_staff else 0.0,
+            'CL': _safe_float(existing_t.get('CL'), 0.0),
+            'SL': _safe_float(existing_t.get('SL'), 0.0),
+            'Total_Present_Days': 0.0,
+            'OT_Hours': _safe_float(existing_t.get('Act_OT_Hrs', existing_t.get('OT_Hours')), 0.0),
             'Opening_Advance': open_adv,
             'New_Advance': new_adv,
             'Advance_Deduction': adv_ded,
@@ -345,22 +367,34 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
         for c_idx, (_, dict_key, col_type, _, is_adv) in enumerate(columns_config, start=1):
             val = row_data.get(dict_key)
 
-            # Excel formula for Closing Advance (Column O, c_idx=15)
-            # L=12 (Opening), M=13 (New), N=14 (Deduction), O=15 (Closing)
-            if dict_key == 'Closing_Advance':
-                cell = ws.cell(row=r_idx, column=c_idx, value=f"=MAX(0, L{r_idx}+M{r_idx}-N{r_idx})")
+            if dict_key == 'Total_Present_Days':
+                # Formula: Present Days = Present + NH + EL + C-off + SL + CL
+                cell = ws.cell(row=r_idx, column=c_idx, value=f"={pres_col}{r_idx}+{nh_col}{r_idx}+{el_col}{r_idx}+{coff_col}{r_idx}+{sl_col}{r_idx}+{cl_col}{r_idx}")
+            elif dict_key == 'Closing_Advance':
+                cell = ws.cell(row=r_idx, column=c_idx, value=f"=MAX(0, {open_col}{r_idx}+{new_col}{r_idx}-{ded_col}{r_idx})")
             else:
                 cell = ws.cell(row=r_idx, column=c_idx, value=val)
 
-            cell.font = bold_font if is_adv else regular_font
+            cell.font = bold_font if (is_adv or dict_key == 'Total_Present_Days') else regular_font
             cell.border = cell_border
             if not is_even:
                 cell.fill = zebra_fill
 
+            # Visual cues:
+            # 1. C-Off column for workers: muted background (only for staff)
+            if dict_key == 'C_Off' and not is_staff:
+                cell.fill = PatternFill(start_color='F1F5F9', end_color='F1F5F9', fill_type='solid')
+                cell.font = Font(name='Segoe UI', size=9, color='94A3B8')
+
+            # 2. Total Present Days: subtle blue highlight with navy bold text
+            if dict_key == 'Total_Present_Days':
+                cell.fill = PatternFill(start_color='EFF6FF', end_color='EFF6FF', fill_type='solid')
+                cell.font = Font(name='Segoe UI', size=9, bold=True, color='1D4ED8')
+
             if col_type == 'currency':
                 cell.number_format = '#,##0.00'
                 cell.alignment = Alignment(horizontal='right', vertical='center')
-            elif col_type == 'number':
+            elif col_type in ('number', 'formula'):
                 cell.number_format = '0.0'
                 cell.alignment = Alignment(horizontal='center', vertical='center')
             elif col_type == 'center':
