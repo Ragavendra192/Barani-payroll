@@ -89,11 +89,11 @@
                             <th class="text-center th-std-days" style="width: 80px;" title="Working Days (Staff: {{ staff_working_days }}, Worker: {{ worker_working_days }})">Work Days</th>
                             <th class="text-center th-present" style="width: 65px;" title="Present Days">Present</th>
                             <th class="text-center" style="width: 55px;" title="National Holiday">N/H</th>
-                            <th class="text-center" style="width: 55px;" title="Earned Leave">EL</th>
                             <th class="text-center" style="width: 55px;" title="Comp-off (Staff Only)">C-Off</th>
+                            <th class="text-center" style="width: 55px;" title="Earned Leave">EL</th>
                             <th class="text-center" style="width: 55px;" title="Casual Leave">CL</th>
                             <th class="text-center" style="width: 55px;" title="Sick Leave">SL</th>
-                            <th class="text-center th-total-days" style="width: 75px;" title="Total Days (Present + N/H + EL + C-Off + CL + SL)">Total Days</th>
+                            <th class="text-center th-total-days" style="width: 75px;" title="Total Days (Present + N/H + C-Off + EL + CL + SL)">Total Days</th>
                             <th class="text-center th-lop" style="width: 65px;" title="Loss of Pay Days">LOP</th>
                             {% if emp_type != 'STAFF' %}
                             <th class="text-center th-ot" style="width: 65px;" title="Actual Overtime Hours">OT Hrs</th>
@@ -140,11 +140,6 @@
                                            value="{{ r.NH or 0.0 }}" oninput="recalcRowLOP('{{ r.Employee_ID }}', '{{ r.Working_Days }}', '{{ 1 if r.Employee_Type == 'WORKER' else 0 }}')">
                                 </td>
                                 <td class="p-1 text-center">
-                                    <input type="number" step="0.5" min="0" max="365" name="emp_{{ r.Employee_ID }}_el" id="emp_{{ r.Employee_ID }}_el" 
-                                           class="form-control form-control-sm text-center" 
-                                           value="{{ r.EL or 0.0 }}" oninput="recalcRowLOP('{{ r.Employee_ID }}', '{{ r.Working_Days }}', '{{ 1 if r.Employee_Type == 'WORKER' else 0 }}')">
-                                </td>
-                                <td class="p-1 text-center">
                                     {% if r.Employee_Type == 'STAFF' %}
                                     <input type="number" step="0.5" min="0" max="365" name="emp_{{ r.Employee_ID }}_coff" id="emp_{{ r.Employee_ID }}_coff" 
                                            class="form-control form-control-sm text-center" 
@@ -153,6 +148,11 @@
                                     <input type="number" class="form-control form-control-sm text-center bg-light text-muted" 
                                            value="0.0" disabled title="Comp-off is only for Staff">
                                     {% endif %}
+                                </td>
+                                <td class="p-1 text-center">
+                                    <input type="number" step="0.5" min="0" max="365" name="emp_{{ r.Employee_ID }}_el" id="emp_{{ r.Employee_ID }}_el" 
+                                           class="form-control form-control-sm text-center" 
+                                           value="{{ r.EL or 0.0 }}" oninput="recalcRowLOP('{{ r.Employee_ID }}', '{{ r.Working_Days }}', '{{ 1 if r.Employee_Type == 'WORKER' else 0 }}')">
                                 </td>
                                 <td class="p-1 text-center">
                                     <input type="number" step="0.5" min="0" max="365" name="emp_{{ r.Employee_ID }}_cl" id="emp_{{ r.Employee_ID }}_cl" 

@@ -620,12 +620,13 @@ def wages():
             existing_t = trans_map.get(emp_id) or {}
             present_days = get_f(f"{prefix}present_days", existing_t.get('Present_Days', 0.0))
             nh_days = get_f(f"{prefix}nh", existing_t.get('NH', 0.0))
+            coff_days = get_f(f"{prefix}coff", existing_t.get('C_Off', 0.0)) if emp_is_staff else 0.0
             el_days = get_f(f"{prefix}el", existing_t.get('EL', 0.0))
             cl_days = get_f(f"{prefix}cl", existing_t.get('CL', 0.0))
             sl_days = get_f(f"{prefix}sl", existing_t.get('SL', 0.0))
             act_ot = get_f(f"{prefix}act_ot", existing_t.get('Act_OT_Hrs', 0.0))
 
-            att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
+            att_dict = {'present_days': present_days, 'nh': nh_days, 'c_off': coff_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
             sal_dict = {'Fixed_Gross': emp.get('Fixed_Gross', 0.0), 'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
 
             ded_dict = {
@@ -640,6 +641,7 @@ def wages():
 
             calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
             calc_res['Working_Days'] = emp_std_days
+            calc_res['C_Off'] = coff_days
             calc_res['Opening_Advance'] = adv_balances.get(str(emp['Emp_No']), 0.0)
             calculated_rows.append(calc_res)
 
@@ -662,12 +664,13 @@ def wages():
             t = trans_map.get(emp['Employee_ID']) or {}
             present_days = float(t.get('Present_Days') if t.get('Present_Days') is not None else 0.0)
             nh_days = float(t.get('NH') or t.get('PH') or 0.0)
+            coff_days = float(t.get('C_Off') or t.get('c_off') or t.get('Comp_Off') or 0.0) if emp_is_staff else 0.0
             el_days = float(t.get('EL') or t.get('PL') or 0.0)
             cl_days = float(t.get('CL') or 0.0)
             sl_days = float(t.get('SL') or 0.0)
             act_ot = float(t.get('Act_OT_Hrs') or t.get('Actual_OT_Hours') or 0.0)
 
-            att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
+            att_dict = {'present_days': present_days, 'nh': nh_days, 'c_off': coff_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'actual_ot_hours': act_ot}
             sal_dict = {'Fixed_Gross': emp.get('Fixed_Gross', 0.0), 'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
 
             ded_dict = {
@@ -682,6 +685,7 @@ def wages():
 
             c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
             c_res['Working_Days'] = emp_std_days
+            c_res['C_Off'] = coff_days
             c_res['Opening_Advance'] = adv_balances.get(str(emp['Emp_No']), 0.0)
             calculated_rows.append(c_res)
     else:

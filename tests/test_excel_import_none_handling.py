@@ -116,7 +116,7 @@ class TestExcelImportNoneHandling(unittest.TestCase):
 
         if zaheer_row:
             # Check Net Salary
-            net_val = float(ws.cell(row=zaheer_row, column=51).value or 0.0) # Column AY / Net Salary
+            net_val = float(ws.cell(row=zaheer_row, column=52).value or 0.0) # Column AZ / Net Salary
             self.assertAlmostEqual(net_val, 18524.38, delta=5.0)
 
 if __name__ == '__main__':

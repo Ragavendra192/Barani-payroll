@@ -114,6 +114,7 @@ def generate_wages_excel(year, month, category_filter='ALL'):
 
             c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
             c_res['Working_Days'] = emp_std_days
+            c_res['C_Off'] = coff_days
             c_res['UAN_No'] = str(t.get('UAN_No') or t.get('UAN') or emp.get('UAN_No') or emp.get('UAN') or '').strip()
             c_res['ESI_No'] = str(t.get('ESI_No') or emp.get('ESI_No') or '').strip()
             c_res['Department'] = t.get('Department') or emp.get('Department') or ''
@@ -122,11 +123,12 @@ def generate_wages_excel(year, month, category_filter='ALL'):
             c_res['Experience_Formatted'] = calculate_experience_str(c_res['DOJ'])
             payroll_rows.append(c_res)
         else:
-            att_dict = {'present_days': emp_std_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': emp_std_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
+            att_dict = {'present_days': emp_std_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'c_off': 0.0, 'total_days': emp_std_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
             ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': float(emp.get('LIC', 0.0) or 0.0), 'tds': 0.0, 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
             sal_dict = {'Fixed_Gross': float(emp.get('Fixed_Gross', 0.0) or 0.0), 'Basic_DA': float(emp.get('Basic_DA', 0.0) or 0.0), 'HRA': float(emp.get('HRA', 0.0) or 0.0), 'Conveyance_Allowance': float(emp.get('Conveyance_Allowance', 0.0) or 0.0), 'Washing_Allowance': float(emp.get('Washing_Allowance', 0.0) or 0.0), 'Other_Allowance': float(emp.get('Other_Allowance', 0.0) or 0.0), 'Per_Day_Wage': float(emp.get('Per_Day_Wage', 0.0) or 0.0), 'OT_Rate': float(emp.get('OT_Rate', 56.25) or 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
             c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
             c_res['Working_Days'] = emp_std_days
+            c_res['C_Off'] = 0.0
             c_res['UAN_No'] = str(emp.get('UAN_No') or emp.get('UAN') or '').strip()
             c_res['ESI_No'] = str(emp.get('ESI_No') or '').strip()
             c_res['Department'] = emp.get('Department') or ''
@@ -246,23 +248,23 @@ def generate_wages_excel(year, month, category_filter='ALL'):
 
         if is_staff:
             if is_staff_pf_esi:
-                # STAFF PF ESI COLUMNS (46 Cols: A to AT with TDS Dedn)
-                ws.merge_range('A1:AT1', 'BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1', fmt_title)
-                ws.merge_range('A2:AT2', f"{grp['title']} SALARY STATEMENT FOR THE MONTH OF {month_label}", fmt_subtitle)
+                # STAFF PF ESI COLUMNS (47 Cols: A to AU with TDS Dedn)
+                ws.merge_range('A1:AU1', 'BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1', fmt_title)
+                ws.merge_range('A2:AU2', f"{grp['title']} SALARY STATEMENT FOR THE MONTH OF {month_label}", fmt_subtitle)
 
                 # Group headers
                 ws.merge_range('A3:J3', 'EMPLOYEE DETAILS', fmt_group_header)
-                ws.merge_range('K3:R3', 'WORKED DAYS', fmt_group_header)
-                ws.merge_range('S3:Y3', 'FIXED SALARY STRUCTURE', fmt_group_header)
-                ws.merge_range('Z3:AF3', 'EARNINGS', fmt_group_header)
-                ws.merge_range('AG3:AH3', 'STATUTORY GROSS', fmt_group_header)
-                ws.merge_range('AI3:AO3', 'DEDUCTIONS', fmt_group_header)
-                ws.write('AP3', 'NET SALARY', fmt_group_header)
-                ws.merge_range('AQ3:AT3', 'ADVANCE TRACKING', fmt_group_header)
+                ws.merge_range('K3:S3', 'WORKED DAYS', fmt_group_header)
+                ws.merge_range('T3:Z3', 'FIXED SALARY STRUCTURE', fmt_group_header)
+                ws.merge_range('AA3:AG3', 'EARNINGS', fmt_group_header)
+                ws.merge_range('AH3:AI3', 'STATUTORY GROSS', fmt_group_header)
+                ws.merge_range('AJ3:AP3', 'DEDUCTIONS', fmt_group_header)
+                ws.write('AQ3', 'NET SALARY', fmt_group_header)
+                ws.merge_range('AR3:AU3', 'ADVANCE TRACKING', fmt_group_header)
 
                 headers = [
                     'S.No', 'Emp ID', 'UAN No', 'ESI No', 'Employee Name', 'Department', 'Date of Joining', 'Year of Experience', 'Designation', 'Category',
-                    'Working Days', 'Present', 'N/H', 'EL', 'CL', 'SL', 'Payable Days', 'OT Hours',
+                    'Working Days', 'Present', 'N/H', 'C-Off', 'EL', 'CL', 'SL', 'Payable Days', 'OT Hours',
                     'Gross', 'Basic+DA', 'HRA', 'Conv', 'Washing Allow', 'Other Allow', 'Gross Wages',
                     'Basic+DA', 'HRA', 'Conv', 'Wash Allow', 'Other Allow', 'OT Wages', 'Gross Wages',
                     'PF Gross', 'ESI Gross',
@@ -294,11 +296,12 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     ws.write(row_idx, 10, float(r.get('Working_Days', default_emp_days) or default_emp_days), fmt_days)
                     ws.write(row_idx, 11, float(r.get('Present_Days', default_emp_days) or default_emp_days), fmt_days)
                     ws.write(row_idx, 12, float(r.get('NH', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 13, float(r.get('EL', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 14, float(r.get('CL', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 15, float(r.get('SL', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 16, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_days)
-                    ws.write(row_idx, 17, float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 13, float(r.get('C_Off', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 14, float(r.get('EL', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 15, float(r.get('CL', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 16, float(r.get('SL', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 17, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_days)
+                    ws.write(row_idx, 18, float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0), fmt_days)
 
                     fg = float(r.get('Fixed_Gross', 0.0) or 0.0)
                     bda = float(r.get('Basic_DA', 0.0) or fg * 0.50)
@@ -306,13 +309,13 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     conv = float(r.get('Conveyance_Allowance', 0.0) or fg * 0.10)
                     wash = float(r.get('Washing_Allowance', 0.0) or fg * 0.10)
                     oth = float(r.get('Other_Allowance', 0.0) or fg * 0.10)
-                    ws.write(row_idx, 18, fg, fmt_currency)
-                    ws.write(row_idx, 19, bda, fmt_currency)
-                    ws.write(row_idx, 20, hra, fmt_currency)
-                    ws.write(row_idx, 21, conv, fmt_currency)
-                    ws.write(row_idx, 22, wash, fmt_currency)
-                    ws.write(row_idx, 23, oth, fmt_currency)
-                    ws.write(row_idx, 24, fg, fmt_currency_bold)
+                    ws.write(row_idx, 19, fg, fmt_currency)
+                    ws.write(row_idx, 20, bda, fmt_currency)
+                    ws.write(row_idx, 21, hra, fmt_currency)
+                    ws.write(row_idx, 22, conv, fmt_currency)
+                    ws.write(row_idx, 23, wash, fmt_currency)
+                    ws.write(row_idx, 24, oth, fmt_currency)
+                    ws.write(row_idx, 25, fg, fmt_currency_bold)
 
                     e_bda = float(r.get('Earned_Basic_DA', r.get('Basic_DA_Earned', 0.0)) or 0.0)
                     e_hra = float(r.get('Earned_HRA', r.get('HRA_Earned', 0.0)) or 0.0)
@@ -321,19 +324,19 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     e_oth = float(r.get('Earned_Other', r.get('Other_Allowance_Earned', 0.0)) or 0.0)
                     ot_wages = float(r.get('OT_Wages', 0.0) or 0.0)
                     gross_wages = float(r.get('Gross_Wages', 0.0) or 0.0)
-                    ws.write(row_idx, 25, e_bda, fmt_currency)
-                    ws.write(row_idx, 26, e_hra, fmt_currency)
-                    ws.write(row_idx, 27, e_conv, fmt_currency)
-                    ws.write(row_idx, 28, e_wash, fmt_currency)
-                    ws.write(row_idx, 29, e_oth, fmt_currency)
-                    ws.write(row_idx, 30, ot_wages, fmt_currency)
-                    ws.write(row_idx, 31, gross_wages, fmt_currency_bold)
+                    ws.write(row_idx, 26, e_bda, fmt_currency)
+                    ws.write(row_idx, 27, e_hra, fmt_currency)
+                    ws.write(row_idx, 28, e_conv, fmt_currency)
+                    ws.write(row_idx, 29, e_wash, fmt_currency)
+                    ws.write(row_idx, 30, e_oth, fmt_currency)
+                    ws.write(row_idx, 31, ot_wages, fmt_currency)
+                    ws.write(row_idx, 32, gross_wages, fmt_currency_bold)
 
                     # Statutory Gross
                     pf_gross_val = float(r.get('PF_Gross', r.get('PF_Eligible_Gross', 0.0)) or 0.0)
                     esi_gross_val = float(r.get('ESI_Gross', r.get('ESI_Eligible_Gross', 0.0)) or 0.0)
-                    ws.write(row_idx, 32, pf_gross_val, fmt_currency)
-                    ws.write(row_idx, 33, esi_gross_val, fmt_currency)
+                    ws.write(row_idx, 33, pf_gross_val, fmt_currency)
+                    ws.write(row_idx, 34, esi_gross_val, fmt_currency)
 
                     # Deductions (with TDS)
                     adv_dedn = float(r.get('Advance_Deduction', 0.0) or 0.0)
@@ -345,15 +348,15 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     tot_dedn = float(r.get('Total_Deduction', 0.0) or 0.0)
                     net_sal = float(r.get('Net_Salary', 0.0) or 0.0)
 
-                    ws.write(row_idx, 34, pf_dedn, fmt_currency)
-                    ws.write(row_idx, 35, esi_dedn, fmt_currency)
-                    ws.write(row_idx, 36, lic_dedn, fmt_currency)
-                    ws.write(row_idx, 37, tds_dedn, fmt_currency)
-                    ws.write(row_idx, 38, adv_dedn, fmt_currency)
-                    ws.write(row_idx, 39, oth_dedn, fmt_currency)
-                    ws.write(row_idx, 40, tot_dedn, fmt_currency_bold)
+                    ws.write(row_idx, 35, pf_dedn, fmt_currency)
+                    ws.write(row_idx, 36, esi_dedn, fmt_currency)
+                    ws.write(row_idx, 37, lic_dedn, fmt_currency)
+                    ws.write(row_idx, 38, tds_dedn, fmt_currency)
+                    ws.write(row_idx, 39, adv_dedn, fmt_currency)
+                    ws.write(row_idx, 40, oth_dedn, fmt_currency)
+                    ws.write(row_idx, 41, tot_dedn, fmt_currency_bold)
 
-                    ws.write(row_idx, 41, net_sal, fmt_net_salary)
+                    ws.write(row_idx, 42, net_sal, fmt_net_salary)
                     
                     # Advance Tracking
                     open_adv = float(r.get('Opening_Advance', 0.0) or 0.0)
@@ -364,17 +367,17 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     else:
                         closing_adv = max(0.0, open_adv + new_adv - adv_dedn)
                     
-                    ws.write(row_idx, 42, new_adv, fmt_currency) # New Advance
-                    ws.write(row_idx, 43, adv_dedn, fmt_currency) # Installment
-                    ws.write(row_idx, 44, open_adv, fmt_currency) # Opening Advance
-                    ws.write(row_idx, 45, closing_adv, fmt_currency) # Closing Advance
+                    ws.write(row_idx, 43, new_adv, fmt_currency) # New Advance
+                    ws.write(row_idx, 44, adv_dedn, fmt_currency) # Installment
+                    ws.write(row_idx, 45, open_adv, fmt_currency) # Opening Advance
+                    ws.write(row_idx, 46, closing_adv, fmt_currency) # Closing Advance
 
                     vals_to_track = {
-                        18: fg, 19: bda, 20: hra, 21: conv, 22: wash, 23: oth, 24: fg,
-                        25: e_bda, 26: e_hra, 27: e_conv, 28: e_wash, 29: e_oth, 30: ot_wages, 31: gross_wages,
-                        32: pf_gross_val, 33: esi_gross_val,
-                        34: pf_dedn, 35: esi_dedn, 36: lic_dedn, 37: tds_dedn, 38: adv_dedn, 39: oth_dedn, 40: tot_dedn,
-                        41: net_sal, 42: new_adv, 43: adv_dedn, 44: open_adv, 45: closing_adv
+                        19: fg, 20: bda, 21: hra, 22: conv, 23: wash, 24: oth, 25: fg,
+                        26: e_bda, 27: e_hra, 28: e_conv, 29: e_wash, 30: e_oth, 31: ot_wages, 32: gross_wages,
+                        33: pf_gross_val, 34: esi_gross_val,
+                        35: pf_dedn, 36: esi_dedn, 37: lic_dedn, 38: tds_dedn, 39: adv_dedn, 40: oth_dedn, 41: tot_dedn,
+                        42: net_sal, 43: new_adv, 44: adv_dedn, 45: open_adv, 46: closing_adv
                     }
                     for col_num, val in vals_to_track.items():
                         col_totals[col_num] = col_totals.get(col_num, 0.0) + val
@@ -383,9 +386,9 @@ def generate_wages_excel(year, month, category_filter='ALL'):
 
                 # Total Row
                 ws.merge_range(row_idx, 0, row_idx, 9, f"TOTAL ({len(rows)} Employees)", fmt_total_label)
-                for c_i in range(10, 18):
+                for c_i in range(10, 19):
                     ws.write(row_idx, c_i, '', fmt_total_label)
-                for c_i in range(18, 46):
+                for c_i in range(19, 47):
                     col_letter = xl_col_to_name(c_i)
                     sum_val = round(col_totals.get(c_i, 0.0), 2)
                     ws.write_formula(row_idx, c_i, f"=SUM({col_letter}5:{col_letter}{row_idx})", fmt_total_currency, value=sum_val)
@@ -400,27 +403,27 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 ws.set_column(7, 7, 20)  # Year of Experience
                 ws.set_column(8, 8, 16)  # Designation
                 ws.set_column(9, 9, 16)  # Category
-                ws.set_column(10, 17, 10) # Attendance
-                ws.set_column(18, 45, 14) # Currency columns
+                ws.set_column(10, 18, 10) # Attendance
+                ws.set_column(19, 46, 14) # Currency columns
 
             else:
-                # OTHER STAFF COLUMNS (45 Cols: A to AS)
-                ws.merge_range('A1:AS1', 'BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1', fmt_title)
-                ws.merge_range('A2:AS2', f"{grp['title']} SALARY STATEMENT FOR THE MONTH OF {month_label}", fmt_subtitle)
+                # OTHER STAFF COLUMNS (46 Cols: A to AT)
+                ws.merge_range('A1:AT1', 'BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1', fmt_title)
+                ws.merge_range('A2:AT2', f"{grp['title']} SALARY STATEMENT FOR THE MONTH OF {month_label}", fmt_subtitle)
 
                 # Group headers
                 ws.merge_range('A3:J3', 'EMPLOYEE DETAILS', fmt_group_header)
-                ws.merge_range('K3:R3', 'WORKED DAYS', fmt_group_header)
-                ws.merge_range('S3:Y3', 'FIXED SALARY STRUCTURE', fmt_group_header)
-                ws.merge_range('Z3:AF3', 'EARNINGS', fmt_group_header)
-                ws.merge_range('AG3:AH3', 'STATUTORY GROSS', fmt_group_header)
-                ws.merge_range('AI3:AN3', 'DEDUCTIONS', fmt_group_header)
-                ws.write('AO3', 'NET SALARY', fmt_group_header)
-                ws.merge_range('AP3:AS3', 'ADVANCE TRACKING', fmt_group_header)
+                ws.merge_range('K3:S3', 'WORKED DAYS', fmt_group_header)
+                ws.merge_range('T3:Z3', 'FIXED SALARY STRUCTURE', fmt_group_header)
+                ws.merge_range('AA3:AG3', 'EARNINGS', fmt_group_header)
+                ws.merge_range('AH3:AI3', 'STATUTORY GROSS', fmt_group_header)
+                ws.merge_range('AJ3:AO3', 'DEDUCTIONS', fmt_group_header)
+                ws.write('AP3', 'NET SALARY', fmt_group_header)
+                ws.merge_range('AQ3:AT3', 'ADVANCE TRACKING', fmt_group_header)
 
                 headers = [
                     'S.No', 'Emp ID', 'UAN No', 'ESI No', 'Employee Name', 'Department', 'Date of Joining', 'Year of Experience', 'Designation', 'Category',
-                    'Working Days', 'Present', 'N/H', 'EL', 'CL', 'SL', 'Payable Days', 'OT Hours',
+                    'Working Days', 'Present', 'N/H', 'C-Off', 'EL', 'CL', 'SL', 'Payable Days', 'OT Hours',
                     'Gross', 'Basic+DA', 'HRA', 'Conv', 'Washing Allow', 'Other Allow', 'Gross Wages',
                     'Basic+DA', 'HRA', 'Conv', 'Wash Allow', 'Other Allow', 'OT Wages', 'Gross Wages',
                     'PF Gross', 'ESI Gross',
@@ -452,11 +455,12 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     ws.write(row_idx, 10, float(r.get('Working_Days', default_emp_days) or default_emp_days), fmt_days)
                     ws.write(row_idx, 11, float(r.get('Present_Days', default_emp_days) or default_emp_days), fmt_days)
                     ws.write(row_idx, 12, float(r.get('NH', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 13, float(r.get('EL', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 14, float(r.get('CL', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 15, float(r.get('SL', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 16, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_days)
-                    ws.write(row_idx, 17, float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 13, float(r.get('C_Off', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 14, float(r.get('EL', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 15, float(r.get('CL', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 16, float(r.get('SL', 0.0) or 0.0), fmt_days)
+                    ws.write(row_idx, 17, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_days)
+                    ws.write(row_idx, 18, float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0), fmt_days)
 
                     fg = float(r.get('Fixed_Gross', 0.0) or 0.0)
                     bda = float(r.get('Basic_DA', 0.0) or fg * 0.50)
@@ -464,13 +468,13 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     conv = float(r.get('Conveyance_Allowance', 0.0) or fg * 0.10)
                     wash = float(r.get('Washing_Allowance', 0.0) or fg * 0.10)
                     oth = float(r.get('Other_Allowance', 0.0) or fg * 0.10)
-                    ws.write(row_idx, 18, fg, fmt_currency)
-                    ws.write(row_idx, 19, bda, fmt_currency)
-                    ws.write(row_idx, 20, hra, fmt_currency)
-                    ws.write(row_idx, 21, conv, fmt_currency)
-                    ws.write(row_idx, 22, wash, fmt_currency)
-                    ws.write(row_idx, 23, oth, fmt_currency)
-                    ws.write(row_idx, 24, fg, fmt_currency_bold)
+                    ws.write(row_idx, 19, fg, fmt_currency)
+                    ws.write(row_idx, 20, bda, fmt_currency)
+                    ws.write(row_idx, 21, hra, fmt_currency)
+                    ws.write(row_idx, 22, conv, fmt_currency)
+                    ws.write(row_idx, 23, wash, fmt_currency)
+                    ws.write(row_idx, 24, oth, fmt_currency)
+                    ws.write(row_idx, 25, fg, fmt_currency_bold)
 
                     e_bda = float(r.get('Earned_Basic_DA', r.get('Basic_DA_Earned', 0.0)) or 0.0)
                     e_hra = float(r.get('Earned_HRA', r.get('HRA_Earned', 0.0)) or 0.0)
@@ -479,19 +483,19 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     e_oth = float(r.get('Earned_Other', r.get('Other_Allowance_Earned', 0.0)) or 0.0)
                     ot_wages = float(r.get('OT_Wages', 0.0) or 0.0)
                     gross_wages = float(r.get('Gross_Wages', 0.0) or 0.0)
-                    ws.write(row_idx, 25, e_bda, fmt_currency)
-                    ws.write(row_idx, 26, e_hra, fmt_currency)
-                    ws.write(row_idx, 27, e_conv, fmt_currency)
-                    ws.write(row_idx, 28, e_wash, fmt_currency)
-                    ws.write(row_idx, 29, e_oth, fmt_currency)
-                    ws.write(row_idx, 30, ot_wages, fmt_currency)
-                    ws.write(row_idx, 31, gross_wages, fmt_currency_bold)
+                    ws.write(row_idx, 26, e_bda, fmt_currency)
+                    ws.write(row_idx, 27, e_hra, fmt_currency)
+                    ws.write(row_idx, 28, e_conv, fmt_currency)
+                    ws.write(row_idx, 29, e_wash, fmt_currency)
+                    ws.write(row_idx, 30, e_oth, fmt_currency)
+                    ws.write(row_idx, 31, ot_wages, fmt_currency)
+                    ws.write(row_idx, 32, gross_wages, fmt_currency_bold)
 
                     # Statutory Gross
                     pf_gross_val = float(r.get('PF_Gross', r.get('PF_Eligible_Gross', 0.0)) or 0.0)
                     esi_gross_val = float(r.get('ESI_Gross', r.get('ESI_Eligible_Gross', 0.0)) or 0.0)
-                    ws.write(row_idx, 32, pf_gross_val, fmt_currency)
-                    ws.write(row_idx, 33, esi_gross_val, fmt_currency)
+                    ws.write(row_idx, 33, pf_gross_val, fmt_currency)
+                    ws.write(row_idx, 34, esi_gross_val, fmt_currency)
 
                     # Deductions
                     adv_dedn = float(r.get('Advance_Deduction', 0.0) or 0.0)
@@ -502,14 +506,14 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     tot_dedn = float(r.get('Total_Deduction', 0.0) or 0.0)
                     net_sal = float(r.get('Net_Salary', 0.0) or 0.0)
 
-                    ws.write(row_idx, 34, pf_dedn, fmt_currency)
-                    ws.write(row_idx, 35, esi_dedn, fmt_currency)
-                    ws.write(row_idx, 36, lic_dedn, fmt_currency)
-                    ws.write(row_idx, 37, adv_dedn, fmt_currency)
-                    ws.write(row_idx, 38, oth_dedn, fmt_currency)
-                    ws.write(row_idx, 39, tot_dedn, fmt_currency_bold)
+                    ws.write(row_idx, 35, pf_dedn, fmt_currency)
+                    ws.write(row_idx, 36, esi_dedn, fmt_currency)
+                    ws.write(row_idx, 37, lic_dedn, fmt_currency)
+                    ws.write(row_idx, 38, adv_dedn, fmt_currency)
+                    ws.write(row_idx, 39, oth_dedn, fmt_currency)
+                    ws.write(row_idx, 40, tot_dedn, fmt_currency_bold)
 
-                    ws.write(row_idx, 40, net_sal, fmt_net_salary)
+                    ws.write(row_idx, 41, net_sal, fmt_net_salary)
                     
                     # Advance Tracking
                     open_adv = float(r.get('Opening_Advance', 0.0) or 0.0)
@@ -520,17 +524,17 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     else:
                         closing_adv = max(0.0, open_adv + new_adv - adv_dedn)
                     
-                    ws.write(row_idx, 41, new_adv, fmt_currency) # New Advance
-                    ws.write(row_idx, 42, adv_dedn, fmt_currency) # Installment
-                    ws.write(row_idx, 43, open_adv, fmt_currency) # Opening Advance
-                    ws.write(row_idx, 44, closing_adv, fmt_currency) # Closing Advance
+                    ws.write(row_idx, 42, new_adv, fmt_currency) # New Advance
+                    ws.write(row_idx, 43, adv_dedn, fmt_currency) # Installment
+                    ws.write(row_idx, 44, open_adv, fmt_currency) # Opening Advance
+                    ws.write(row_idx, 45, closing_adv, fmt_currency) # Closing Advance
 
                     vals_to_track = {
-                        18: fg, 19: bda, 20: hra, 21: conv, 22: wash, 23: oth, 24: fg,
-                        25: e_bda, 26: e_hra, 27: e_conv, 28: e_wash, 29: e_oth, 30: ot_wages, 31: gross_wages,
-                        32: pf_gross_val, 33: esi_gross_val,
-                        34: pf_dedn, 35: esi_dedn, 36: lic_dedn, 37: adv_dedn, 38: oth_dedn, 39: tot_dedn,
-                        40: net_sal, 41: new_adv, 42: adv_dedn, 43: open_adv, 44: closing_adv
+                        19: fg, 20: bda, 21: hra, 22: conv, 23: wash, 24: oth, 25: fg,
+                        26: e_bda, 27: e_hra, 28: e_conv, 29: e_wash, 30: e_oth, 31: ot_wages, 32: gross_wages,
+                        33: pf_gross_val, 34: esi_gross_val,
+                        35: pf_dedn, 36: esi_dedn, 37: lic_dedn, 38: adv_dedn, 39: oth_dedn, 40: tot_dedn,
+                        41: net_sal, 42: new_adv, 43: adv_dedn, 44: open_adv, 45: closing_adv
                     }
                     for col_num, val in vals_to_track.items():
                         col_totals[col_num] = col_totals.get(col_num, 0.0) + val
@@ -539,9 +543,9 @@ def generate_wages_excel(year, month, category_filter='ALL'):
 
                 # Total Row
                 ws.merge_range(row_idx, 0, row_idx, 9, f"TOTAL ({len(rows)} Employees)", fmt_total_label)
-                for c_i in range(10, 18):
+                for c_i in range(10, 19):
                     ws.write(row_idx, c_i, '', fmt_total_label)
-                for c_i in range(18, 45):
+                for c_i in range(19, 46):
                     col_letter = xl_col_to_name(c_i)
                     sum_val = round(col_totals.get(c_i, 0.0), 2)
                     ws.write_formula(row_idx, c_i, f"=SUM({col_letter}5:{col_letter}{row_idx})", fmt_total_currency, value=sum_val)
@@ -556,26 +560,26 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 ws.set_column(7, 7, 20)  # Year of Experience
                 ws.set_column(8, 8, 16)  # Designation
                 ws.set_column(9, 9, 16)  # Category
-                ws.set_column(10, 17, 10) # Attendance
-                ws.set_column(18, 44, 14) # Currency columns
+                ws.set_column(10, 18, 10) # Attendance
+                ws.set_column(19, 45, 14) # Currency columns
 
         else:
-            # WORKER COLUMNS (55 Cols: A to BC)
-            ws.merge_range('A1:BC1', 'BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1', fmt_title)
-            ws.merge_range('A2:BC2', f"{grp['title']} SALARY STATEMENT FOR THE MONTH OF {month_label}", fmt_subtitle)
+            # WORKER COLUMNS (56 Cols: A to BD)
+            ws.merge_range('A1:BD1', 'BARANI HYDRAULICS INDIA PRIVATE LIMITED - UNIT - 1', fmt_title)
+            ws.merge_range('A2:BD2', f"{grp['title']} SALARY STATEMENT FOR THE MONTH OF {month_label}", fmt_subtitle)
 
             ws.merge_range('A3:J3', 'EMPLOYEE DETAILS', fmt_group_header)
-            ws.merge_range('K3:U3', 'WORKED DAYS & OT', fmt_group_header)
-            ws.merge_range('V3:AC3', 'FIXED SALARY', fmt_group_header)
-            ws.merge_range('AD3:AL3', 'EARNINGS', fmt_group_header)
-            ws.merge_range('AM3:AP3', 'STATUTORY GROSS & ARREARS', fmt_group_header)
-            ws.merge_range('AQ3:AX3', 'DEDUCTIONS', fmt_group_header)
-            ws.write('AY3', 'NET SALARY', fmt_group_header)
-            ws.merge_range('AZ3:BC3', 'ADVANCE TRACKING', fmt_group_header)
+            ws.merge_range('K3:V3', 'WORKED DAYS & OT', fmt_group_header)
+            ws.merge_range('W3:AD3', 'FIXED SALARY', fmt_group_header)
+            ws.merge_range('AE3:AM3', 'EARNINGS', fmt_group_header)
+            ws.merge_range('AN3:AQ3', 'STATUTORY GROSS & ARREARS', fmt_group_header)
+            ws.merge_range('AR3:AY3', 'DEDUCTIONS', fmt_group_header)
+            ws.write('AZ3', 'NET SALARY', fmt_group_header)
+            ws.merge_range('BA3:BD3', 'ADVANCE TRACKING', fmt_group_header)
 
             headers = [
                 'S.No', 'Emp ID', 'UAN No', 'ESI No', 'Employee Name', 'Department', 'Date of Joining', 'Year of Experience', 'Designation', 'Category',
-                'Working Days', 'Present', 'N/H', 'EL', 'CL', 'SL', 'Payable Days', 'Act OT Hrs', 'OT', 'SPL', 'OT Hrs (/2)',
+                'Working Days', 'Present', 'N/H', 'C-Off', 'EL', 'CL', 'SL', 'Payable Days', 'Act OT Hrs', 'OT', 'SPL', 'OT Hrs (/2)',
                 'Per Day Wage', 'Basic+DA', 'HRA', 'Convey Allow', 'Washing Allow', 'Other Allow', 'OT Hrs Wage', 'Gross Wages',
                 'Basic+DA', 'HRA', 'Conv', 'Wash Allow', 'Other Allow', 'Spl Allowance', 'SPL Amount', 'OT Wages', 'Gross Wages',
                 'Gross-OT', 'PF Gross', 'ESI Gross', 'Arrears',
@@ -607,20 +611,21 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 ws.write(row_idx, 10, float(r.get('Working_Days', default_emp_days) or default_emp_days), fmt_days)
                 ws.write(row_idx, 11, float(r.get('Present_Days', default_emp_days) or default_emp_days), fmt_days)
                 ws.write(row_idx, 12, float(r.get('NH', 0.0) or 0.0), fmt_days)
-                ws.write(row_idx, 13, float(r.get('EL', 0.0) or 0.0), fmt_days)
-                ws.write(row_idx, 14, float(r.get('CL', 0.0) or 0.0), fmt_days)
-                ws.write(row_idx, 15, float(r.get('SL', 0.0) or 0.0), fmt_days)
-                ws.write(row_idx, 16, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_days)
+                ws.write(row_idx, 13, float(r.get('C_Off', 0.0) or 0.0), fmt_days)
+                ws.write(row_idx, 14, float(r.get('EL', 0.0) or 0.0), fmt_days)
+                ws.write(row_idx, 15, float(r.get('CL', 0.0) or 0.0), fmt_days)
+                ws.write(row_idx, 16, float(r.get('SL', 0.0) or 0.0), fmt_days)
+                ws.write(row_idx, 17, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_days)
 
                 act_ot = float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0)
                 reg_ot = min(act_ot, 50.0)
                 spl_ot = max(0.0, act_ot - 50.0)
                 ot_hrs_display = reg_ot / 2.0
                 
-                ws.write(row_idx, 17, act_ot, fmt_days)
-                ws.write(row_idx, 18, reg_ot, fmt_ot_hrs)
-                ws.write(row_idx, 19, spl_ot, fmt_ot_hrs)
-                ws.write(row_idx, 20, ot_hrs_display, fmt_ot_hrs)
+                ws.write(row_idx, 18, act_ot, fmt_days)
+                ws.write(row_idx, 19, reg_ot, fmt_ot_hrs)
+                ws.write(row_idx, 20, spl_ot, fmt_ot_hrs)
+                ws.write(row_idx, 21, ot_hrs_display, fmt_ot_hrs)
 
                 pdw = float(r.get('Per_Day_Wage', 0.0) or 0.0)
                 fg = float(r.get('Fixed_Gross', 0.0) or (pdw * default_emp_days))
@@ -631,14 +636,14 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 oth = float(r.get('Other_Allowance', 0.0) or fg * 0.10)
                 ot_wage_calc = pdw / 8.0 if pdw else (fg / (default_emp_days * 8.0) if default_emp_days else 0.0)
                 
-                ws.write(row_idx, 21, pdw, fmt_pdw)
-                ws.write(row_idx, 22, bda, fmt_currency)
-                ws.write(row_idx, 23, hra, fmt_currency)
-                ws.write(row_idx, 24, conv, fmt_currency)
-                ws.write(row_idx, 25, wash, fmt_currency)
-                ws.write(row_idx, 26, oth, fmt_currency)
-                ws.write(row_idx, 27, ot_wage_calc, fmt_ot_rate)
-                ws.write(row_idx, 28, fg, fmt_currency_bold)
+                ws.write(row_idx, 22, pdw, fmt_pdw)
+                ws.write(row_idx, 23, bda, fmt_currency)
+                ws.write(row_idx, 24, hra, fmt_currency)
+                ws.write(row_idx, 25, conv, fmt_currency)
+                ws.write(row_idx, 26, wash, fmt_currency)
+                ws.write(row_idx, 27, oth, fmt_currency)
+                ws.write(row_idx, 28, ot_wage_calc, fmt_ot_rate)
+                ws.write(row_idx, 29, fg, fmt_currency_bold)
 
                 e_bda = float(r.get('Earned_Basic_DA', r.get('Basic_DA_Earned', 0.0)) or 0.0)
                 e_hra = float(r.get('Earned_HRA', r.get('HRA_Earned', 0.0)) or 0.0)
@@ -647,33 +652,33 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 e_oth = float(r.get('Earned_Other', r.get('Other_Allowance_Earned', 0.0)) or 0.0)
                 e_spl = float(r.get('Earned_Special', r.get('Special_Allowance_Earned', 0.0)) or 0.0)
                 
-                ws.write(row_idx, 29, e_bda, fmt_currency)
-                ws.write(row_idx, 30, e_hra, fmt_currency)
-                ws.write(row_idx, 31, e_conv, fmt_currency)
-                ws.write(row_idx, 32, e_wash, fmt_currency)
-                ws.write(row_idx, 33, e_oth, fmt_currency)
-                ws.write(row_idx, 34, e_spl, fmt_currency)
+                ws.write(row_idx, 30, e_bda, fmt_currency)
+                ws.write(row_idx, 31, e_hra, fmt_currency)
+                ws.write(row_idx, 32, e_conv, fmt_currency)
+                ws.write(row_idx, 33, e_wash, fmt_currency)
+                ws.write(row_idx, 34, e_oth, fmt_currency)
+                ws.write(row_idx, 35, e_spl, fmt_currency)
                 
                 # SPL Amount (Special OT Hours Amount: >50h OT * OT_Rate)
                 ot_rate_calc = pdw / 8.0 if pdw > 0.0 else (fg / (default_emp_days * 8.0) if default_emp_days else 56.25)
                 spl_ot_amount_val = float(r.get('Special_OT_Amount') if r.get('Special_OT_Amount') is not None else round(spl_ot * ot_rate_calc, 2))
-                ws.write(row_idx, 35, spl_ot_amount_val, fmt_currency)
+                ws.write(row_idx, 36, spl_ot_amount_val, fmt_currency)
                 
                 # OT Wages (Capped <=50h OT)
                 ot_wages_val = float(r.get('OT_Wages', 0.0) or 0.0)
-                ws.write(row_idx, 36, ot_wages_val, fmt_currency)
+                ws.write(row_idx, 37, ot_wages_val, fmt_currency)
                 
                 earned_gross = float(r.get('Gross_Wages', 0.0) or 0.0)
                 gross_minus_ot = earned_gross - ot_wages_val
                 
-                ws.write(row_idx, 37, earned_gross, fmt_currency_bold)
-                ws.write(row_idx, 38, gross_minus_ot, fmt_currency)
+                ws.write(row_idx, 38, earned_gross, fmt_currency_bold)
+                ws.write(row_idx, 39, gross_minus_ot, fmt_currency)
                 pf_gross_val = float(r.get('PF_Gross', r.get('PF_Eligible_Gross', 0.0)) or 0.0)
                 esi_gross_val = float(r.get('ESI_Gross', r.get('ESI_Eligible_Gross', 0.0)) or 0.0)
-                ws.write(row_idx, 39, pf_gross_val, fmt_currency)
-                ws.write(row_idx, 40, esi_gross_val, fmt_currency)
+                ws.write(row_idx, 40, pf_gross_val, fmt_currency)
+                ws.write(row_idx, 41, esi_gross_val, fmt_currency)
                 arrears_val = float(r.get('Arrears', 0.0) or 0.0)
-                ws.write(row_idx, 41, arrears_val, fmt_currency)
+                ws.write(row_idx, 42, arrears_val, fmt_currency)
 
                 pf_dedn = float(r.get('PF_Deduction', 0.0) or 0.0)
                 esi_dedn = float(r.get('ESI_Deduction', 0.0) or 0.0)
@@ -685,16 +690,16 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 tot_dedn = float(r.get('Total_Deduction', 0.0) or 0.0)
                 net_sal = float(r.get('Net_Salary', 0.0) or 0.0)
                 
-                ws.write(row_idx, 42, pf_dedn, fmt_currency)
-                ws.write(row_idx, 43, esi_dedn, fmt_currency)
-                ws.write(row_idx, 44, lic_dedn, fmt_currency)
-                ws.write(row_idx, 45, adv_dedn, fmt_currency)
-                ws.write(row_idx, 46, naps_dedn, fmt_currency)
-                ws.write(row_idx, 47, accom_dedn, fmt_currency)
-                ws.write(row_idx, 48, oth_dedn, fmt_currency)
-                ws.write(row_idx, 49, tot_dedn, fmt_currency_bold)
+                ws.write(row_idx, 43, pf_dedn, fmt_currency)
+                ws.write(row_idx, 44, esi_dedn, fmt_currency)
+                ws.write(row_idx, 45, lic_dedn, fmt_currency)
+                ws.write(row_idx, 46, adv_dedn, fmt_currency)
+                ws.write(row_idx, 47, naps_dedn, fmt_currency)
+                ws.write(row_idx, 48, accom_dedn, fmt_currency)
+                ws.write(row_idx, 49, oth_dedn, fmt_currency)
+                ws.write(row_idx, 50, tot_dedn, fmt_currency_bold)
 
-                ws.write(row_idx, 50, net_sal, fmt_net_salary)
+                ws.write(row_idx, 51, net_sal, fmt_net_salary)
                 
                 # Advance Tracking
                 open_adv = float(r.get('Opening_Advance', 0.0) or 0.0)
@@ -705,18 +710,18 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 else:
                     closing_adv = max(0.0, open_adv + new_adv - adv_dedn)
 
-                ws.write(row_idx, 51, new_adv, fmt_currency) # New Advance
-                ws.write(row_idx, 52, adv_dedn, fmt_currency) # Installment
-                ws.write(row_idx, 53, open_adv, fmt_currency) # Opening Advance
-                ws.write(row_idx, 54, closing_adv, fmt_currency) # Closing Advance
+                ws.write(row_idx, 52, new_adv, fmt_currency) # New Advance
+                ws.write(row_idx, 53, adv_dedn, fmt_currency) # Installment
+                ws.write(row_idx, 54, open_adv, fmt_currency) # Opening Advance
+                ws.write(row_idx, 55, closing_adv, fmt_currency) # Closing Advance
 
                 vals_to_track = {
-                    21: pdw, 22: bda, 23: hra, 24: conv, 25: wash, 26: oth, 27: ot_wage_calc, 28: fg,
-                    29: e_bda, 30: e_hra, 31: e_conv, 32: e_wash, 33: e_oth, 34: e_spl, 35: spl_ot_amount_val,
-                    36: ot_wages_val, 37: earned_gross, 38: gross_minus_ot, 39: pf_gross_val, 40: esi_gross_val,
-                    41: arrears_val, 42: pf_dedn, 43: esi_dedn, 44: lic_dedn, 45: adv_dedn, 46: naps_dedn,
-                    47: accom_dedn, 48: oth_dedn, 49: tot_dedn, 50: net_sal,
-                    51: new_adv, 52: adv_dedn, 53: open_adv, 54: closing_adv
+                    22: pdw, 23: bda, 24: hra, 25: conv, 26: wash, 27: oth, 28: ot_wage_calc, 29: fg,
+                    30: e_bda, 31: e_hra, 32: e_conv, 33: e_wash, 34: e_oth, 35: e_spl, 36: spl_ot_amount_val,
+                    37: ot_wages_val, 38: earned_gross, 39: gross_minus_ot, 40: pf_gross_val, 41: esi_gross_val,
+                    42: arrears_val, 43: pf_dedn, 44: esi_dedn, 45: lic_dedn, 46: adv_dedn, 47: naps_dedn,
+                    48: accom_dedn, 49: oth_dedn, 50: tot_dedn, 51: net_sal,
+                    52: new_adv, 53: adv_dedn, 54: open_adv, 55: closing_adv
                 }
                 for col_num, val in vals_to_track.items():
                     col_totals[col_num] = col_totals.get(col_num, 0.0) + val
@@ -725,10 +730,10 @@ def generate_wages_excel(year, month, category_filter='ALL'):
 
             # Total Row
             ws.merge_range(row_idx, 0, row_idx, 9, f"TOTAL ({len(rows)} Employees)", fmt_total_label)
-            for c_i in range(10, 21):
+            for c_i in range(10, 22):
                 ws.write(row_idx, c_i, '', fmt_total_label)
             
-            for c_i in range(21, 55):
+            for c_i in range(22, 56):
                 col_letter = xl_col_to_name(c_i)
                 sum_val = round(col_totals.get(c_i, 0.0), 2)
                 ws.write_formula(row_idx, c_i, f"=SUM({col_letter}5:{col_letter}{row_idx})", fmt_total_currency, value=sum_val)
@@ -742,8 +747,8 @@ def generate_wages_excel(year, month, category_filter='ALL'):
             ws.set_column(7, 7, 20)  # Year of Experience
             ws.set_column(8, 8, 16)  # Designation
             ws.set_column(9, 9, 16)  # Category
-            ws.set_column(10, 20, 10) # Attendance & OT
-            ws.set_column(21, 54, 14) # Currency columns
+            ws.set_column(10, 21, 10) # Attendance & OT
+            ws.set_column(22, 55, 14) # Currency columns
 
     wb.close()
     output.seek(0)

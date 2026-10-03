@@ -241,8 +241,8 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
         ('Company Working Days', 'Company_Working_Days', 'number', 16, False),
         ('Present', 'Present', 'number', 12, False),
         ('N/H', 'NH', 'number', 10, False),
-        ('EL', 'EL', 'number', 10, False),
         ('C-Off', 'C_Off', 'number', 10, False),
+        ('EL', 'EL', 'number', 10, False),
         ('CL', 'CL', 'number', 10, False),
         ('SL', 'SL', 'number', 10, False),
         ('Total Present Days', 'Total_Present_Days', 'formula', 18, False),
@@ -368,8 +368,8 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
             val = row_data.get(dict_key)
 
             if dict_key == 'Total_Present_Days':
-                # Formula: Present Days = Present + NH + EL + C-off + SL + CL
-                cell = ws.cell(row=r_idx, column=c_idx, value=f"={pres_col}{r_idx}+{nh_col}{r_idx}+{el_col}{r_idx}+{coff_col}{r_idx}+{sl_col}{r_idx}+{cl_col}{r_idx}")
+                # Formula: Present Days = Present + NH + C-off + EL + SL + CL
+                cell = ws.cell(row=r_idx, column=c_idx, value=f"={pres_col}{r_idx}+{nh_col}{r_idx}+{coff_col}{r_idx}+{el_col}{r_idx}+{sl_col}{r_idx}+{cl_col}{r_idx}")
             elif dict_key == 'Closing_Advance':
                 cell = ws.cell(row=r_idx, column=c_idx, value=f"=MAX(0, {open_col}{r_idx}+{new_col}{r_idx}-{ded_col}{r_idx})")
             else:
