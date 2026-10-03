@@ -207,28 +207,6 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
     if trans_map is None:
         trans_map = {}
 
-    # Query active advances map from DB to pre-fill opening balances & installments
-    adv_map = {}
-    try:
-        from db import get_db_connection
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT Emp_No, SUM(Remaining_Amount) AS Total_Remaining, SUM(Monthly_Amount) AS Total_Monthly
-            FROM Advances
-            WHERE Status = 'Active' AND Remaining_Amount > 0
-            GROUP BY Emp_No
-        """)
-        for row in cur.fetchall():
-            emp_no_val = str(row[0]).strip()
-            adv_map[emp_no_val] = {
-                'remaining': _safe_float(row[1]),
-                'monthly': _safe_float(row[2])
-            }
-        conn.close()
-    except Exception as e:
-        print(f"[ADVANCE PREFILL NOTICE]: {e}")
-
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = f"Attendance_{month}_{year}"
@@ -304,8 +282,6 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
         emp_id = emp['Employee_ID']
         emp_no = str(emp.get('Emp_No', '')).strip()
         existing_t = trans_map.get(emp_id) or {}
-        adv_info = adv_map.get(emp_no) or {}
-
         emp_type_str = str(emp.get('Employee_Type', '')).upper()
         is_staff = ('STAFF' in emp_type_str)
         if is_staff:
@@ -313,25 +289,11 @@ def generate_attendance_template_excel(year, month, employees, standard_days=26.
         else:
             emp_working_days = worker_working_days if worker_working_days is not None else standard_days
 
-        # Determine Opening Advance
-        if 'Opening_Advance' in existing_t and _safe_float(existing_t.get('Opening_Advance')) > 0:
-            open_adv = _safe_float(existing_t.get('Opening_Advance'))
-        elif adv_info.get('remaining', 0.0) > 0:
-            open_adv = _safe_float(adv_info.get('remaining'))
-        else:
-            open_adv = 0.0
-
-        new_adv = _safe_float(existing_t.get('New_Advance'), 0.0)
-
-        # Determine Advance Deduction
-        if 'Advance_Deduction' in existing_t and _safe_float(existing_t.get('Advance_Deduction')) > 0:
-            adv_ded = _safe_float(existing_t.get('Advance_Deduction'))
-        elif adv_info.get('monthly', 0.0) > 0:
-            adv_ded = min(open_adv + new_adv, _safe_float(adv_info.get('monthly')))
-        else:
-            adv_ded = 0.0
-
-        close_adv = max(0.0, open_adv + new_adv - adv_ded)
+        # In attendance template download, Opening Advance, New Advance, and Advance Deduction default to 0.0 for all
+        open_adv = 0.0
+        new_adv = 0.0
+        adv_ded = 0.0
+        close_adv = 0.0
 
         lic_val = _safe_float(existing_t.get('LIC_Deduction'))
         if lic_val == 0.0:

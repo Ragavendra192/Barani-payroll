@@ -94,5 +94,29 @@ class TestPayslipAttendanceAndMasterData(unittest.TestCase):
             # Check leave table cells
             self.assertIn('<td style="color: #000;">0.0</td>', html)
 
+    def test_attendance_template_advances_are_zero(self):
+        """Verify that when downloading the attendance template, Opening Advance and Advance Deduction are 0.0 for all."""
+        import openpyxl
+        from services.excel_service import generate_attendance_template_excel
+        from models.employee import get_all_employees
+
+        emps = get_all_employees(status='Active')
+        bio = generate_attendance_template_excel(2026, 7, emps)
+        wb = openpyxl.load_workbook(bio, data_only=False)
+        ws = wb.active
+        headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
+
+        open_idx = headers.index('Opening Advance') + 1
+        new_idx = headers.index('New Advance') + 1
+        ded_idx = headers.index('Advance Deduction') + 1
+
+        for r in range(2, ws.max_row + 1):
+            open_val = ws.cell(r, open_idx).value
+            new_val = ws.cell(r, new_idx).value
+            ded_val = ws.cell(r, ded_idx).value
+            self.assertEqual(open_val, 0.0, f"Row {r} Opening Advance must be 0.0")
+            self.assertEqual(new_val, 0.0, f"Row {r} New Advance must be 0.0")
+            self.assertEqual(ded_val, 0.0, f"Row {r} Advance Deduction must be 0.0")
+
 if __name__ == '__main__':
     unittest.main()
