@@ -48,6 +48,7 @@ def generate_employee_master_excel(employees=None, include_sample=False):
         ('DOJ', 'DOJ', 'center', 14),
         ('DOB', 'DOB', 'center', 14),
         ('Father_Name', 'Father_Name', 'text', 22),
+        ('Bank_Name', 'Bank_Name', 'text', 24),
         ('Bank_Acc_No', 'Bank_Acc_No', 'text', 20),
         ('Bank_IFSC', 'Bank_IFSC', 'text', 15),
         ('UAN_No', 'UAN_No', 'text', 18),
@@ -117,6 +118,7 @@ def generate_employee_master_excel(employees=None, include_sample=False):
                 clean_str_val(emp.get('DOJ')),
                 clean_str_val(emp.get('DOB')),
                 clean_str_val(emp.get('Father_Name')),
+                clean_str_val(emp.get('Bank_Name')),
                 clean_str_val(emp.get('Bank_Acc_No')),
                 clean_str_val(emp.get('Bank_IFSC')),
                 clean_str_val(emp.get('UAN_No')),
@@ -141,7 +143,7 @@ def generate_employee_master_excel(employees=None, include_sample=False):
         sample_row = [
             '1001', 'Rajesh Kumar', 'STAFF', 'PF_ESI', 'Production',
             'CNC Operator', 'Grade A', 'Active', '2024-01-15', '1995-08-20',
-            'Ramesh Kumar', '918273645012', 'SBIN0001234', '100918273645',
+            'Ramesh Kumar', 'State Bank of India', '918273645012', 'SBIN0001234', '100918273645',
             '3109182736', '+919876543210', 'rajesh@example.com',
             25000.0, 12500.0, 5000.0, 2500.0, 2500.0, 2500.0, 0.0, 81.25,
             'YES', 'YES', 500.0

@@ -95,6 +95,14 @@ def init_employee_contact_columns():
 
             IF NOT EXISTS (
                 SELECT * FROM sys.columns 
+                WHERE object_id = OBJECT_ID('EmployeeMaster') AND name = 'Bank_Name'
+            )
+            BEGIN
+                ALTER TABLE EmployeeMaster ADD Bank_Name VARCHAR(100) NULL;
+            END
+
+            IF NOT EXISTS (
+                SELECT * FROM sys.columns 
                 WHERE object_id = OBJECT_ID('EmployeeMaster') AND name = 'LIC'
             )
             BEGIN
@@ -182,8 +190,15 @@ def get_all_employees(category=None, employee_type=None, payroll_category=None, 
             ISNULL(m.Employee_Name, m.Emp_Name) AS Employee_Name,
             m.Employee_Type, m.Payroll_Category, m.Category,
             m.Department, m.Designation, m.Grade, m.DOJ, m.Rejoin_DOJ,
-            m.Father_Name, m.DOB, ISNULL(m.Bank_Acc_No, m.Bank_Account) AS Bank_Acc_No, m.Bank_IFSC,
-            m.UAN_No, m.ESI_No, m.Status,
+            m.Father_Name, m.DOB,
+            ISNULL(m.Bank_Acc_No, m.Bank_Account) AS Bank_Acc_No,
+            ISNULL(m.Bank_Acc_No, m.Bank_Account) AS Account_No,
+            m.Bank_IFSC, m.Bank_IFSC AS IFSC_Code,
+            m.Bank_Name,
+            ISNULL(NULLIF(m.UAN_No, ''), ISNULL(m.UAN, '')) AS UAN_No,
+            ISNULL(NULLIF(m.UAN_No, ''), ISNULL(m.UAN, '')) AS UAN,
+            ISNULL(m.ESI_No, '') AS ESI_No,
+            m.Status,
             m.Phone_Number, m.Email_ID,
             ISNULL(s.Fixed_Gross, m.Fixed_Gross) AS Fixed_Gross,
             s.Basic_DA, s.HRA, s.Conveyance_Allowance, s.Washing_Allowance, s.Other_Allowance,
@@ -245,8 +260,15 @@ def get_employee_by_id(employee_id):
             ISNULL(m.Employee_Name, m.Emp_Name) AS Employee_Name,
             m.Employee_Type, m.Payroll_Category, m.Category,
             m.Department, m.Designation, m.Grade, m.DOJ, m.Rejoin_DOJ,
-            m.Father_Name, m.DOB, ISNULL(m.Bank_Acc_No, m.Bank_Account) AS Bank_Acc_No, m.Bank_IFSC,
-            m.UAN_No, m.ESI_No, m.Status,
+            m.Father_Name, m.DOB,
+            ISNULL(m.Bank_Acc_No, m.Bank_Account) AS Bank_Acc_No,
+            ISNULL(m.Bank_Acc_No, m.Bank_Account) AS Account_No,
+            m.Bank_IFSC, m.Bank_IFSC AS IFSC_Code,
+            m.Bank_Name,
+            ISNULL(NULLIF(m.UAN_No, ''), ISNULL(m.UAN, '')) AS UAN_No,
+            ISNULL(NULLIF(m.UAN_No, ''), ISNULL(m.UAN, '')) AS UAN,
+            ISNULL(m.ESI_No, '') AS ESI_No,
+            m.Status,
             m.Phone_Number, m.Email_ID,
             ISNULL(s.Fixed_Gross, m.Fixed_Gross) AS Fixed_Gross,
             s.Basic_DA, s.HRA, s.Conveyance_Allowance, s.Washing_Allowance, s.Other_Allowance,
@@ -286,8 +308,15 @@ def get_employee_by_emp_no(emp_no):
             ISNULL(m.Employee_Name, m.Emp_Name) AS Employee_Name,
             m.Employee_Type, m.Payroll_Category, m.Category,
             m.Department, m.Designation, m.Grade, m.DOJ, m.Rejoin_DOJ,
-            m.Father_Name, m.DOB, ISNULL(m.Bank_Acc_No, m.Bank_Account) AS Bank_Acc_No, m.Bank_IFSC,
-            m.UAN_No, m.ESI_No, m.Status,
+            m.Father_Name, m.DOB,
+            ISNULL(m.Bank_Acc_No, m.Bank_Account) AS Bank_Acc_No,
+            ISNULL(m.Bank_Acc_No, m.Bank_Account) AS Account_No,
+            m.Bank_IFSC, m.Bank_IFSC AS IFSC_Code,
+            m.Bank_Name,
+            ISNULL(NULLIF(m.UAN_No, ''), ISNULL(m.UAN, '')) AS UAN_No,
+            ISNULL(NULLIF(m.UAN_No, ''), ISNULL(m.UAN, '')) AS UAN,
+            ISNULL(m.ESI_No, '') AS ESI_No,
+            m.Status,
             m.Phone_Number, m.Email_ID,
             ISNULL(s.Fixed_Gross, m.Fixed_Gross) AS Fixed_Gross,
             s.Basic_DA, s.HRA, s.Conveyance_Allowance, s.Washing_Allowance, s.Other_Allowance,
@@ -424,6 +453,7 @@ def add_employee(data):
     father_name = (data.get('Father_Name') or '').strip()
     dob = (data.get('DOB') or '').strip() or None
     bank_ifsc = (data.get('Bank_IFSC') or '').strip()
+    bank_name = (data.get('Bank_Name') or data.get('Bank') or '').strip()
     status_str = data.get('Status', 'Active')
     is_active_bit = 0 if str(status_str).strip().lower() in ['inactive', '0', 'no', 'disabled', 'false'] else 1
 
@@ -440,21 +470,21 @@ def add_employee(data):
             Emp_No, ERP_Emp_No, Emp_Code, Emp_Name, Employee_Name,
             Employee_Type, Payroll_Category, Category,
             Department, Designation, Grade, DOJ, Father_Name, DOB,
-            Bank_Acc_No, Bank_Account, Bank_IFSC,
+            Bank_Acc_No, Bank_Account, Bank_IFSC, Bank_Name,
             UAN_No, UAN, ESI_No, Status, Is_Active,
             Phone_Number, Email_ID, Fixed_Gross, Monthly_Salary,
             Basic, DA, HRA, Washing_Allowance, Conveyance, Special_Allowance,
             Daily_Wage, PF_Eligible, ESI_Eligible, LIC
         ) 
         OUTPUT INSERTED.Employee_ID
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         emp_no_val, str(data.get('ERP_Emp_No') or data['Emp_No']).strip(), str(data.get('Emp_Code') or data['Emp_No']).strip(),
         str(data['Employee_Name']).strip(), str(data['Employee_Name']).strip(),
         emp_type, pay_cat, category,
         data.get('Department'), data.get('Designation'), data.get('Grade'),
         data.get('DOJ'), father_name, dob,
-        bank_acc, bank_acc, bank_ifsc,
+        bank_acc, bank_acc, bank_ifsc, bank_name,
         data.get('UAN_No'), data.get('UAN_No'), data.get('ESI_No'),
         status_str, is_active_bit,
         norm_phone, data.get('Email_ID'), fixed_gross, fixed_gross,
@@ -578,6 +608,7 @@ def update_employee(employee_id, data):
     father_name = (data.get('Father_Name') or '').strip()
     dob = (data.get('DOB') or '').strip() or None
     bank_ifsc = (data.get('Bank_IFSC') or '').strip()
+    bank_name = (data.get('Bank_Name') or data.get('Bank') or '').strip()
     status_str = data.get('Status', 'Active')
     is_active_bit = 0 if str(status_str).strip().lower() in ['inactive', '0', 'no', 'disabled', 'false'] else 1
 
@@ -589,7 +620,7 @@ def update_employee(employee_id, data):
             Emp_No = ISNULL(NULLIF(?, ''), Emp_No),
             Emp_Name = ?, Employee_Name = ?, Employee_Type = ?, Payroll_Category = ?, Category = ?,
             ERP_Emp_No = ?, Emp_Code = ?, Department = ?, Designation = ?, Grade = ?,
-            DOJ = ?, Father_Name = ?, DOB = ?, Bank_Acc_No = ?, Bank_Account = ?, Bank_IFSC = ?,
+            DOJ = ?, Father_Name = ?, DOB = ?, Bank_Acc_No = ?, Bank_Account = ?, Bank_IFSC = ?, Bank_Name = ?,
             UAN_No = ?, UAN = ?, ESI_No = ?, Status = ?, Is_Active = ?,
             Phone_Number = ISNULL(?, Phone_Number), Email_ID = ?,
             Fixed_Gross = ?, Monthly_Salary = ?,
@@ -603,7 +634,7 @@ def update_employee(employee_id, data):
         str(data.get('ERP_Emp_No') or data.get('Emp_No') or '').strip(), str(data.get('Emp_Code') or data.get('Emp_No') or '').strip(),
         data.get('Department'), data.get('Designation'), data.get('Grade'),
         data.get('DOJ'), father_name, dob,
-        bank_acc, bank_acc, bank_ifsc,
+        bank_acc, bank_acc, bank_ifsc, bank_name,
         data.get('UAN_No'), data.get('UAN_No'), data.get('ESI_No'),
         status_str, is_active_bit,
         norm_phone, data.get('Email_ID'),
@@ -852,10 +883,11 @@ def bulk_import_employees(df):
             return s
 
         father_name = clean_import_str(get_row_val(row, "FATHER_NAME"))
-        bank_acc = clean_import_str(get_row_val(row, "BANK_ACC_NO"))
-        bank_ifsc = clean_import_str(get_row_val(row, "BANK_IFSC"))
-        uan_no = clean_import_str(get_row_val(row, "UAN_NO"))
-        esi_no = clean_import_str(get_row_val(row, "ESI_NO"))
+        bank_name = clean_import_str(get_row_val(row, "BANK_NAME") or get_row_val(row, "BANK"))
+        bank_acc = clean_import_str(get_row_val(row, "BANK_ACC_NO") or get_row_val(row, "ACCOUNT_NO") or get_row_val(row, "BANK_ACCOUNT"))
+        bank_ifsc = clean_import_str(get_row_val(row, "BANK_IFSC") or get_row_val(row, "IFSC_CODE") or get_row_val(row, "IFSC"))
+        uan_no = clean_import_str(get_row_val(row, "UAN_NO") or get_row_val(row, "UAN"))
+        esi_no = clean_import_str(get_row_val(row, "ESI_NO") or get_row_val(row, "ESI"))
         phone = clean_import_str(get_row_val(row, "PHONE_NUMBER"))
         email = clean_import_str(get_row_val(row, "EMAIL_ID"))
 
@@ -873,6 +905,7 @@ def bulk_import_employees(df):
             'Employee_Name': emp_name,
             'Father_Name': father_name,
             'DOB': dob,
+            'Bank_Name': bank_name,
             'Bank_Acc_No': bank_acc,
             'Bank_IFSC': bank_ifsc,
             'Employee_Type': emp_type,

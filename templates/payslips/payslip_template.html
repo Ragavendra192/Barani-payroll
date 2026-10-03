@@ -224,22 +224,28 @@
             <tbody>
                 <tr>
                     <td style="text-align: left; font-weight: bold; color: #000;">Earned Leave</td>
-                    <td style="color: #000;">{{ "%.1f"|format(row.EL_Op or 18.0) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.EL_Op or 0.0) }}</td>
                     <td style="color: #000;">{{ "%.1f"|format(row.EL or 0.0) }}</td>
-                    <td style="color: #000;">{{ "%.1f"|format(row.EL_Cl or (18.0 - (row.EL or 0.0))) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Working_Days or 26.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Present_Days or 0.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format(row.Week_Off or 4.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format(row.NH or 0.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; color: #000;">{{ "%.1f"|format((row.EL or 0.0) + (row.C_Off or 0.0) + (row.CL or 0.0) + (row.SL or 0.0)) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; color: #000; font-weight: bold;">{{ "%.1f"|format(row.LOP_Days or 0.0) }}</td>
-                    <td rowspan="2" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Total_Days or 0.0) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.EL_Cl or 0.0) }}</td>
+                    <td rowspan="3" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Working_Days or 26.0) }}</td>
+                    <td rowspan="3" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Present_Days or 0.0) }}</td>
+                    <td rowspan="3" style="vertical-align: middle; color: #000;">{{ "%.1f"|format(row.Week_Off or 4.0) }}</td>
+                    <td rowspan="3" style="vertical-align: middle; color: #000;">{{ "%.1f"|format(row.NH or 0.0) }}</td>
+                    <td rowspan="3" style="vertical-align: middle; color: #000;">{{ "%.1f"|format(row.Paid_Leave if row.Paid_Leave is defined else ((row.EL or 0.0) + (row.C_Off or 0.0) + (row.CL or 0.0) + (row.SL or 0.0))) }}</td>
+                    <td rowspan="3" style="vertical-align: middle; color: #000; font-weight: bold;">{{ "%.1f"|format(row.LOP_Days or 0.0) }}</td>
+                    <td rowspan="3" style="vertical-align: middle; font-weight: bold; color: #000;">{{ "%.1f"|format(row.Total_Days or 0.0) }}</td>
                 </tr>
                 <tr>
                     <td style="text-align: left; font-weight: bold; color: #000;">Casual Leave</td>
-                    <td style="color: #000;">{{ "%.1f"|format(row.CL_Op or 5.0) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.CL_Op or 0.0) }}</td>
                     <td style="color: #000;">{{ "%.1f"|format(row.CL or 0.0) }}</td>
-                    <td style="color: #000;">{{ "%.1f"|format(row.CL_Cl or (5.0 - (row.CL or 0.0))) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.CL_Cl or 0.0) }}</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left; font-weight: bold; color: #000;">Comp Off</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.C_Off_Op or 0.0) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.C_Off or 0.0) }}</td>
+                    <td style="color: #000;">{{ "%.1f"|format(row.C_Off_Cl or 0.0) }}</td>
                 </tr>
             </tbody>
         </table>

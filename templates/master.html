@@ -133,7 +133,7 @@
                             </td>
                             <td class="text-center pe-3 text-nowrap">
                                 <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3 py-1 shadow-sm" 
-                                        onclick="openEditEmployeeModal('{{ emp.Employee_ID }}', '{{ emp.Emp_No }}', '{{ emp.Employee_Name|escape }}', '{{ emp.Father_Name or '' }}', '{{ emp.DOB or '' }}', '{{ emp.Employee_Type }}', '{{ emp.Payroll_Category }}', '{{ emp.Department or '' }}', '{{ emp.Designation or '' }}', '{{ emp.DOJ or '' }}', '{{ emp.UAN_No or '' }}', '{{ emp.ESI_No or '' }}', '{{ emp.Phone_Number or '' }}', '{{ emp.Email_ID or '' }}', '{{ emp.Bank_Acc_No or '' }}', '{{ emp.Bank_IFSC or '' }}', '{{ emp.Status }}', '{{ emp.Fixed_Gross or 0.0 }}', '{{ emp.Basic_DA or 0.0 }}', '{{ emp.HRA or 0.0 }}', '{{ emp.Conveyance_Allowance or 0.0 }}', '{{ emp.Washing_Allowance or 0.0 }}', '{{ emp.Other_Allowance or 0.0 }}', '{{ emp.Per_Day_Wage or 0.0 }}', '{{ 1 if emp.PF_Eligible else 0 }}', '{{ 1 if emp.ESI_Eligible else 0 }}', '{{ emp.LIC or 0.0 }}')">
+                                        onclick="openEditEmployeeModal('{{ emp.Employee_ID }}', '{{ emp.Emp_No }}', '{{ emp.Employee_Name|escape }}', '{{ emp.Father_Name or '' }}', '{{ emp.DOB or '' }}', '{{ emp.Employee_Type }}', '{{ emp.Payroll_Category }}', '{{ emp.Department or '' }}', '{{ emp.Designation or '' }}', '{{ emp.DOJ or '' }}', '{{ emp.UAN_No or '' }}', '{{ emp.ESI_No or '' }}', '{{ emp.Phone_Number or '' }}', '{{ emp.Email_ID or '' }}', '{{ emp.Bank_Acc_No or '' }}', '{{ emp.Bank_IFSC or '' }}', '{{ emp.Bank_Name or '' }}', '{{ emp.Status }}', '{{ emp.Fixed_Gross or 0.0 }}', '{{ emp.Basic_DA or 0.0 }}', '{{ emp.HRA or 0.0 }}', '{{ emp.Conveyance_Allowance or 0.0 }}', '{{ emp.Washing_Allowance or 0.0 }}', '{{ emp.Other_Allowance or 0.0 }}', '{{ emp.Per_Day_Wage or 0.0 }}', '{{ 1 if emp.PF_Eligible else 0 }}', '{{ 1 if emp.ESI_Eligible else 0 }}', '{{ emp.LIC or 0.0 }}')">
                                     <i class="fa-solid fa-eye me-1"></i> View
                                 </button>
                             </td>
@@ -217,11 +217,15 @@
                     <!-- SECTION 3: BANK DETAILS -->
                     <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fa-solid fa-building-columns me-2"></i>3. BANK DETAILS</h6>
                     <div class="row g-3 mb-4">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Bank Name</label>
+                            <input type="text" name="Bank_Name" id="modal_Bank_Name" class="form-control" placeholder="e.g. State Bank of India">
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Bank Account Number</label>
                             <input type="text" name="Bank_Acc_No" id="modal_Bank_Acc_No" class="form-control" placeholder="Bank account number">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Bank IFSC Code</label>
                             <input type="text" name="Bank_IFSC" id="modal_Bank_IFSC" class="form-control text-uppercase" placeholder="e.g. SBIN0001234">
                         </div>
@@ -530,13 +534,15 @@ function openAddEmployeeModal() {
     form.action = "{{ url_for('employees.add') }}";
     form.reset();
     document.getElementById('modal_Emp_No').removeAttribute('readonly');
+    const bankNameInp = document.getElementById('modal_Bank_Name');
+    if (bankNameInp) bankNameInp.value = '';
     const licInp = document.getElementById('modal_LIC');
     if (licInp) licInp.value = '';
     syncModalSalarySplit();
     syncExperienceFromDOJ();
 }
 
-function openEditEmployeeModal(empId, empNo, name, fatherName, dob, empType, payCat, dept, desig, doj, uan, esi, phone, email, bankAcc, bankIfsc, status, fixedGross, basic, hra, conv, wash, other, perDay, pfEligible, esiEligible, lic) {
+function openEditEmployeeModal(empId, empNo, name, fatherName, dob, empType, payCat, dept, desig, doj, uan, esi, phone, email, bankAcc, bankIfsc, bankName, status, fixedGross, basic, hra, conv, wash, other, perDay, pfEligible, esiEligible, lic) {
     document.getElementById('employeeModalLabel').innerHTML = '<i class="fa-solid fa-eye text-primary me-2"></i>Employee Details (#' + empNo + ')';
     const form = document.getElementById('employeeMasterForm');
     form.action = "/employees/edit/" + empId;
@@ -551,6 +557,8 @@ function openEditEmployeeModal(empId, empNo, name, fatherName, dob, empType, pay
     document.getElementById('modal_DOJ').value = doj;
     document.getElementById('modal_Phone_Number').value = phone;
     document.getElementById('modal_Email_ID').value = email;
+    const bNameInp = document.getElementById('modal_Bank_Name');
+    if (bNameInp) bNameInp.value = bankName || '';
     document.getElementById('modal_Bank_Acc_No').value = bankAcc || '';
     document.getElementById('modal_Bank_IFSC').value = bankIfsc || '';
     document.getElementById('modal_UAN_No').value = uan;
