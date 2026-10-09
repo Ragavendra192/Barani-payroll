@@ -2,7 +2,7 @@ import datetime as dt
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from models.employee import get_all_employees, get_employee_by_id
 from models.payroll_transaction import get_payroll_transactions, save_payroll_batch
-from models.payroll_period_settings import get_period_settings, save_period_settings
+from models.payroll_period_settings import get_period_settings, save_period_settings, get_default_payroll_year_month
 from payroll_formulas import (
     calculate_payroll,
     recalculate_for_category_transition,
@@ -28,13 +28,14 @@ CATEGORIES = [
 @payroll_bp.route('/', methods=['GET', 'POST'])
 def dynamic_payroll():
     now = dt.datetime.now()
+    def_year, def_month = get_default_payroll_year_month()
     if request.method == 'POST':
-        year = int(request.form.get('year') or request.args.get('year') or 2026)
-        month = int(request.form.get('month') or request.args.get('month') or 7)
+        year = int(request.form.get('year') or request.args.get('year') or def_year)
+        month = int(request.form.get('month') or request.args.get('month') or def_month)
         raw_cat = request.form.get('category') or request.args.get('category') or 'ALL'
     else:
-        year = int(request.args.get('year') or request.form.get('year') or 2026)
-        month = int(request.args.get('month') or request.form.get('month') or 7)
+        year = int(request.args.get('year') or request.form.get('year') or def_year)
+        month = int(request.args.get('month') or request.form.get('month') or def_month)
         raw_cat = request.args.get('category') or request.form.get('category') or 'ALL'
     
     category = raw_cat.strip().upper()
@@ -236,8 +237,9 @@ def employee_trace(employee_id):
     if not emp:
         return jsonify({'error': 'Employee not found'}), 404
 
-    year = int(request.args.get('year', 2026))
-    month = int(request.args.get('month', 7))
+    def_year, def_month = get_default_payroll_year_month()
+    year = int(request.args.get('year') or def_year)
+    month = int(request.args.get('month') or def_month)
     emp_cat = emp.get('Category', '')
     std_days = float(request.args.get('standard_days', 27.0 if 'STAFF' in emp_cat else 26.0))
 

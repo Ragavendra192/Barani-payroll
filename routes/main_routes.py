@@ -5,8 +5,10 @@ import io
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, current_app
 from models.employee import get_all_employees, get_employee_by_id, add_employee, update_employee, toggle_employee_status, bulk_import_employees
 from models.payroll_transaction import get_payroll_transactions, get_payroll_attendance, save_payroll_batch
-from models.payroll_period_settings import get_period_settings, save_period_settings
-from models.payroll_period_settings import get_period_settings, save_period_settings, get_period_settings_info, calculate_month_working_days
+from models.payroll_period_settings import (
+    get_period_settings, save_period_settings, get_period_settings_info,
+    calculate_month_working_days, get_default_payroll_year_month
+)
 from payroll_formulas import (
     calculate_payroll,
     recalculate_for_category_transition,
@@ -203,12 +205,13 @@ YEARS = [2025, 2026, 2027, 2028]
 @main_bp.route('/attendance', methods=['GET', 'POST'])
 def attendance():
     now = dt.datetime.now()
+    def_year, def_month = get_default_payroll_year_month()
     if request.method == 'POST':
-        year = int(request.form.get('year') or request.args.get('year') or 2026)
-        month = int(request.form.get('month') or request.args.get('month') or 7)
+        year = int(request.form.get('year') or request.args.get('year') or def_year)
+        month = int(request.form.get('month') or request.args.get('month') or def_month)
     else:
-        year = int(request.args.get('year') or request.form.get('year') or 2026)
-        month = int(request.args.get('month') or request.form.get('month') or 7)
+        year = int(request.args.get('year') or request.form.get('year') or def_year)
+        month = int(request.args.get('month') or request.form.get('month') or def_month)
     
     category = request.form.get('category') or request.args.get('category') or 'ALL'
     emp_type = request.form.get('employee_type') or request.args.get('employee_type') or 'ALL'
@@ -568,9 +571,10 @@ def attendance():
 @main_bp.route('/wages', methods=['GET', 'POST'])
 def wages():
     now = dt.datetime.now()
+    def_year, def_month = get_default_payroll_year_month()
     if request.method == 'POST':
-        year = int(request.form.get('year') or request.args.get('year') or 2026)
-        month = int(request.form.get('month') or request.args.get('month') or 7)
+        year = int(request.form.get('year') or request.args.get('year') or def_year)
+        month = int(request.form.get('month') or request.args.get('month') or def_month)
         category = request.form.get('category') if request.form.get('category') is not None else (request.args.get('category') or 'ALL')
         dept = request.form.get('department') if request.form.get('department') is not None else (request.args.get('department') or 'ALL')
         search = request.form.get('search')
@@ -578,8 +582,8 @@ def wages():
             search = request.args.get('search', '')
         search = search.strip()
     else:
-        year = int(request.args.get('year') or 2026)
-        month = int(request.args.get('month') or 7)
+        year = int(request.args.get('year') or def_year)
+        month = int(request.args.get('month') or def_month)
         category = request.args.get('category') or 'ALL'
         dept = request.args.get('department') or 'ALL'
         search = request.args.get('search', '').strip()
@@ -782,8 +786,9 @@ def download_wages_excel(year, month, filename=None):
 @main_bp.route('/payslip')
 def payslip():
     now = dt.datetime.now()
-    year = int(request.args.get('year', 2026))
-    month = int(request.args.get('month', 7))
+    def_year, def_month = get_default_payroll_year_month()
+    year = int(request.args.get('year') or def_year)
+    month = int(request.args.get('month') or def_month)
     category = request.args.get('category', '')
     search = request.args.get('search', '').strip()
 
@@ -800,6 +805,10 @@ def payslip():
         phone_norm = normalize_indian_phone(e_info.get('Phone_Number'))
         r['Phone_Number_Masked'] = mask_phone_number(phone_norm) if phone_norm else '-'
         r['Email_ID'] = e_info.get('Email_ID')
+        raw_net = float(r.get('Net_Salary') if r.get('Net_Salary') is not None else (r.get('Net_Pay') or 0.0))
+        r['Net_Salary_Raw'] = raw_net
+        r['Net_Salary'] = float(round(raw_net))
+        r['Net_Pay'] = r['Net_Salary']
 
     # Fetch send log stats
     from models.payslip_send_log import get_payslip_send_logs

@@ -172,6 +172,14 @@ def get_payslip_data(year, month, emp_no=None, category=None):
         r['Master_Conveyance'] = float(emp_master.get('Conveyance_Allowance', 0.0) or 0.0)
         r['Master_Washing'] = float(emp_master.get('Washing_Allowance', 0.0) or 0.0)
         r['Master_Other'] = float(emp_master.get('Other_Allowance', 0.0) or 0.0)
+
+        # Net Salary rounding: match the rounded integer value on the wage statement
+        raw_net = float(r.get('Net_Salary') if r.get('Net_Salary') is not None else (r.get('Net_Pay') or 0.0))
+        rounded_net = float(round(raw_net))
+        r['Net_Salary_Raw'] = raw_net
+        r['Net_Salary'] = rounded_net
+        r['Net_Pay'] = rounded_net
+        r['Round_Off'] = round(rounded_net - raw_net, 2)
         
         enriched.append(r)
 

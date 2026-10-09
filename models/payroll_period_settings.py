@@ -220,3 +220,29 @@ def save_period_settings(year, month, worker_days=None, staff_days=None, standar
                 time.sleep(0.1 * (attempt + 1))
                 continue
             raise e
+
+def get_default_payroll_year_month():
+    """
+    Returns the latest active payroll period (year, month).
+    Queries PayrollPeriodSettings for the highest active period.
+    Falls back to current date if not configured.
+    """
+    try:
+        init_period_settings_table()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT TOP 1 PayrollYear, PayrollMonth 
+            FROM PayrollPeriodSettings WITH (NOLOCK)
+            WHERE IsActive = 1 
+            ORDER BY PayrollYear DESC, PayrollMonth DESC
+        """)
+        row = cur.fetchone()
+        conn.close()
+        if row and row[0] and row[1]:
+            return int(row[0]), int(row[1])
+    except Exception:
+        pass
+    now = dt.datetime.now()
+    return now.year, now.month
+

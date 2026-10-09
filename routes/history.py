@@ -1,6 +1,7 @@
 import datetime as dt
 from flask import Blueprint, render_template, request
 from models.payroll_transaction import get_payroll_transactions
+from models.payroll_period_settings import get_default_payroll_year_month
 from services.excel_service import generate_monthly_salary_statement_excel
 
 history_bp = Blueprint('history', __name__, url_prefix='/history')
@@ -17,8 +18,9 @@ CATEGORIES = [
 @history_bp.route('/')
 def index():
     now = dt.datetime.now()
-    year = request.args.get('year', 2026, type=int)
-    month = request.args.get('month', 7, type=int)
+    def_year, def_month = get_default_payroll_year_month()
+    year = int(request.args.get('year') or def_year)
+    month = int(request.args.get('month') or def_month)
     category = request.args.get('category', '')
     search = request.args.get('search', '').strip()
 

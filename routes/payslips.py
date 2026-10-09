@@ -1,6 +1,6 @@
 import datetime as dt
 from flask import Blueprint, render_template, request, send_file, flash, redirect, url_for
-from models.payroll_transaction import get_payroll_transactions
+from models.payroll_period_settings import get_default_payroll_year_month
 from services.payslip_service import (
     generate_payslip_pdf, generate_all_payslips_zip, get_payslip_data, 
     get_payslip_template, get_worker_deductions_list, MONTH_NAMES
@@ -21,12 +21,18 @@ CATEGORIES = [
 @payslips_bp.route('/')
 def index():
     now = dt.datetime.now()
-    year = int(request.args.get('year', 2026))
-    month = int(request.args.get('month', 7))
+    def_year, def_month = get_default_payroll_year_month()
+    year = int(request.args.get('year') or def_year)
+    month = int(request.args.get('month') or def_month)
     category = request.args.get('category', '')
     search = request.args.get('search', '').strip()
 
     records = get_payroll_transactions(year, month, category=category if category else None, search=search if search else None)
+    for r in records:
+        raw_net = float(r.get('Net_Salary') if r.get('Net_Salary') is not None else (r.get('Net_Pay') or 0.0))
+        r['Net_Salary_Raw'] = raw_net
+        r['Net_Salary'] = float(round(raw_net))
+        r['Net_Pay'] = r['Net_Salary']
 
     return render_template(
         'payslips/index.html',
@@ -103,10 +109,11 @@ def send_whatsapp(year=None, month=None, emp_no=None):
 
     # Parse parameters from URL, JSON body, or Form data
     data = request.get_json(silent=True) or {}
+    def_year, def_month = get_default_payroll_year_month()
     if year is None:
-        year = int(data.get('year') or request.form.get('year') or 2026)
+        year = int(data.get('year') or request.form.get('year') or def_year)
     if month is None:
-        month = int(data.get('month') or request.form.get('month') or 7)
+        month = int(data.get('month') or request.form.get('month') or def_month)
     if emp_no is None:
         emp_no = str(data.get('employee_id') or data.get('emp_no') or request.form.get('emp_no') or '').strip()
 
@@ -246,8 +253,9 @@ def api_bulk_summary():
     from flask import jsonify
     from services.bulk_payslip_service import get_bulk_payslip_summary
 
-    year = int(request.args.get('year', 2026))
-    month = int(request.args.get('month', 7))
+    def_year, def_month = get_default_payroll_year_month()
+    year = int(request.args.get('year') or def_year)
+    month = int(request.args.get('month') or def_month)
     category = request.args.get('category', '')
     search = request.args.get('search', '').strip()
     resend = request.args.get('resend', 'false').lower() in ('true', '1', 'yes')
@@ -261,8 +269,9 @@ def api_bulk_send_single():
     from services.bulk_payslip_service import process_single_employee_whatsapp_send
 
     data = request.get_json() or {}
-    year = int(data.get('year', 2026))
-    month = int(data.get('month', 7))
+    def_year, def_month = get_default_payroll_year_month()
+    year = int(data.get('year') or def_year)
+    month = int(data.get('month') or def_month)
     emp_no = str(data.get('emp_no', '')).strip()
     category = data.get('category')
     resend = bool(data.get('resend', False))

@@ -125,7 +125,7 @@
         <button onclick="window.print()" style="padding: 7px 16px; font-weight: bold; background: #0284c7; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px;">
             <i class="fa-solid fa-print"></i> Print Payslip
         </button>
-        <a href="{{ url_for('payslips.download_payslip', year=year, month=row.Payroll_Month or 7, emp_no=row.Emp_No, category=row.Category) }}" style="padding: 7px 16px; font-weight: bold; background: #16a34a; color: #fff; text-decoration: none; border-radius: 4px; display: inline-block;">
+        <a href="{{ url_for('payslips.download_payslip', year=year, month=row.Payroll_Month or month, emp_no=row.Emp_No, category=row.Category) }}" style="padding: 7px 16px; font-weight: bold; background: #16a34a; color: #fff; text-decoration: none; border-radius: 4px; display: inline-block;">
             <i class="fa-solid fa-download"></i> Download PDF
         </a>
     </div>
