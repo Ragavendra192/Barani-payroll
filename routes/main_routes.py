@@ -214,6 +214,8 @@ def attendance():
     search = search.strip()
 
     action = request.form.get('action') or request.args.get('action')
+    if not action and any(k.endswith('_present_days') for k in request.form.keys()):
+        action = 'save_attendance'
     form_worker_days = request.form.get('worker_working_days') or request.args.get('worker_working_days')
     form_staff_days = request.form.get('staff_working_days') or request.args.get('staff_working_days')
     form_std_days = request.form.get('standard_days') or request.args.get('standard_days')
@@ -262,13 +264,20 @@ def attendance():
             emp_std_days = staff_working_days if emp_is_staff else worker_working_days
 
             prefix = f"emp_{emp_id}_"
-            present_days = float(request.form.get(f"{prefix}present_days", 0.0) or 0.0)
-            nh_days = float(request.form.get(f"{prefix}nh", 0.0) or 0.0)
-            el_days = float(request.form.get(f"{prefix}el", 0.0) or 0.0)
-            coff_days = float(request.form.get(f"{prefix}coff", 0.0) or 0.0) if emp_is_staff else 0.0
-            cl_days = float(request.form.get(f"{prefix}cl", 0.0) or 0.0)
-            sl_days = float(request.form.get(f"{prefix}sl", 0.0) or 0.0)
-            act_ot = float(request.form.get(f"{prefix}act_ot", 0.0) or 0.0)
+            pres_str = request.form.get(f"{prefix}present_days")
+            present_days = float(pres_str) if pres_str is not None and str(pres_str).strip() != '' else 0.0
+            nh_str = request.form.get(f"{prefix}nh")
+            nh_days = float(nh_str) if nh_str is not None and str(nh_str).strip() != '' else 0.0
+            el_str = request.form.get(f"{prefix}el")
+            el_days = float(el_str) if el_str is not None and str(el_str).strip() != '' else 0.0
+            coff_str = request.form.get(f"{prefix}coff")
+            coff_days = (float(coff_str) if coff_str is not None and str(coff_str).strip() != '' else 0.0) if emp_is_staff else 0.0
+            cl_str = request.form.get(f"{prefix}cl")
+            cl_days = float(cl_str) if cl_str is not None and str(cl_str).strip() != '' else 0.0
+            sl_str = request.form.get(f"{prefix}sl")
+            sl_days = float(sl_str) if sl_str is not None and str(sl_str).strip() != '' else 0.0
+            act_ot_str = request.form.get(f"{prefix}act_ot")
+            act_ot = float(act_ot_str) if act_ot_str is not None and str(act_ot_str).strip() != '' else 0.0
 
             att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'c_off': coff_days, 'actual_ot_hours': act_ot}
             sal_dict = {'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
@@ -311,19 +320,28 @@ def attendance():
         
         try:
             df = pd.read_excel(import_file)
+            df.columns = [str(c).strip() for c in df.columns]
             import_data = {}
             for _, r in df.iterrows():
                 r_dict = r.to_dict()
                 try:
                     eid_val = None
-                    for id_col in ['Emp ID', 'Emp_ID', 'Emp No', 'Emp_No', 'Employee ID', 'Employee_ID', 'Employee_No']:
-                        if id_col in r_dict and r_dict[id_col] is not None and not pd.isna(r_dict[id_col]):
-                            eid_val = r_dict[id_col]
-                            break
+                    norm_keys = {str(k).strip().lower(): k for k in r_dict.keys() if k is not None}
+                    for id_candidate in ['emp id', 'emp_id', 'emp no', 'emp_no', 'employee id', 'employee_id', 'employee_no', 'id']:
+                        if id_candidate in norm_keys:
+                            actual_k = norm_keys[id_candidate]
+                            if r_dict[actual_k] is not None and not pd.isna(r_dict[actual_k]):
+                                eid_val = r_dict[actual_k]
+                                break
                     if eid_val is not None:
                         try:
-                            eid = int(eid_val)
-                            import_data[eid] = r_dict
+                            eid_float = float(eid_val)
+                            if eid_float.is_integer():
+                                eid_int = int(eid_float)
+                                import_data[eid_int] = r_dict
+                                import_data[str(eid_int)] = r_dict
+                            else:
+                                import_data[str(eid_val).strip()] = r_dict
                         except Exception:
                             import_data[str(eid_val).strip()] = r_dict
                 except Exception:
@@ -348,9 +366,11 @@ def attendance():
                         data_dict = data_dict.to_dict()
                     else:
                         return default if default is None else float(default)
+                norm_dict = {str(k).strip().lower(): v for k, v in data_dict.items() if k is not None}
                 for k in keys:
-                    if k in data_dict:
-                        v = data_dict[k]
+                    norm_k = str(k).strip().lower()
+                    if norm_k in norm_dict:
+                        v = norm_dict[norm_k]
                         if v is not None:
                             if isinstance(v, (int, float)):
                                 if not pd.isna(v):
@@ -384,13 +404,14 @@ def attendance():
                     r_data = {}
                 existing_t = trans_map.get(emp_id) or {}
                 
-                present_days = _get_float_val(r_data, ['Present', 'Present Days', 'Present_Days', 'PRES'], _safe_float(existing_t.get('Present_Days'), emp_std_days))
-                nh_days = _get_float_val(r_data, ['N/H', 'NH', 'National Holiday', 'N_H'], _safe_float(existing_t.get('NH'), 0.0))
+                existing_pres = _safe_float(existing_t.get('Present_Days'), 0.0) if existing_t.get('Present_Days') is not None else 0.0
+                present_days = _get_float_val(r_data, ['Present', 'Present Days', 'Present_Days', 'PRES', 'Total Present Days', 'Total Present'], existing_pres)
+                nh_days = _get_float_val(r_data, ['N/H', 'NH', 'National Holiday', 'N_H', 'Holiday'], _safe_float(existing_t.get('NH'), 0.0))
                 el_days = _get_float_val(r_data, ['EL', 'Earned Leave', 'PL', 'Pl'], _safe_float(existing_t.get('EL'), 0.0))
-                coff_days = _get_float_val(r_data, ['C-Off', 'C_Off', 'Comp-Off', 'Comp Off', 'Comp_Off', 'COFF', 'C/Off', 'CH', 'C/H'], _safe_float(existing_t.get('C_Off'), 0.0)) if emp_is_staff else 0.0
+                coff_days = _get_float_val(r_data, ['C-Off', 'C_Off', 'Comp-Off', 'Comp Off', 'Comp_Off', 'COFF', 'C/Off', 'CH', 'C/H', 'Comp-off (Staff Only)'], _safe_float(existing_t.get('C_Off'), 0.0)) if emp_is_staff else 0.0
                 cl_days = _get_float_val(r_data, ['CL', 'Casual Leave'], _safe_float(existing_t.get('CL'), 0.0))
                 sl_days = _get_float_val(r_data, ['SL', 'Sick Leave'], _safe_float(existing_t.get('SL'), 0.0))
-                act_ot = _get_float_val(r_data, ['OT Hours', 'OT_Hours', 'OT Hrs', 'Act OT Hrs', 'Act_OT_Hrs'], _safe_float(existing_t.get('Act_OT_Hrs'), 0.0))
+                act_ot = _get_float_val(r_data, ['OT Hours', 'OT_Hours', 'OT Hrs', 'Act OT Hrs', 'Act_OT_Hrs', 'Overtime', 'OT'], _safe_float(existing_t.get('Act_OT_Hrs'), 0.0))
 
                 att_dict = {'present_days': present_days, 'nh': nh_days, 'cl': cl_days, 'sl': sl_days, 'el': el_days, 'c_off': coff_days, 'actual_ot_hours': act_ot}
                 sal_dict = {'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0), 'Conveyance_Allowance': emp.get('Conveyance_Allowance', 0.0), 'Washing_Allowance': emp.get('Washing_Allowance', 0.0), 'Other_Allowance': emp.get('Other_Allowance', 0.0), 'Per_Day_Wage': emp.get('Per_Day_Wage', 0.0), 'OT_Rate': emp.get('OT_Rate', 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}

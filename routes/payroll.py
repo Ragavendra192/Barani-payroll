@@ -83,7 +83,8 @@ def dynamic_payroll():
             emp_cat = emp.get('Category', 'STAFF_PF_ESI')
             prefix = f"emp_{emp_id}_"
 
-            present_days = float(request.form.get(f"{prefix}present_days", standard_days) or standard_days)
+            pres_str = request.form.get(f"{prefix}present_days")
+            present_days = float(pres_str) if pres_str is not None and str(pres_str).strip() != '' else 0.0
             nh_days = float(request.form.get(f"{prefix}nh", 0.0) or 0.0)
             el_days = float(request.form.get(f"{prefix}el", 0.0) or 0.0)
             cl_days = float(request.form.get(f"{prefix}cl", 0.0) or 0.0)
@@ -157,12 +158,12 @@ def dynamic_payroll():
     elif trans_map:
         for emp in employees:
             t = trans_map.get(emp['Employee_ID'])
-            if t and float(t.get('Gross_Wages', 0.0) or 0.0) > 0.0:
+            if t and (t.get('Present_Days') is not None or float(t.get('Gross_Wages', 0.0) or 0.0) > 0.0):
                 # Force global standard days on saved row
                 t['Working_Days'] = standard_days
                 calculated_rows.append(t)
             else:
-                att_dict = {'present_days': standard_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': standard_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
+                att_dict = {'present_days': 0.0, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'total_days': 0.0, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
                 ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': float(emp.get('LIC', 0.0) or 0.0), 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
                 sal_dict = {
                     'Basic_DA': emp.get('Basic_DA', 0.0), 'HRA': emp.get('HRA', 0.0),

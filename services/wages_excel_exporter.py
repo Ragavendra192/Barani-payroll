@@ -64,7 +64,7 @@ def generate_wages_excel(year, month, category_filter='ALL'):
         t = trans_map.get(emp_id) if trans_map else None
 
         if t and (t.get('Present_Days') is not None or float(t.get('Gross_Wages', 0.0) or 0.0) > 0.0):
-            pres_days = float(t.get('Present_Days') if t.get('Present_Days') is not None else emp_std_days)
+            pres_days = float(t.get('Present_Days') if t.get('Present_Days') is not None else 0.0)
             nh_days = float(t.get('NH') or t.get('PH') or 0.0)
             cl_days = float(t.get('CL') or 0.0)
             sl_days = float(t.get('SL') or 0.0)
@@ -123,7 +123,7 @@ def generate_wages_excel(year, month, category_filter='ALL'):
             c_res['Experience_Formatted'] = calculate_experience_str(c_res['DOJ'])
             payroll_rows.append(c_res)
         else:
-            att_dict = {'present_days': emp_std_days, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'c_off': 0.0, 'total_days': emp_std_days, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
+            att_dict = {'present_days': 0.0, 'nh': 0.0, 'cl': 0.0, 'el': 0.0, 'sl': 0.0, 'c_off': 0.0, 'total_days': 0.0, 'actual_ot_hours': 0.0, 'ot_hours': 0.0}
             ded_dict = {'arrears': 0.0, 'naps': 0.0, 'lic': float(emp.get('LIC', 0.0) or 0.0), 'tds': 0.0, 'advance': 0.0, 'accommodation': 0.0, 'other': 0.0}
             sal_dict = {'Fixed_Gross': float(emp.get('Fixed_Gross', 0.0) or 0.0), 'Basic_DA': float(emp.get('Basic_DA', 0.0) or 0.0), 'HRA': float(emp.get('HRA', 0.0) or 0.0), 'Conveyance_Allowance': float(emp.get('Conveyance_Allowance', 0.0) or 0.0), 'Washing_Allowance': float(emp.get('Washing_Allowance', 0.0) or 0.0), 'Other_Allowance': float(emp.get('Other_Allowance', 0.0) or 0.0), 'Per_Day_Wage': float(emp.get('Per_Day_Wage', 0.0) or 0.0), 'OT_Rate': float(emp.get('OT_Rate', 56.25) or 56.25), 'PF_Eligible': emp.get('PF_Eligible', True), 'ESI_Eligible': emp.get('ESI_Eligible', True)}
             c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
@@ -293,14 +293,15 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     ws.write(row_idx, 8, str(r.get('Designation', '') or '-'), fmt_text)
                     ws.write(row_idx, 9, str(r.get('Category', '')), fmt_center)
 
-                    ws.write(row_idx, 10, float(r.get('Working_Days', default_emp_days) or default_emp_days), fmt_days)
-                    ws.write(row_idx, 11, float(r.get('Present_Days', default_emp_days) or default_emp_days), fmt_days)
+                    ws.write(row_idx, 10, float(r.get('Working_Days') if r.get('Working_Days') is not None else default_emp_days), fmt_days)
+                    ws.write(row_idx, 11, float(r.get('Present_Days') if r.get('Present_Days') is not None else 0.0), fmt_days)
                     ws.write(row_idx, 12, float(r.get('NH', 0.0) or 0.0), fmt_days)
                     ws.write(row_idx, 13, float(r.get('C_Off', 0.0) or 0.0), fmt_days)
                     ws.write(row_idx, 14, float(r.get('EL', 0.0) or 0.0), fmt_days)
                     ws.write(row_idx, 15, float(r.get('CL', 0.0) or 0.0), fmt_days)
                     ws.write(row_idx, 16, float(r.get('SL', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 17, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_days)
+                    tot_days_val = float(r.get('Total_Days') if r.get('Total_Days') is not None else (float(r.get('Present_Days') if r.get('Present_Days') is not None else 0.0) + float(r.get('NH', 0.0) or 0.0) + float(r.get('C_Off', 0.0) or 0.0) + float(r.get('EL', 0.0) or 0.0) + float(r.get('CL', 0.0) or 0.0) + float(r.get('SL', 0.0) or 0.0)))
+                    ws.write(row_idx, 17, tot_days_val, fmt_days)
                     ws.write(row_idx, 18, float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0), fmt_days)
 
                     fg = float(r.get('Fixed_Gross', 0.0) or 0.0)
@@ -452,14 +453,15 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                     ws.write(row_idx, 8, str(r.get('Designation', '') or '-'), fmt_text)
                     ws.write(row_idx, 9, str(r.get('Category', '')), fmt_center)
 
-                    ws.write(row_idx, 10, float(r.get('Working_Days', default_emp_days) or default_emp_days), fmt_days)
-                    ws.write(row_idx, 11, float(r.get('Present_Days', default_emp_days) or default_emp_days), fmt_days)
+                    ws.write(row_idx, 10, float(r.get('Working_Days') if r.get('Working_Days') is not None else default_emp_days), fmt_days)
+                    ws.write(row_idx, 11, float(r.get('Present_Days') if r.get('Present_Days') is not None else 0.0), fmt_days)
                     ws.write(row_idx, 12, float(r.get('NH', 0.0) or 0.0), fmt_days)
                     ws.write(row_idx, 13, float(r.get('C_Off', 0.0) or 0.0), fmt_days)
                     ws.write(row_idx, 14, float(r.get('EL', 0.0) or 0.0), fmt_days)
                     ws.write(row_idx, 15, float(r.get('CL', 0.0) or 0.0), fmt_days)
                     ws.write(row_idx, 16, float(r.get('SL', 0.0) or 0.0), fmt_days)
-                    ws.write(row_idx, 17, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_days)
+                    tot_days_val = float(r.get('Total_Days') if r.get('Total_Days') is not None else (float(r.get('Present_Days') if r.get('Present_Days') is not None else 0.0) + float(r.get('NH', 0.0) or 0.0) + float(r.get('C_Off', 0.0) or 0.0) + float(r.get('EL', 0.0) or 0.0) + float(r.get('CL', 0.0) or 0.0) + float(r.get('SL', 0.0) or 0.0)))
+                    ws.write(row_idx, 17, tot_days_val, fmt_days)
                     ws.write(row_idx, 18, float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0), fmt_days)
 
                     fg = float(r.get('Fixed_Gross', 0.0) or 0.0)
@@ -608,14 +610,15 @@ def generate_wages_excel(year, month, category_filter='ALL'):
                 ws.write(row_idx, 8, str(r.get('Designation', '') or '-'), fmt_text)
                 ws.write(row_idx, 9, str(r.get('Category', '')), fmt_center)
 
-                ws.write(row_idx, 10, float(r.get('Working_Days', default_emp_days) or default_emp_days), fmt_days)
-                ws.write(row_idx, 11, float(r.get('Present_Days', default_emp_days) or default_emp_days), fmt_days)
+                ws.write(row_idx, 10, float(r.get('Working_Days') if r.get('Working_Days') is not None else default_emp_days), fmt_days)
+                ws.write(row_idx, 11, float(r.get('Present_Days') if r.get('Present_Days') is not None else 0.0), fmt_days)
                 ws.write(row_idx, 12, float(r.get('NH', 0.0) or 0.0), fmt_days)
                 ws.write(row_idx, 13, float(r.get('C_Off', 0.0) or 0.0), fmt_days)
                 ws.write(row_idx, 14, float(r.get('EL', 0.0) or 0.0), fmt_days)
                 ws.write(row_idx, 15, float(r.get('CL', 0.0) or 0.0), fmt_days)
                 ws.write(row_idx, 16, float(r.get('SL', 0.0) or 0.0), fmt_days)
-                ws.write(row_idx, 17, float(r.get('Total_Days', default_emp_days) or default_emp_days), fmt_days)
+                tot_days_val = float(r.get('Total_Days') if r.get('Total_Days') is not None else (float(r.get('Present_Days') if r.get('Present_Days') is not None else 0.0) + float(r.get('NH', 0.0) or 0.0) + float(r.get('C_Off', 0.0) or 0.0) + float(r.get('EL', 0.0) or 0.0) + float(r.get('CL', 0.0) or 0.0) + float(r.get('SL', 0.0) or 0.0)))
+                ws.write(row_idx, 17, tot_days_val, fmt_days)
 
                 act_ot = float(r.get('Act_OT_Hrs', 0.0) or r.get('OT_Hours', 0.0) or 0.0)
                 reg_ot = min(act_ot, 50.0)

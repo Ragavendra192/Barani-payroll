@@ -65,17 +65,62 @@ def calculate_attendance(att_dict, is_worker=False, standard_days=26.0, deduct_l
     Calculate worked days, leaves, and LOP days from attendance input.
     Total_Worked_Days = Present_Days + N/H + EL + C-Off (Staff) + CL + SL
     """
-    present_days = to_dec(att_dict.get('present_days') or att_dict.get('Present_Days'), '0.0')
-    ph = to_dec(att_dict.get('ph') or att_dict.get('PH') or att_dict.get('nh') or att_dict.get('NH') or att_dict.get('N_H'), '0.0')
-    cl = to_dec(att_dict.get('cl') or att_dict.get('CL'), '0.0')
-    sl = to_dec(att_dict.get('sl') or att_dict.get('SL'), '0.0')
-    pl = to_dec(att_dict.get('pl') or att_dict.get('PL') or att_dict.get('el') or att_dict.get('EL'), '0.0')
-    coff = to_dec(att_dict.get('c_off') or att_dict.get('C_Off') or att_dict.get('coff') or att_dict.get('COff') or att_dict.get('comp_off') or att_dict.get('ch') or att_dict.get('C_H'), '0.0') if not is_worker else Decimal('0.0')
+    pres_val = att_dict.get('present_days')
+    if pres_val is None:
+        pres_val = att_dict.get('Present_Days')
+    present_days = to_dec(pres_val if pres_val is not None else '0.0', '0.0')
+
+    ph_val = att_dict.get('ph')
+    if ph_val is None:
+        ph_val = att_dict.get('PH')
+    if ph_val is None:
+        ph_val = att_dict.get('nh')
+    if ph_val is None:
+        ph_val = att_dict.get('NH')
+    if ph_val is None:
+        ph_val = att_dict.get('N_H')
+    ph = to_dec(ph_val if ph_val is not None else '0.0', '0.0')
+
+    cl_val = att_dict.get('cl')
+    if cl_val is None:
+        cl_val = att_dict.get('CL')
+    cl = to_dec(cl_val if cl_val is not None else '0.0', '0.0')
+
+    sl_val = att_dict.get('sl')
+    if sl_val is None:
+        sl_val = att_dict.get('SL')
+    sl = to_dec(sl_val if sl_val is not None else '0.0', '0.0')
+
+    pl_val = att_dict.get('pl')
+    if pl_val is None:
+        pl_val = att_dict.get('PL')
+    if pl_val is None:
+        pl_val = att_dict.get('el')
+    if pl_val is None:
+        pl_val = att_dict.get('EL')
+    pl = to_dec(pl_val if pl_val is not None else '0.0', '0.0')
+
+    coff_val = att_dict.get('c_off')
+    if coff_val is None:
+        coff_val = att_dict.get('C_Off')
+    if coff_val is None:
+        coff_val = att_dict.get('coff')
+    if coff_val is None:
+        coff_val = att_dict.get('COff')
+    if coff_val is None:
+        coff_val = att_dict.get('comp_off')
+    if coff_val is None:
+        coff_val = att_dict.get('ch')
+    if coff_val is None:
+        coff_val = att_dict.get('C_H')
+    coff = to_dec(coff_val if coff_val is not None else '0.0', '0.0') if not is_worker else Decimal('0.0')
     std_days_dec = to_dec(standard_days, '26.0')
 
-    total_days = att_dict.get('total_days') or att_dict.get('Total_Worked_Days')
-    if total_days is not None and str(total_days).strip() != '':
-        total_worked_days = to_dec(total_days, '0.0')
+    tot_val = att_dict.get('total_days')
+    if tot_val is None:
+        tot_val = att_dict.get('Total_Worked_Days')
+    if tot_val is not None and str(tot_val).strip() != '':
+        total_worked_days = to_dec(tot_val, '0.0')
     else:
         total_worked_days = present_days + ph + cl + sl + pl + coff
 

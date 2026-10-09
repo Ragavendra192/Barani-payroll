@@ -3,7 +3,8 @@
 {% block title %}Attendance | BHIPL Payroll System{% endblock %}
 
 {% block content %}
-<form method="POST" action="{{ url_for('main.attendance', year=year, month=month, category=category, employee_type=emp_type, department=dept, search=search) }}" enctype="multipart/form-data">
+<form id="attendance_form" method="POST" action="{{ url_for('main.attendance', year=year, month=month, category=category, employee_type=emp_type, department=dept, search=search) }}" enctype="multipart/form-data">
+    <input type="hidden" name="action" id="attendance_action" value="save_attendance">
     <div class="card-custom mb-2">
         <div class="card-header-custom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
@@ -40,11 +41,11 @@
                         <span class="input-group-text bg-success text-white fw-bold">Worker</span>
                         <input type="number" step="0.5" name="worker_working_days" class="form-control text-center fw-bold text-success" value="{{ worker_working_days }}" placeholder="Worker">
                     </div>
-                    <button type="submit" name="action" value="apply_std_days" class="btn btn-sm btn-dark fw-bold px-3" title="Apply & Save Working Days">APPLY</button>
+                    <button type="submit" name="action" value="apply_std_days" onclick="document.getElementById('attendance_action').value='apply_std_days';" class="btn btn-sm btn-dark fw-bold px-3" title="Apply & Save Working Days">APPLY</button>
                 </div>
 
                 <div class="btn-group">
-                    <button type="submit" name="action" value="save_attendance" class="btn btn-success fw-bold px-4">
+                    <button type="submit" name="action" value="save_attendance" id="save_attendance_btn" onclick="document.getElementById('attendance_action').value='save_attendance';" class="btn btn-success fw-bold px-4">
                         <i class="fa-solid fa-floppy-disk me-1"></i> Save Attendance
                     </button>
                     <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
@@ -53,7 +54,7 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                         <li><a href="{{ url_for('main.attendance', year=year, month=month, category=category, employee_type=emp_type, department=dept, search=search, action='download_template') }}" class="dropdown-item fw-bold text-primary"><i class="fa-solid fa-file-excel me-2"></i>Download Template</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><button type="button" class="dropdown-item fw-bold text-success" onclick="document.getElementById('import_file').click();"><i class="fa-solid fa-file-import me-2"></i>Import Excel</button></li>
+                        <li><button type="button" class="dropdown-item fw-bold text-success" onclick="document.getElementById('attendance_action').value='import_excel'; document.getElementById('import_file').click();"><i class="fa-solid fa-file-import me-2"></i>Import Excel</button></li>
                     </ul>
                 </div>
                 <input type="file" name="import_file" id="import_file" class="d-none" accept=".xlsx, .xls" onchange="document.getElementById('import_action_btn').click();">
@@ -67,7 +68,7 @@
                 <div class="input-group input-group-sm" style="max-width: 380px;">
                     <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
                     <input type="text" name="search" class="form-control" placeholder="Search Employee ID or Name..." value="{{ search or '' }}">
-                    <button type="submit" class="btn btn-secondary fw-bold px-3">Search</button>
+                    <button type="submit" name="action" value="search" onclick="document.getElementById('attendance_action').value='search';" class="btn btn-secondary fw-bold px-3">Search</button>
                     {% if search %}
                     <a href="{{ url_for('main.attendance', year=year, month=month) }}" class="btn btn-outline-danger" title="Clear Search"><i class="fa-solid fa-xmark"></i></a>
                     {% endif %}
@@ -78,7 +79,7 @@
         <!-- Attendance Entry Table -->
         <div class="card-body p-0">
             <div class="table-responsive" style="max-height: 650px;">
-                <table class="table table-hover align-middle mb-0 text-nowrap table-custom w-100">
+                <table class="table table-hover align-middle mb-0 text-nowrap table-custom w-100" id="attendanceTable">
                     <thead class="small text-uppercase">
                         <tr>
                             <th class="ps-2 text-center sticky-col-1" style="width: 45px;">#</th>
@@ -200,6 +201,13 @@
                 </table>
             </div>
         </div>
+
+        <div class="card-footer bg-light d-flex justify-content-between align-items-center py-2 px-3 border-top">
+            <span class="text-muted small"><i class="fa-solid fa-circle-info me-1"></i>Showing <strong>{{ rows|length }}</strong> employee attendance records. Changes in table cells are saved when clicking <strong>Save Attendance</strong>.</span>
+            <button type="submit" name="action" value="save_attendance" onclick="document.getElementById('attendance_action').value='save_attendance';" class="btn btn-success fw-bold px-4 shadow-sm">
+                <i class="fa-solid fa-floppy-disk me-1"></i> Save Attendance
+            </button>
+        </div>
     </div>
 </form>
 
@@ -250,5 +258,30 @@ function recalcOT(empId) {
         splInp.value = splOt.toFixed(1);
     }
 }
+
+// Keyboard navigation in table: Enter key moves to next employee cell in same column
+document.addEventListener('DOMContentLoaded', function() {
+    const tableInputs = document.querySelectorAll('#attendanceTable input[type="number"]');
+    tableInputs.forEach(function(inp) {
+        inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const currentName = this.name;
+                const match = currentName.match(/^emp_\d+_(.+)$/);
+                if (match) {
+                    const colSuffix = match[1];
+                    const allColInputs = Array.from(document.querySelectorAll(`input[name$="_${colSuffix}"]`));
+                    const currentIndex = allColInputs.indexOf(this);
+                    if (currentIndex >= 0 && currentIndex < allColInputs.length - 1) {
+                        allColInputs[currentIndex + 1].focus();
+                        allColInputs[currentIndex + 1].select();
+                        return;
+                    }
+                }
+                this.blur();
+            }
+        });
+    });
+});
 </script>
 {% endblock %}
