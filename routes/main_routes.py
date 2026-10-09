@@ -7,7 +7,12 @@ from models.employee import get_all_employees, get_employee_by_id, add_employee,
 from models.payroll_transaction import get_payroll_transactions, get_payroll_attendance, save_payroll_batch
 from models.payroll_period_settings import get_period_settings, save_period_settings
 from models.payroll_period_settings import get_period_settings, save_period_settings, get_period_settings_info, calculate_month_working_days
-from services.payroll_engine import calculate_payroll
+from payroll_formulas import (
+    calculate_payroll,
+    recalculate_for_category_transition,
+    validate_payroll_result,
+    resolve_category
+)
 from services.excel_service import generate_employee_master_excel, generate_attendance_template_excel
 from utils.payroll_calculation_engine import get_worker_calculation_trace, get_staff_pf_esi_calculation_trace
 from utils.contact_utils import normalize_indian_phone, mask_phone_number

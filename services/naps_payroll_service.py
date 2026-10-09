@@ -1,4 +1,4 @@
-from utils.payroll_calculation_engine import calculate_payroll
+from payroll_formulas import calculate_payroll
 
 def calculate_naps_payroll(employee, working_days, ot_hours, other_deduction):
     """

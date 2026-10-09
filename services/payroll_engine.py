@@ -1,10 +1,10 @@
 """
 services/payroll_engine.py
-Delegate module pointing directly to the single authoritative calculation engine:
-utils/payroll_calculation_engine.py
+Direct delegate to the single authoritative central calculation engine:
+payroll_formulas.py
 """
 
-from utils.payroll_calculation_engine import (
+from payroll_formulas import (
     calculate_payroll,
     calculate_staff_pf_esi,
     calculate_worker_pf_esi,
@@ -14,9 +14,25 @@ from utils.payroll_calculation_engine import (
     calculate_worker_non_pf_esi,
     calculate_attendance,
     calculate_earned_salary,
-    calculate_ot,
-    calculate_pf,
-    calculate_esi,
-    calculate_deductions,
-    money
+    calculate_worker_ot as calculate_ot,
+    calculate_deductions_package as calculate_deductions,
+    money,
+    round_half,
+    to_dec,
+    recalculate_for_category_transition,
+    validate_payroll_result,
+    resolve_category,
+    excel_round,
+    excel_roundup,
+    excel_rounddown,
+    STANDARD_WORKING_DAYS,
+    STANDARD_WORKING_HOURS,
+    PF_RATE,
+    PF_CAP,
+    ESI_EMPLOYEE_RATE,
+    ESI_LIMIT,
+    OT_MAX_HOURS,
+    ALL_CANONICAL_CATEGORIES,
+    CATEGORY_ALIASES,
 )
+

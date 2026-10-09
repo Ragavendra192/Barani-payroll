@@ -1,5 +1,5 @@
 import pandas as pd
-from utils.payroll_calculation_engine import calculate_payroll
+from payroll_formulas import calculate_payroll
 from models_manual import get_manual_deductions
 
 def calculate_attendance_payroll(df, year=None, month=None):

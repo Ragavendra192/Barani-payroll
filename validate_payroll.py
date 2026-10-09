@@ -1,7 +1,7 @@
 import os
 import openpyxl
 from decimal import Decimal, ROUND_HALF_UP
-from utils.payroll_calculation_engine import calculate_payroll, money
+from payroll_formulas import calculate_payroll, money
 
 EXCEL_PATH = r"C:\Users\Ragzz\Downloads\BHIPL UNIT - 1 SALARY STATEMENT FOR THE MONTH OF July-2026.xlsx"
 

@@ -3,7 +3,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from models.employee import get_all_employees, get_employee_by_id
 from models.payroll_transaction import get_payroll_transactions, save_payroll_batch
 from models.payroll_period_settings import get_period_settings, save_period_settings
-from services.payroll_engine import calculate_payroll
+from payroll_formulas import (
+    calculate_payroll,
+    recalculate_for_category_transition,
+    validate_payroll_result,
+    resolve_category
+)
 from utils.payroll_calculation_engine import get_worker_calculation_trace, get_staff_pf_esi_calculation_trace
 
 payroll_bp = Blueprint('payroll', __name__, url_prefix='/payroll')

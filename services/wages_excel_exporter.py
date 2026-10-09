@@ -5,7 +5,7 @@ from xlsxwriter.utility import xl_col_to_name
 from models.employee import get_all_employees, calculate_experience_str
 from models.payroll_transaction import get_payroll_transactions
 from models.payroll_period_settings import get_period_settings
-from services.payroll_engine import calculate_payroll
+from payroll_formulas import calculate_payroll
 
 def format_doj_display(doj):
     """Format Date of Joining as DD-MM-YYYY for display."""

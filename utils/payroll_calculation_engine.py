@@ -935,32 +935,14 @@ def calculate_worker_non_pf_esi(emp, salary, attendance, deductions, standard_da
 # CENTRAL PAYROLL ENGINE ROUTER
 # ==============================================================================
 
-def calculate_payroll(emp, salary, attendance, deductions, standard_days=26.0):
-    """
-    Central Authoritative Formula Router:
-    Routes employee calculation to its exact dedicated category-specific routine.
-    """
-    cat = (emp.get('Category') or f"{emp.get('Employee_Type', 'STAFF')}_{emp.get('Payroll_Category', 'PF_ESI')}").upper()
+from payroll_formulas import calculate_payroll as central_calculate_payroll
 
-    if cat == 'STAFF_PF_ESI':
-        return calculate_staff_pf_esi(emp, salary, attendance, deductions, standard_days=standard_days)
-    elif cat == 'WORKER_PF_ESI':
-        return calculate_worker_pf_esi(emp, salary, attendance, deductions, standard_days=standard_days)
-    elif cat == 'STAFF_NAPS':
-        return calculate_staff_naps(emp, salary, attendance, deductions, standard_days=standard_days)
-    elif cat == 'WORKER_NAPS':
-        return calculate_worker_naps(emp, salary, attendance, deductions, standard_days=standard_days)
-    elif cat == 'STAFF_NON_PF_ESI':
-        return calculate_staff_non_pf_esi(emp, salary, attendance, deductions, standard_days=standard_days)
-    elif cat == 'WORKER_NON_PF_ESI':
-        return calculate_worker_non_pf_esi(emp, salary, attendance, deductions, standard_days=standard_days)
-    else:
-        # Fallback by Employee_Type
-        emp_type = (emp.get('Employee_Type') or 'STAFF').upper()
-        if emp_type == 'WORKER':
-            return calculate_worker_pf_esi(emp, salary, attendance, deductions, standard_days=standard_days)
-        else:
-            return calculate_staff_pf_esi(emp, salary, attendance, deductions, standard_days=standard_days)
+def calculate_payroll(emp, salary=None, attendance=None, deductions=None, standard_days=26.0):
+    """
+    Central Authoritative Formula Router delegating directly to
+    the single source of truth in payroll_formulas.py.
+    """
+    return central_calculate_payroll(emp, salary, attendance, deductions, standard_days=standard_days)
 
 # ==============================================================================
 # AUDIT & TRACE ROUTER
