@@ -137,8 +137,24 @@ def get_payroll_transactions(year, month, category=None, emp_type=None, search=N
                 r['Washing_Allowance_Earned'] = r['Earned_Washing']
                 r['Earned_Other'] = float(r.get('Other_Allowance_Earned') or r.get('Earned_Other') or 0.0)
                 r['Other_Allowance_Earned'] = r['Earned_Other']
-                r['Earned_Special'] = float(r.get('Special_Allowance_Earned') or r.get('Earned_Special') or 0.0)
-                r['Special_Allowance_Earned'] = r['Earned_Special']
+                spl_amt = float(r.get('Special_OT_Amount') if r.get('Special_OT_Amount') is not None else (r.get('Special_Allowance_Earned') or r.get('Earned_Special') or 0.0))
+                if spl_amt == 0.0 and float(r.get('Act_OT_Hrs') or 0.0) > 50.0:
+                    act_ot = float(r.get('Act_OT_Hrs') or 0.0)
+                    pdw = float(r.get('Per_Day_Wage') or 0.0)
+                    ot_r = pdw / 8.0 if pdw > 0.0 else float(r.get('OT_Rate', 56.25) or 56.25)
+                    spl_amt = round((act_ot - 50.0) * ot_r, 2)
+                r['Special_OT_Amount'] = spl_amt
+                r['SPL_Amount'] = spl_amt
+                r['Earned_Special'] = spl_amt
+                r['Special_Allowance_Earned'] = spl_amt
+
+                op_adv = float(r.get('Opening_Advance') or 0.0)
+                nw_adv = float(r.get('New_Advance') or 0.0)
+                adv_ded = float(r.get('Advance_Deduction') or 0.0)
+                cl_adv = float(r.get('Closing_Advance') or 0.0)
+                if cl_adv == 0.0 and (op_adv > 0.0 or nw_adv > 0.0):
+                    cl_adv = max(0.0, op_adv + nw_adv - adv_ded)
+                r['Closing_Advance'] = cl_adv
             return records
         except Exception as e:
             if '1205' in str(e) and attempt < max_retries - 1:
@@ -224,6 +240,12 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                     period_id, emp_id, pres_days, nh_days, cl_days, sl_days, el_days, coff_days, lop_days, tot_days, work_days, act_ot, ot_h, spl_ot
                 ))
 
+                op_to_save = float(r.get('Opening_Advance', 0.0) or 0.0)
+                nw_to_save = float(r.get('New_Advance', 0.0) or 0.0)
+                adv_ded_to_save = float(r.get('Advance_Deduction', 0.0) or 0.0)
+                cl_to_save = float(r.get('Closing_Advance') if r.get('Closing_Advance') is not None and float(r.get('Closing_Advance')) > 0 else max(0.0, op_to_save + nw_to_save - adv_ded_to_save))
+                spl_to_save = float(r.get('Special_OT_Amount') if r.get('Special_OT_Amount') is not None else (r.get('Special_Allowance_Earned') or r.get('Earned_Special', 0.0) or 0.0))
+
                 transaction_params.append((
                     period_id, emp_id,
                     r['Employee_Type'], r['Payroll_Category'], r['Category'],
@@ -231,13 +253,13 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                     r.get('Washing_Allowance', r.get('Fixed_Washing', 0.0)), r.get('Other_Allowance', r.get('Fixed_Other', 0.0)), r.get('Special_Allowance', r.get('Fixed_Special', 0.0)),
                     r.get('Per_Day_Wage', 0.0), r.get('OT_Hours', 0.0), r.get('OT_Rate', 0.0), r.get('OT_Wages', 0.0),
                     r.get('Basic_DA_Earned', r.get('Earned_Basic_DA', 0.0)), r.get('HRA_Earned', r.get('Earned_HRA', 0.0)), r.get('Conveyance_Earned', r.get('Earned_Conveyance', 0.0)),
-                    r.get('Washing_Allowance_Earned', r.get('Earned_Washing', 0.0)), r.get('Other_Allowance_Earned', r.get('Earned_Other', 0.0)), r.get('Special_Allowance_Earned', r.get('Earned_Special', 0.0)),
+                    r.get('Washing_Allowance_Earned', r.get('Earned_Washing', 0.0)), r.get('Other_Allowance_Earned', r.get('Earned_Other', 0.0)), spl_to_save,
                     r.get('Gross_Wages', 0.0), r.get('PF_Gross', 0.0), r.get('ESI_Gross', 0.0),
                     r.get('PF_Deduction', 0.0), r.get('Accounts_PF_Deduction', 0.0),
                     r.get('ESI_Deduction', 0.0), r.get('Accounts_ESI_Deduction', 0.0),
                     r.get('Arrears', 0.0), r.get('NAPS_Deduction', 0.0), r.get('LIC_Deduction', 0.0), r.get('TDS_Deduction', r.get('TDS', 0.0)),
-                    r.get('Advance_Deduction', 0.0), r.get('Accommodation_Deduction', 0.0), r.get('Other_Deduction', 0.0),
-                    float(r.get('Opening_Advance', 0.0) or 0.0), float(r.get('New_Advance', 0.0) or 0.0), float(r.get('Closing_Advance', 0.0) or 0.0),
+                    adv_ded_to_save, r.get('Accommodation_Deduction', 0.0), r.get('Other_Deduction', 0.0),
+                    op_to_save, nw_to_save, cl_to_save,
                     lop_ded, r.get('Total_Deduction', 0.0), r.get('Net_Salary', 0.0),
 
                     period_id, emp_id,
@@ -246,13 +268,13 @@ def save_payroll_batch(year, month, records, standard_days=26.0, max_retries=3):
                     r.get('Washing_Allowance', r.get('Fixed_Washing', 0.0)), r.get('Other_Allowance', r.get('Fixed_Other', 0.0)), r.get('Special_Allowance', r.get('Fixed_Special', 0.0)),
                     r.get('Per_Day_Wage', 0.0), r.get('OT_Hours', 0.0), r.get('OT_Rate', 0.0), r.get('OT_Wages', 0.0),
                     r.get('Basic_DA_Earned', r.get('Earned_Basic_DA', 0.0)), r.get('HRA_Earned', r.get('Earned_HRA', 0.0)), r.get('Conveyance_Earned', r.get('Earned_Conveyance', 0.0)),
-                    r.get('Washing_Allowance_Earned', r.get('Earned_Washing', 0.0)), r.get('Other_Allowance_Earned', r.get('Earned_Other', 0.0)), r.get('Special_Allowance_Earned', r.get('Earned_Special', 0.0)),
+                    r.get('Washing_Allowance_Earned', r.get('Earned_Washing', 0.0)), r.get('Other_Allowance_Earned', r.get('Earned_Other', 0.0)), spl_to_save,
                     r.get('Gross_Wages', 0.0), r.get('PF_Gross', 0.0), r.get('ESI_Gross', 0.0),
                     r.get('PF_Deduction', 0.0), r.get('Accounts_PF_Deduction', 0.0),
                     r.get('ESI_Deduction', 0.0), r.get('Accounts_ESI_Deduction', 0.0),
                     r.get('Arrears', 0.0), r.get('NAPS_Deduction', 0.0), r.get('LIC_Deduction', 0.0), r.get('TDS_Deduction', r.get('TDS', 0.0)),
-                    r.get('Advance_Deduction', 0.0), r.get('Accommodation_Deduction', 0.0), r.get('Other_Deduction', 0.0),
-                    float(r.get('Opening_Advance', 0.0) or 0.0), float(r.get('New_Advance', 0.0) or 0.0), float(r.get('Closing_Advance', 0.0) or 0.0),
+                    adv_ded_to_save, r.get('Accommodation_Deduction', 0.0), r.get('Other_Deduction', 0.0),
+                    op_to_save, nw_to_save, cl_to_save,
                     lop_ded, r.get('Total_Deduction', 0.0), r.get('Net_Salary', 0.0)
                 ))
 

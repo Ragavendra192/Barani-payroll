@@ -672,7 +672,21 @@ def wages():
             calc_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
             calc_res['Working_Days'] = emp_std_days
             calc_res['C_Off'] = coff_days
-            calc_res['Opening_Advance'] = adv_balances.get(str(emp['Emp_No']), 0.0)
+            stored_op = float(existing_t.get('Opening_Advance') or 0.0)
+            op_adv = stored_op if stored_op > 0.0 else float(adv_balances.get(str(emp['Emp_No']), 0.0) or 0.0)
+            nw_adv = float(existing_t.get('New_Advance') or 0.0)
+            adv_ded = float(calc_res.get('Advance_Deduction', 0.0) or 0.0)
+            stored_cl = float(existing_t.get('Closing_Advance') or 0.0)
+            if stored_cl > 0.0:
+                cl_adv = stored_cl
+            elif op_adv > 0.0 or nw_adv > 0.0:
+                cl_adv = max(0.0, op_adv + nw_adv - adv_ded)
+            else:
+                cl_adv = 0.0
+            calc_res['Opening_Advance'] = op_adv
+            calc_res['New_Advance'] = nw_adv
+            calc_res['Closing_Advance'] = cl_adv
+            calc_res['SPL_Amount'] = float(calc_res.get('Special_OT_Amount') if calc_res.get('Special_OT_Amount') is not None else (calc_res.get('Special_Allowance_Earned') or 0.0))
             calculated_rows.append(calc_res)
 
         if action == 'save':
@@ -716,7 +730,21 @@ def wages():
             c_res = calculate_payroll(emp, sal_dict, att_dict, ded_dict, standard_days=emp_std_days)
             c_res['Working_Days'] = emp_std_days
             c_res['C_Off'] = coff_days
-            c_res['Opening_Advance'] = adv_balances.get(str(emp['Emp_No']), 0.0)
+            stored_op = float(t.get('Opening_Advance') or 0.0)
+            op_adv = stored_op if stored_op > 0.0 else float(adv_balances.get(str(emp['Emp_No']), 0.0) or 0.0)
+            nw_adv = float(t.get('New_Advance') or 0.0)
+            adv_ded = float(c_res.get('Advance_Deduction', 0.0) or 0.0)
+            stored_cl = float(t.get('Closing_Advance') or 0.0)
+            if stored_cl > 0.0:
+                cl_adv = stored_cl
+            elif op_adv > 0.0 or nw_adv > 0.0:
+                cl_adv = max(0.0, op_adv + nw_adv - adv_ded)
+            else:
+                cl_adv = 0.0
+            c_res['Opening_Advance'] = op_adv
+            c_res['New_Advance'] = nw_adv
+            c_res['Closing_Advance'] = cl_adv
+            c_res['SPL_Amount'] = float(c_res.get('Special_OT_Amount') if c_res.get('Special_OT_Amount') is not None else (c_res.get('Special_Allowance_Earned') or 0.0))
             calculated_rows.append(c_res)
     else:
         # NEW MONTH WITH NO SAVED PAYROLL YET -> DO NOT SHOW PREVIOUS MONTH!

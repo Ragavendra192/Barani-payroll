@@ -257,7 +257,7 @@
                     Opening Advance: Rs. {{ "{:,.2f}".format(row.Opening_Advance or 0.0) }}
                 </td>
                 <td style="width: 50%; text-align: right; padding: 4px 10px; border: 1px solid #000; color: #000;">
-                    Closing Advance: Rs. {{ "{:,.2f}".format(row.Closing_Advance if row.Closing_Advance is defined and row.Closing_Advance is not none else ((row.Opening_Advance or 0.0) - (row.Advance_Deduction or 0.0))) }}
+                    Closing Advance: Rs. {{ "{:,.2f}".format(row.Closing_Advance or 0.0) }}
                 </td>
             </tr>
         </table>

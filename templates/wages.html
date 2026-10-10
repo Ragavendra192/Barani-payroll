@@ -135,7 +135,7 @@
                             <th class="text-center text-primary bg-primary bg-opacity-10">Total Days</th>
                             <th class="text-center text-danger bg-danger bg-opacity-10">LOP Days</th>
                             <th class="text-center">OT Hrs</th>
-                            <th class="text-end text-info bg-info bg-opacity-10">Spl OT Amt</th>
+                            <th class="text-end text-info bg-info bg-opacity-10">SPL Amount</th>
                             <th class="text-end text-primary bg-primary bg-opacity-10">Earned Gross</th>
                             <th class="text-end text-danger bg-danger bg-opacity-10">LOP Dedn</th>
                             <th class="text-end text-danger">PF</th>
@@ -176,7 +176,7 @@
                                 <td class="text-center bg-primary bg-opacity-10"><span class="badge bg-primary-subtle text-primary border border-primary fw-bold px-2">{{ r.Total_Days or (r.Present_Days + (r.NH or 0.0) + (r.C_Off or 0.0) + (r.EL or 0.0) + (r.CL or 0.0) + (r.SL or 0.0)) }}</span></td>
                                 <td class="text-center bg-danger bg-opacity-10"><span class="badge bg-danger-subtle text-danger border border-danger fw-bold px-2">{{ r.LOP_Days or 0.0 }}</span></td>
                                 <td class="text-center fw-bold text-dark">{{ r.Act_OT_Hrs or r.OT_Hours or 0.0 }}</td>
-                                <td class="text-end text-info bg-info bg-opacity-10 font-monospace">₹{{ "{:,.2f}".format(r.Special_OT_Amount or 0.0) }}</td>
+                                <td class="text-end text-info bg-info bg-opacity-10 font-monospace">₹{{ "{:,.2f}".format(r.SPL_Amount if r.SPL_Amount is defined and r.SPL_Amount is not none else (r.Special_OT_Amount if r.Special_OT_Amount is defined and r.Special_OT_Amount is not none else (r.Special_Allowance_Earned or 0.0))) }}</td>
                                 <td class="text-end fw-bold text-primary bg-primary bg-opacity-10 font-monospace">
                                     ₹{{ "{:,.2f}".format(r.Earned_Gross or r.Gross_Wages or 0.0) }}
                                 </td>
@@ -209,7 +209,7 @@
                                            data-emp="{{ r.Employee_ID }}" data-open="{{ r.Opening_Advance or 0.0 }}">
                                 </td>
                                 <td class="text-end fw-bold text-info font-monospace pt-2" id="close_adv_{{ r.Employee_ID }}">
-                                    ₹{{ "{:,.2f}".format([0.0, (r.Opening_Advance or 0.0) - (r.Advance_Deduction or 0.0)]|max) }}
+                                    ₹{{ "{:,.2f}".format(r.Closing_Advance if (r.Closing_Advance is defined and r.Closing_Advance is not none and r.Closing_Advance > 0) else ([0.0, (r.Opening_Advance or 0.0) - (r.Advance_Deduction or 0.0)]|max)) }}
                                 </td>
 
                                 <td class="p-1 text-end">

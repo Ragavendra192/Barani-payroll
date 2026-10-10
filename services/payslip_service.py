@@ -180,6 +180,28 @@ def get_payslip_data(year, month, emp_no=None, category=None):
         r['Net_Salary'] = rounded_net
         r['Net_Pay'] = rounded_net
         r['Round_Off'] = round(rounded_net - raw_net, 2)
+
+        # Advance tracking
+        op_adv = float(r.get('Opening_Advance') or 0.0)
+        nw_adv = float(r.get('New_Advance') or 0.0)
+        adv_ded = float(r.get('Advance_Deduction') or 0.0)
+        cl_adv_stored = r.get('Closing_Advance')
+        if cl_adv_stored is not None and float(cl_adv_stored) > 0.0:
+            cl_adv = float(cl_adv_stored)
+        elif op_adv > 0.0 or nw_adv > 0.0:
+            cl_adv = max(0.0, op_adv + nw_adv - adv_ded)
+        else:
+            cl_adv = float(cl_adv_stored or 0.0)
+        r['Opening_Advance'] = op_adv
+        r['New_Advance'] = nw_adv
+        r['Closing_Advance'] = cl_adv
+
+        # Special Amount mapping
+        spl_amt = float(r.get('Special_OT_Amount') if r.get('Special_OT_Amount') is not None else (r.get('Special_Allowance_Earned') or 0.0))
+        r['Special_OT_Amount'] = spl_amt
+        r['SPL_Amount'] = spl_amt
+        if is_worker(r):
+            r['Special_Allowance_Earned'] = spl_amt
         
         enriched.append(r)
 
