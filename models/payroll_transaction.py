@@ -49,6 +49,32 @@ def ensure_attendance_columns():
     except Exception as e:
         print(f"[ATTENDANCE COLUMN NOTICE]: {e}")
 
+def format_date_dmy(val):
+    if val is None:
+        return '-'
+    if hasattr(val, 'strftime'):
+        return val.strftime('%d-%m-%Y')
+    s = str(val).strip()
+    if s in ('', '-', 'None', 'nan', 'null', 'NaT'):
+        return '-'
+    import re
+    m = re.match(r'^(\d{4})[-/](\d{1,2})[-/](\d{1,2})', s)
+    if m:
+        y, mth, d = m.groups()
+        return f"{int(d):02d}-{int(mth):02d}-{y}"
+    m2 = re.match(r'^(\d{1,2})[-/](\d{1,2})[-/](\d{4})', s)
+    if m2:
+        d, mth, y = m2.groups()
+        return f"{int(d):02d}-{int(mth):02d}-{y}"
+    try:
+        import pandas as pd
+        parsed = pd.to_datetime(s, errors='coerce')
+        if pd.notnull(parsed):
+            return parsed.strftime('%d-%m-%Y')
+    except Exception:
+        pass
+    return s
+
 def get_payroll_transactions(year, month, category=None, emp_type=None, search=None, max_retries=3):
     """Retrieve monthly payroll transactions with CL/EL/SL/NH leaves and WITH (NOLOCK) hints."""
     ensure_attendance_columns()
@@ -155,6 +181,13 @@ def get_payroll_transactions(year, month, category=None, emp_type=None, search=N
                 if cl_adv == 0.0 and (op_adv > 0.0 or nw_adv > 0.0):
                     cl_adv = max(0.0, op_adv + nw_adv - adv_ded)
                 r['Closing_Advance'] = cl_adv
+                
+                if r.get('DOJ'):
+                    r['DOJ'] = format_date_dmy(r['DOJ'])
+                if r.get('DOB'):
+                    r['DOB'] = format_date_dmy(r['DOB'])
+                if r.get('Rejoin_DOJ'):
+                    r['Rejoin_DOJ'] = format_date_dmy(r['Rejoin_DOJ'])
             return records
         except Exception as e:
             if '1205' in str(e) and attempt < max_retries - 1:

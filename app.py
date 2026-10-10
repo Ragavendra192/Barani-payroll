@@ -45,9 +45,11 @@ app.register_blueprint(reports_bp)
 app.register_blueprint(history_bp)
 
 from utils.excel_rounding import display_currency, display_decimal
+from services.payslip_service import format_date_dmy
 
 app.jinja_env.filters['display_currency'] = display_currency
 app.jinja_env.filters['display_decimal'] = display_decimal
+app.jinja_env.filters['date_dmy'] = format_date_dmy
 
 @app.context_processor
 def inject_global_vars():

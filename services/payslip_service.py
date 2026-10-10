@@ -77,6 +77,34 @@ def clean_val_str(val):
         return '-'
     return s
 
+def format_date_dmy(val):
+    if val is None:
+        return '-'
+    if hasattr(val, 'strftime'):
+        return val.strftime('%d-%m-%Y')
+    s = str(val).strip()
+    if s in ('', '-', 'None', 'nan', 'null', 'NaT'):
+        return '-'
+    import re
+    # Check YYYY-MM-DD or YYYY/MM/DD pattern
+    m = re.match(r'^(\d{4})[-/](\d{1,2})[-/](\d{1,2})', s)
+    if m:
+        y, mth, d = m.groups()
+        return f"{int(d):02d}-{int(mth):02d}-{y}"
+    # Check DD-MM-YYYY or DD/MM/YYYY pattern
+    m2 = re.match(r'^(\d{1,2})[-/](\d{1,2})[-/](\d{4})', s)
+    if m2:
+        d, mth, y = m2.groups()
+        return f"{int(d):02d}-{int(mth):02d}-{y}"
+    try:
+        import pandas as pd
+        parsed = pd.to_datetime(s, errors='coerce')
+        if pd.notnull(parsed):
+            return parsed.strftime('%d-%m-%Y')
+    except Exception:
+        pass
+    return s
+
 def get_payslip_data(year, month, emp_no=None, category=None):
     """Retrieve payroll transaction and merge with EmployeeMaster for payslip rendering."""
     records = get_payroll_transactions(year, month, category=category)
@@ -103,11 +131,14 @@ def get_payslip_data(year, month, emp_no=None, category=None):
         father = clean_val_str(emp_master.get('Father_Name') or r.get('Father_Name'))
         r['Father_Name'] = father
 
-        dob = clean_val_str(emp_master.get('DOB') or r.get('DOB'))
+        dob = format_date_dmy(emp_master.get('DOB') or r.get('DOB'))
         r['DOB'] = dob
 
-        doj = clean_val_str(emp_master.get('DOJ') or r.get('DOJ'))
+        doj = format_date_dmy(emp_master.get('DOJ') or r.get('DOJ'))
         r['DOJ'] = doj
+
+        rejoin_doj = format_date_dmy(emp_master.get('Rejoin_DOJ') or r.get('Rejoin_DOJ'))
+        r['Rejoin_DOJ'] = rejoin_doj
 
         # Bank details
         acc_no = clean_val_str(

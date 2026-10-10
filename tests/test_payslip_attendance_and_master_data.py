@@ -57,14 +57,14 @@ class TestPayslipAttendanceAndMasterData(unittest.TestCase):
         self.assertEqual(r_1038.get('IFSC_Code'), 'SBIN0007040')
         self.assertEqual(r_1038.get('UAN'), '102074864881')
         self.assertEqual(r_1038.get('Father_Name'), 'A.ANBALAGAN')
-        self.assertEqual(r_1038.get('DOB'), '2001-03-06')
+        self.assertEqual(r_1038.get('DOB'), '06-03-2001')
 
         # Test Employee 1001 (KRISHNAN.A.P)
         records_1001 = get_payslip_data(2026, 7, '1001')
         r_1001 = records_1001[0]
         self.assertEqual(r_1001.get('UAN'), '100196077241')
         self.assertEqual(r_1001.get('Father_Name'), 'PALAVASAM')
-        self.assertEqual(r_1001.get('DOB'), '1971-07-29')
+        self.assertEqual(r_1001.get('DOB'), '29-07-1971')
 
     def test_rendered_payslip_html(self):
         """Verify that rendered HTML contains the actual Bank Name, UAN, and Option A 0.0 leaves."""
@@ -85,7 +85,7 @@ class TestPayslipAttendanceAndMasterData(unittest.TestCase):
             self.assertIn('SBIN0007040', html)
             self.assertIn('102074864881', html)
             self.assertIn('A.ANBALAGAN', html)
-            self.assertIn('2001-03-06', html)
+            self.assertIn('06-03-2001', html)
 
             # Option A 0.0 in leave table rendered
             self.assertIn('Earned Leave', html)
