@@ -263,7 +263,7 @@
             <!-- ROW 1: BASIC + DA -->
             <tr>
                 <td class="bold">WAGE BASIC AND DA</td>
-                <td class="text-right">{{ "{:,.2f}".format(row.Master_Basic + row.Master_DA if row.Master_Basic is defined and (row.Master_Basic + row.Master_DA) > 0 else row.Basic_DA or 0.0) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(row.Basic_DA if (row.Basic_DA is defined and row.Basic_DA > 0) else ((row.Master_Basic + row.Master_DA) if row.Master_Basic is defined else 0.0)) }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(row.Basic_DA_Earned or 0.0) }}</td>
                 <td class="bold">{{ deductions_list[0][0] if deductions_list|length > 0 else '&nbsp;'|safe }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(deductions_list[0][1]) if deductions_list|length > 0 else '&nbsp;'|safe }}</td>
@@ -271,7 +271,7 @@
             <!-- ROW 2: CONVEYANCE -->
             <tr>
                 <td class="bold">WAGE CONVEYANCE</td>
-                <td class="text-right">{{ "{:,.2f}".format(row.Master_Conveyance if row.Master_Conveyance is defined and row.Master_Conveyance > 0 else row.Conveyance_Allowance or 0.0) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(row.Conveyance_Allowance if (row.Conveyance_Allowance is defined and row.Conveyance_Allowance > 0) else (row.Master_Conveyance or 0.0)) }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(row.Conveyance_Earned or 0.0) }}</td>
                 <td class="bold">{{ deductions_list[1][0] if deductions_list|length > 1 else '&nbsp;'|safe }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(deductions_list[1][1]) if deductions_list|length > 1 else '&nbsp;'|safe }}</td>
@@ -279,7 +279,7 @@
             <!-- ROW 3: HRA -->
             <tr>
                 <td class="bold">WAGE HRA</td>
-                <td class="text-right">{{ "{:,.2f}".format(row.Master_HRA if row.Master_HRA is defined and row.Master_HRA > 0 else row.HRA or 0.0) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(row.HRA if (row.HRA is defined and row.HRA > 0) else (row.Master_HRA or 0.0)) }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(row.HRA_Earned or 0.0) }}</td>
                 <td class="bold">{{ deductions_list[2][0] if deductions_list|length > 2 else '&nbsp;'|safe }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(deductions_list[2][1]) if deductions_list|length > 2 else '&nbsp;'|safe }}</td>
@@ -287,7 +287,7 @@
             <!-- ROW 4: OTHER ALLOWANCE -->
             <tr>
                 <td class="bold">WAGE OTHER ALLOWANCE</td>
-                <td class="text-right">{{ "{:,.2f}".format(row.Master_Other if row.Master_Other is defined and row.Master_Other > 0 else row.Other_Allowance or 0.0) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(row.Other_Allowance if (row.Other_Allowance is defined and row.Other_Allowance > 0) else (row.Master_Other or 0.0)) }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(row.Other_Allowance_Earned or 0.0) }}</td>
                 <td class="bold">{{ deductions_list[3][0] if deductions_list|length > 3 else '&nbsp;'|safe }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(deductions_list[3][1]) if deductions_list|length > 3 else '&nbsp;'|safe }}</td>
@@ -295,7 +295,7 @@
             <!-- ROW 5: WASHING ALLOWANCE -->
             <tr>
                 <td class="bold">WAGE WASHING ALLOWANCE</td>
-                <td class="text-right">{{ "{:,.2f}".format(row.Master_Washing if row.Master_Washing is defined and row.Master_Washing > 0 else row.Washing_Allowance or 0.0) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(row.Washing_Allowance if (row.Washing_Allowance is defined and row.Washing_Allowance > 0) else (row.Master_Washing or 0.0)) }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(row.Washing_Allowance_Earned or 0.0) }}</td>
                 <td class="bold">{{ deductions_list[4][0] if deductions_list|length > 4 else '&nbsp;'|safe }}</td>
                 <td class="text-right">{{ "{:,.2f}".format(deductions_list[4][1]) if deductions_list|length > 4 else '&nbsp;'|safe }}</td>

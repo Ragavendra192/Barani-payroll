@@ -165,13 +165,38 @@ def get_payslip_data(year, month, emp_no=None, category=None):
         r['C_Off_Op'] = float(r.get('C_Off_Op') or 0.0)
         r['C_Off_Cl'] = float(r.get('C_Off_Cl') or 0.0)
         
-        # Salary component master fallbacks
-        r['Master_Basic'] = float(emp_master.get('Basic_Pay', 0.0) or 0.0)
-        r['Master_DA'] = float(emp_master.get('DA', 0.0) or 0.0)
-        r['Master_HRA'] = float(emp_master.get('HRA', 0.0) or 0.0)
-        r['Master_Conveyance'] = float(emp_master.get('Conveyance_Allowance', 0.0) or 0.0)
-        r['Master_Washing'] = float(emp_master.get('Washing_Allowance', 0.0) or 0.0)
-        r['Master_Other'] = float(emp_master.get('Other_Allowance', 0.0) or 0.0)
+        # Ensure accurate monthly fixed salary components (50% Basic+DA, 20% HRA, 10% Conv, 10% Wash, 10% Other)
+        fg = float(r.get('Fixed_Gross') or 0.0)
+        pdw = float(r.get('Per_Day_Wage') or 0.0)
+        if fg == 0.0 and pdw > 0.0:
+            fg = round(pdw * float(r.get('Working_Days') or 26.0), 2)
+            r['Fixed_Gross'] = fg
+            
+        bda = float(r.get('Basic_DA') or 0.0)
+        hra = float(r.get('HRA') or 0.0)
+        conv = float(r.get('Conveyance_Allowance') or 0.0)
+        wash = float(r.get('Washing_Allowance') or 0.0)
+        oth = float(r.get('Other_Allowance') or 0.0)
+        
+        # If components are zero but Fixed_Gross > 0, compute standard 50/20/10/10/10 breakdown
+        if fg > 0.0 and (bda == 0.0 or hra == 0.0):
+            bda = round(fg * 0.50, 2)
+            hra = round(fg * 0.20, 2)
+            conv = round(fg * 0.10, 2)
+            wash = round(fg * 0.10, 2)
+            oth = round(fg - (bda + hra + conv + wash), 2)
+            r['Basic_DA'] = bda
+            r['HRA'] = hra
+            r['Conveyance_Allowance'] = conv
+            r['Washing_Allowance'] = wash
+            r['Other_Allowance'] = oth
+            
+        r['Master_Basic'] = round(bda / 2.0, 2)
+        r['Master_DA'] = round(bda / 2.0, 2)
+        r['Master_HRA'] = hra
+        r['Master_Conveyance'] = conv
+        r['Master_Washing'] = wash
+        r['Master_Other'] = oth
 
         # Net Salary rounding: match the rounded integer value on the wage statement
         raw_net = float(r.get('Net_Salary') if r.get('Net_Salary') is not None else (r.get('Net_Pay') or 0.0))

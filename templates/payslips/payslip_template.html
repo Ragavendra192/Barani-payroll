@@ -276,35 +276,35 @@
             <tbody>
                 <tr>
                     <td style="color: #000;">BASIC + DA</td>
-                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_Basic + row.Master_DA if row.Master_Basic is defined and (row.Master_Basic + row.Master_DA) > 0 else row.Basic_DA or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Basic_DA if (row.Basic_DA is defined and row.Basic_DA > 0) else ((row.Master_Basic + row.Master_DA) if row.Master_Basic is defined else 0.0)) }}</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Basic_DA_Earned or 0.0) }}</td>
                     <td style="color: #000;">PF</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.PF_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
                     <td style="color: #000;">HOUSE RENT ALLOWANCE</td>
-                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_HRA if row.Master_HRA is defined and row.Master_HRA > 0 else row.HRA or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.HRA if (row.HRA is defined and row.HRA > 0) else (row.Master_HRA or 0.0)) }}</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.HRA_Earned or 0.0) }}</td>
                     <td style="color: #000;">ESI</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.ESI_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
                     <td style="color: #000;">CONVEYANCE ALLOWANCE</td>
-                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_Conveyance if row.Master_Conveyance is defined and row.Master_Conveyance > 0 else row.Conveyance_Allowance or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Conveyance_Allowance if (row.Conveyance_Allowance is defined and row.Conveyance_Allowance > 0) else (row.Master_Conveyance or 0.0)) }}</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Conveyance_Earned or 0.0) }}</td>
                     <td style="color: #000;">LIC</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.LIC_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
                     <td style="color: #000;">WASHING ALLOWANCE</td>
-                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_Washing if row.Master_Washing is defined and row.Master_Washing > 0 else row.Washing_Allowance or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Washing_Allowance if (row.Washing_Allowance is defined and row.Washing_Allowance > 0) else (row.Master_Washing or 0.0)) }}</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Washing_Allowance_Earned or 0.0) }}</td>
                     <td style="color: #000;">TDS</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.TDS_Deduction or 0.0) }}</td>
                 </tr>
                 <tr>
                     <td style="color: #000;">OTHER ALLOWANCES</td>
-                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Master_Other if row.Master_Other is defined and row.Master_Other > 0 else row.Other_Allowance or 0.0) }}</td>
+                    <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Other_Allowance if (row.Other_Allowance is defined and row.Other_Allowance > 0) else (row.Master_Other or 0.0)) }}</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Other_Allowance_Earned or 0.0) }}</td>
                     <td style="color: #000;">ADVANCE</td>
                     <td class="text-right" style="color: #000;">{{ "{:,.2f}".format(row.Advance_Deduction or 0.0) }}</td>
